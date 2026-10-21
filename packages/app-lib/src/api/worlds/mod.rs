@@ -214,10 +214,7 @@ pub async fn get_recent_worlds(
             break;
         }
         let instance_id = &instance.instance.id;
-        let instance_dir =
-            state.directories.instance_game_dir(&instance.instance);
-        let instance_worlds =
-            get_all_worlds_in_instance(instance_id, &instance_dir).await;
+        let instance_worlds = get_instance_worlds(instance_id).await;
         if let Err(e) = instance_worlds {
             tracing::error!(
                 "Failed to get worlds for instance {}: {}",
@@ -1242,8 +1239,193 @@ async fn _get_server_status_new(
 
 #[cfg(test)]
 mod tests {
-    use super::read_hardcore;
+    use super::*;
+    use crate::state::{
+        CreateDirectLinkInstance, CreateInstance, InstanceLink,
+    };
     use quartz_nbt::{NbtCompound, NbtTag};
+    use tempfile::TempDir;
+
+    fn write_world(game_dir: &Path) {
+        let world_dir = game_dir.join("saves").join("home-world");
+        std::fs::create_dir_all(&world_dir).unwrap();
+        let mut data = NbtCompound::new();
+        data.insert("LevelName", "Home world");
+        data.insert("LastPlayed", 1_700_000_000_000_i64);
+        let mut root = NbtCompound::new();
+        root.insert("Data", data);
+        let mut bytes = Vec::new();
+        quartz_nbt::io::write_nbt(
+            &mut bytes,
+            None,
+            &root,
+            quartz_nbt::io::Flavor::GzCompressed,
+        )
+        .unwrap();
+        std::fs::write(world_dir.join("level.dat"), bytes).unwrap();
+    }
+
+    #[tokio::test]
+    async fn home_worlds_use_instance_game_directories() {
+        // Keep the singleton's data directory alive for other API tests.
+        if !State::initialized() {
+            let root = TempDir::new().unwrap().keep();
+            State::init_for_test(root.to_string_lossy().into_owned())
+                .await
+                .unwrap();
+        }
+        let state = State::get().await.unwrap();
+        let fixture = TempDir::new().unwrap();
+        let mut expected_ids = Vec::new();
+        for label in ["pcl-isolated", "pcl-shared", "managed", "override"] {
+            let instance = if label.starts_with("pcl-") {
+                let launcher_root = fixture.path().join(label);
+                let version_dir = launcher_root
+                    .join(".minecraft")
+                    .join("versions")
+                    .join(label);
+                std::fs::create_dir_all(&version_dir).unwrap();
+                std::fs::write(
+                    version_dir.join(format!("{label}.json")),
+                    serde_json::to_vec(&serde_json::json!({
+                        "id": label,
+                        "inheritsFrom": "1.20.1",
+                        "mainClass": "net.minecraft.client.main.Main"
+                    }))
+                    .unwrap(),
+                )
+                .unwrap();
+                crate::state::create_direct_link_instance(
+                    CreateDirectLinkInstance {
+                        name: None,
+                        launcher_type:
+                            crate::api::pack::import::ImportLauncherType::PCL2,
+                        base_path: launcher_root,
+                        instance_folder: label.into(),
+                        instance_path: Some(
+                            version_dir.to_string_lossy().into_owned(),
+                        ),
+                        game_dir_mode: (label == "pcl-shared").then_some(
+                            crate::launcher::ExternalGameDirMode::Shared,
+                        ),
+                    },
+                    &state,
+                )
+                .await
+                .unwrap()
+            } else {
+                crate::state::instances::commands::create_instance(
+                    CreateInstance {
+                        name: format!("{label} {}", uuid::Uuid::new_v4()),
+                        path: None,
+                        game_version: "1.20.1".into(),
+                        loader: ModLoader::Vanilla,
+                        loader_version: None,
+                        icon_path: None,
+                        link: InstanceLink::Unmanaged,
+                        symlink_target: None,
+                        game_dir_override: (label == "override").then(|| {
+                            fixture
+                                .path()
+                                .join(label)
+                                .to_string_lossy()
+                                .into_owned()
+                        }),
+                    },
+                    &state,
+                )
+                .await
+                .unwrap()
+            };
+            let game_dir = get_full_path(&instance.id).await.unwrap();
+            if label.starts_with("pcl-") {
+                let minecraft = fixture.path().join(label).join(".minecraft");
+                let expected = if label == "pcl-shared" {
+                    minecraft
+                } else {
+                    minecraft.join("versions").join(label)
+                };
+                assert_eq!(game_dir, io::canonicalize(expected).unwrap());
+            }
+            write_world(&game_dir);
+            add_server_to_instance(
+                &instance.id,
+                "Home server".into(),
+                "localhost:25565".into(),
+                ServerPackStatus::Prompt,
+                None,
+                None,
+            )
+            .await
+            .unwrap();
+            attached_world_data::set_display_status(
+                &instance.id,
+                WorldType::Singleplayer,
+                "home-world",
+                DisplayStatus::Favorite,
+                &state.pool,
+            )
+            .await
+            .unwrap();
+            assert_eq!(
+                get_instance_worlds(&instance.id).await.unwrap().len(),
+                2
+            );
+            expected_ids.push(instance.id);
+        }
+
+        let recent = get_recent_worlds(
+            usize::MAX,
+            enumset::enum_set!(DisplayStatus::Normal | DisplayStatus::Favorite),
+        )
+        .await
+        .unwrap();
+        let favorites = get_favorite_worlds().await.unwrap();
+        for instance_id in &expected_ids {
+            let worlds: Vec<_> = recent
+                .iter()
+                .filter(|world| &world.instance_id == instance_id)
+                .collect();
+            assert_eq!(worlds.len(), 2, "recent worlds for {instance_id}");
+            assert!(
+                worlds
+                    .iter()
+                    .any(|world| world.world.world_type() == WorldType::Server)
+            );
+            let pinned: Vec<_> = favorites
+                .iter()
+                .filter(|world| &world.instance_id == instance_id)
+                .collect();
+            assert_eq!(pinned.len(), 1, "favorite worlds for {instance_id}");
+            assert_eq!(pinned[0].world.world_id(), "home-world");
+        }
+
+        // A disconnected installation must not hide worlds from valid ones.
+        // Point the record at a missing root instead of moving watched folders.
+        let missing_id = expected_ids.remove(0);
+        sqlx::query(
+            "UPDATE instances SET linked_dot_minecraft = ?, linked_version_json_path = NULL WHERE id = ?",
+        )
+        .bind(fixture.path().join("disconnected").to_string_lossy().as_ref())
+        .bind(&missing_id)
+        .execute(&state.pool)
+        .await
+            .unwrap();
+        assert!(get_instance_worlds(&missing_id).await.is_err());
+        let favorites = get_favorite_worlds().await.unwrap();
+        assert!(
+            !favorites
+                .iter()
+                .any(|world| world.instance_id == missing_id)
+        );
+        for instance_id in &expected_ids {
+            assert!(
+                favorites
+                    .iter()
+                    .any(|world| &world.instance_id == instance_id)
+            );
+        }
+    }
 
     #[test]
     fn reads_hardcore_from_legacy_and_26_1_layouts() {
