@@ -64,6 +64,10 @@ jobs:
         env:
           AXOLOTL_BUILD_RESOURCES: ${{ github.workspace }}/target/build-resources
 
+      - name: Bundle NSIS installer
+        working-directory: apps/app
+        run: pnpm tauri bundle --bundles nsis --ci --config tauri-release.conf.json
+
       - name: Upload installer artifact
         uses: actions/upload-artifact@v4
         with:
