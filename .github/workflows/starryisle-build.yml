@@ -62,7 +62,7 @@ jobs:
       - name: Build application and bundle
         run: node scripts/axolotl/build-desktop.mjs --profile release
         env:
-          AXOLOTL_BUILD_RESOURCES: target/build-resources
+          AXOLOTL_BUILD_RESOURCES: ${{ github.workspace }}/target/build-resources
 
       - name: Upload installer artifact
         uses: actions/upload-artifact@v4
