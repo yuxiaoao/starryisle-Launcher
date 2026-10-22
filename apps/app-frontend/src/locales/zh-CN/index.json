@@ -746,7 +746,42 @@
   "app.appearance-settings.accent-color.system-unsupported-label": {
     "message": "跟随系统：系统不支持"
   },
-  "app.appearance-settings.accent-color.title": {
+  "app.appearance-settings.hue-tint.title": {
+    "message": "界面色调"
+  },
+  "app.appearance-settings.hue-tint.description": {
+    "message": "用选定的色相给左侧导航栏与顶栏着色，不影响图标与强调色。"
+  },
+  "app.appearance-settings.hue-tint.reset": {
+    "message": "恢复默认"
+  },
+  "app.appearance-settings.hue-tint.enable": {
+    "message": "启用界面色调"
+  },
+  "app.appearance-settings.hue-tint.enable-description": {
+    "message": "用选定的色相给左侧导航栏与顶栏换个底色。"
+  },
+  "app.appearance-settings.hue-tint.tint-all": {
+    "message": "左侧导航栏与顶栏"
+  },
+  "app.appearance-settings.hue-tint.tint-nav": {
+    "message": "左侧导航栏"
+  },
+  "app.appearance-settings.hue-tint.tint-shell": {
+    "message": "窗口圆角与外框"
+  },
+  "app.appearance-settings.hue-tint.tint-titlebar": {
+    "message": "顶栏"
+  },
+  "app.appearance-settings.hue-tint.hex": {
+    "message": "十六进制色号"
+  },
+  "app.appearance-settings.hue-tint.light-theme": {
+    "message": "浅色主题"
+  },
+  "app.appearance-settings.hue-tint.dark-theme": {
+    "message": "深色主题"
+  },  "app.appearance-settings.accent-color.title": {
     "message": "强调色"
   },
   "app.appearance-settings.advanced-rendering.description": {
@@ -774,10 +809,10 @@
     "message": "隐藏至托盘"
   },
   "app.appearance-settings.close-behavior.title": {
-    "message": "关闭 Axolotl Launcher 的方式"
+    "message": "关闭 StarryIsle Launcher 的方式"
   },
   "app.appearance-settings.color-theme.description": {
-    "message": "为 Axolotl Launcher 选择偏好的色彩主题。"
+    "message": "为 StarryIsle Launcher 选择偏好的色彩主题。"
   },
   "app.appearance-settings.color-theme.title": {
     "message": "色彩主题"
@@ -1203,7 +1238,7 @@
     "message": "记住我的选择"
   },
   "app.close-launcher.title": {
-    "message": "选择关闭 Axolotl Launcher 的方式"
+    "message": "选择关闭 StarryIsle Launcher 的方式"
   },
   "app.close-launcher.tray": {
     "message": "隐藏至托盘"
@@ -2142,7 +2177,7 @@
     "message": "调试信息"
   },
   "app.error.directory-description": {
-    "message": "Axolotl Launcher 无法迁移到所选目录。请联系支持获取帮助，或取消目录更改。"
+    "message": "StarryIsle Launcher 无法迁移到所选目录。请联系支持获取帮助，或取消目录更改。"
   },
   "app.error.directory-title": {
     "message": "无法更改应用目录"
@@ -2160,7 +2195,7 @@
     "message": "与 Microsoft、Xbox 或 Minecraft 服务的连接被拒绝。这些服务可能被 hosts 文件阻止，请参考支持文章进行修复。"
   },
   "app.error.loader-description": {
-    "message": "Axolotl Launcher 无法找到此实例所需的加载器版本。"
+    "message": "StarryIsle Launcher 无法找到此实例所需的加载器版本。"
   },
   "app.error.loader-fix": {
     "message": "请使用下方按钮修复此实例。"
@@ -2178,7 +2213,7 @@
     "message": "登录 Minecraft"
   },
   "app.error.network-description": {
-    "message": "Axolotl Launcher 连接 Microsoft 服务时遇到问题，这通常是网络连接不佳造成的。请重试；如果问题持续存在，请参考支持文章。"
+    "message": "StarryIsle Launcher 连接 Microsoft 服务时遇到问题，这通常是网络连接不佳造成的。请重试；如果问题持续存在，请参考支持文章。"
   },
   "app.error.network-issues": {
     "message": "网络问题"
@@ -2199,7 +2234,7 @@
     "message": "正在使用 PC Game Pass、从基岩版转来，或刚刚购买游戏？"
   },
   "app.error.permissions-description": {
-    "message": "Axolotl Launcher 无法写入所选目录。请调整目录权限后重试，或取消目录更改。"
+    "message": "StarryIsle Launcher 无法写入所选目录。请调整目录权限后重试，或取消目录更改。"
   },
   "app.error.permissions-title": {
     "message": "更改目录权限"
@@ -2217,7 +2252,7 @@
     "message": "空间不足"
   },
   "app.error.state-database-newer-description": {
-    "message": "数据库最后一次是被较新版本的 Axolotl 打开的，它将其升级为当前版本无法读取的格式。你的实例与设置仍然保留。"
+    "message": "数据库最后一次是被较新版本的 StarryIsle 打开的，它将其升级为当前版本无法读取的格式。你的实例与设置仍然保留。"
   },
   "app.error.state-database-newer-fix-downgrade": {
     "message": "如果你只是在试用构建、并非日常使用启动器，可以改用 scripts/axolotl/downgrade-app-db.mjs 将数据库回退。"
@@ -2226,10 +2261,10 @@
     "message": "要让启动器重新启动，可以任选其一："
   },
   "app.error.state-database-newer-fix-update": {
-    "message": "重新安装较新版本的 Axolotl——它可以直接打开这个数据库。"
+    "message": "重新安装较新版本的 StarryIsle——它可以直接打开这个数据库。"
   },
   "app.error.state-description": {
-    "message": "Axolotl Launcher 未能正确加载，可能有文件损坏或缺少必要文件。"
+    "message": "StarryIsle Launcher 未能正确加载，可能有文件损坏或缺少必要文件。"
   },
   "app.error.state-fix-internet": {
     "message": "检查网络连接，然后重启应用。"
@@ -2241,7 +2276,7 @@
     "message": "重新下载并安装应用。"
   },
   "app.error.state-title": {
-    "message": "Axolotl Launcher 初始化失败"
+    "message": "StarryIsle Launcher 初始化失败"
   },
   "app.error.support-article": {
     "message": "支持文章"
@@ -2774,7 +2809,54 @@
   "app.home.widgets.options": {
     "message": "小组件选项"
   },
-  "app.home.widgets.pinned-instances": {
+  "app.home.widgets.weather": {
+    "message": "天气"
+  },
+  "app.home.widgets.weather-description": {
+    "message": "显示你选定城市的当前天气，数据来自 Open-Meteo。"
+  },
+  "app.home.weather.title": {
+    "message": "天气"
+  },
+  "app.home.weather.change-city": {
+    "message": "更改城市"
+  },
+  "app.home.weather.search-placeholder": {
+    "message": "搜索城市"
+  },
+  "app.home.weather.searching": {
+    "message": "搜索中…"
+  },
+  "app.home.weather.no-results": {
+    "message": "没有匹配的城市"
+  },
+  "app.home.weather.loading": {
+    "message": "正在获取天气…"
+  },
+  "app.home.weather.load-failed": {
+    "message": "天气获取失败，请稍后再试。"
+  },
+  "app.home.weather.refresh": {
+    "message": "刷新"
+  },
+  "app.home.weather.feels-like": {
+    "message": "体感"
+  },
+  "app.home.weather.high": {
+    "message": "最高"
+  },
+  "app.home.weather.low": {
+    "message": "最低"
+  },
+  "app.home.weather.humidity": {
+    "message": "湿度"
+  },
+  "app.home.weather.wind": {
+    "message": "风速"
+  },
+  "app.home.weather.updated-at": {
+    "message": "更新于 {time}"
+  },  "app.home.widgets.pinned-instances": {
     "message": "全部固定实例"
   },
   "app.home.widgets.pinned-instances-description": {
@@ -4389,7 +4471,7 @@
     "message": "红石"
   },
   "app.lab.recipe-generator.copyright.disclaimer-body": {
-    "message": "Minecraft 素材版权归 Mojang Studios / Microsoft 所有，仅用于识别兼容的游戏内容。Axolotl Launcher 与 Mojang Studios 或 Microsoft 无关联，也未获得其认可。"
+    "message": "Minecraft 素材版权归 Mojang Studios / Microsoft 所有，仅用于识别兼容的游戏内容。StarryIsle Launcher 与 Mojang Studios 或 Microsoft 无关联，也未获得其认可。"
   },
   "app.lab.recipe-generator.copyright.disclaimer-heading": {
     "message": "非官方工具"
@@ -5367,13 +5449,13 @@
     "message": "复制 /tp"
   },
   "app.lab.seed-map.copyright.disclaimer-body": {
-    "message": "Minecraft 是 Mojang Synergies AB 的商标。Axolotl Launcher 与 Mojang 或 MinecraftSearch 均无隶属关系，也未获得其认可。"
+    "message": "Minecraft 是 Mojang Synergies AB 的商标。StarryIsle Launcher 与 Mojang 或 MinecraftSearch 均无隶属关系，也未获得其认可。"
   },
   "app.lab.seed-map.copyright.disclaimer-heading": {
     "message": "非官方工具"
   },
   "app.lab.seed-map.copyright.engine-body": {
-    "message": "地图预测由 xpple/cubiomes 和 Axolotl 原生集成在本地计算；该引擎基于 Cubitect 的 cubiomes，以 MIT 许可证提供。"
+    "message": "地图预测由 xpple/cubiomes 和 StarryIsle 原生集成在本地计算；该引擎基于 Cubitect 的 cubiomes，以 MIT 许可证提供。"
   },
   "app.lab.seed-map.copyright.engine-heading": {
     "message": "本地地图引擎"
@@ -6654,7 +6736,7 @@
     "message": "先不逛了"
   },
   "app.onboarding.action.start": {
-    "message": "带我逛逛"
+    "message": "开始使用"
   },
   "app.onboarding.ai.description": {
     "message": "统一连接文本模型供应商、选择要使用的模型，也可在这里一键关闭所有 AI 功能。"
@@ -6873,16 +6955,16 @@
     "message": "浏览时直接翻译 Modrinth 项目的标题、摘要和介绍。保留原文、双语同屏，或者让译文站 C 位，都由你决定。"
   },
   "app.onboarding.translation.title": {
-    "message": "翻译，是 Axolotl 的拿手活"
+    "message": "翻译，是 StarryIsle 的拿手活"
   },
   "app.onboarding.updates.description": {
-    "message": "决定 Axolotl 何时检查更新，以及是否替你安装。"
+    "message": "决定 StarryIsle 何时检查更新，以及是否替你安装。"
   },
   "app.onboarding.updates.title": {
     "message": "保持在线"
   },
   "app.onboarding.welcome.description": {
-    "message": "实例、内容、世界和下载，现在都有了同一个家。正式开玩之前，先快速逛一圈。"
+    "message": "实例、内容、世界和下载，现在都有了同一个家。"
   },
   "app.onboarding.welcome.footer": {
     "message": "你的最后一款启动器"
@@ -6909,7 +6991,7 @@
     "message": "Discord 运行时显示你当前使用启动器或游玩的状态。"
   },
   "app.privacy-consent.intro": {
-    "message": "选择 Axolotl 可以发送或展示的内容。确认前不会发送任何遥测。"
+    "message": "选择 StarryIsle 可以发送或展示的内容。确认前不会发送任何遥测。"
   },
   "app.privacy-consent.privacy-policy": {
     "message": "阅读隐私政策"
@@ -7425,7 +7507,7 @@
     "message": "正在准备服务器..."
   },
   "app.servers.modpack.unsupported-loader-description": {
-    "message": "此整合包使用 {loader}，但 Axolotl 目前仅支持原版、Fabric 和 Quilt 整合包服务端。{loader} 支持即将推出。"
+    "message": "此整合包使用 {loader}，但 StarryIsle 目前仅支持原版、Fabric 和 Quilt 整合包服务端。{loader} 支持即将推出。"
   },
   "app.servers.modpack.unsupported-loader-title": {
     "message": "{loader} 服务端暂不支持"
@@ -7899,7 +7981,7 @@
     "message": "支持项目持续开发"
   },
   "app.settings.about.attribution": {
-    "message": "Axolotl Launcher 是开源项目 Modrinth 代码库的修改版本。"
+    "message": "StarryIsle Launcher 是开源项目 Modrinth 代码库的修改版本。"
   },
   "app.settings.about.community-support": {
     "message": "项目与社区"
@@ -7998,7 +8080,7 @@
     "message": "许可证与来源声明"
   },
   "app.settings.about.not-affiliated": {
-    "message": "Modrinth 是 Rinth, Inc. 的商标。Axolotl Launcher 与 Rinth, Inc. 无关联，亦未获得其认可。"
+    "message": "Modrinth 是 Rinth, Inc. 的商标。StarryIsle Launcher 与 Rinth, Inc. 无关联，亦未获得其认可。"
   },
   "app.settings.about.original-source": {
     "message": "Modrinth 原始源代码"
@@ -9516,7 +9598,7 @@
     "message": "正在以便携模式运行，所有数据已固定在程序目录下，无法修改。"
   },
   "app.settings.resources.axolotl-data-directory": {
-    "message": "Axolotl 数据目录"
+    "message": "StarryIsle 数据目录"
   },
   "app.settings.resources.concurrency.manual": {
     "message": "手动"
@@ -9576,7 +9658,7 @@
     "message": "Minecraft 目录"
   },
   "app.settings.resources.minecraft-directories-description": {
-    "message": "添加一个或多个供实例使用的外部 .minecraft 文件夹。这些文件夹与 Axolotl 数据分开保存。"
+    "message": "添加一个或多个供实例使用的外部 .minecraft 文件夹。这些文件夹与 StarryIsle 数据分开保存。"
   },
   "app.settings.resources.minecraft-directory-mode": {
     "message": "游戏目录模式"
@@ -10176,7 +10258,7 @@
     "message": "将 Release 数据复制到 Beta？"
   },
   "app.settings.updates.channel.description": {
-    "message": "选择 Axolotl 接收的启动器版本。"
+    "message": "选择 StarryIsle 接收的启动器版本。"
   },
   "app.settings.updates.channel.label": {
     "message": "通道"
@@ -10188,7 +10270,7 @@
     "message": "稳定且经过测试的新功能与修复，更新频率较慢。"
   },
   "app.settings.updates.channel.restart-description": {
-    "message": "立即重启 Axolotl 以开始使用新的更新通道，或稍后手动重启。"
+    "message": "立即重启 StarryIsle 以开始使用新的更新通道，或稍后手动重启。"
   },
   "app.settings.updates.channel.restart-development-description": {
     "message": "手动重启开发会话后，新的更新通道才会生效。"
@@ -10239,7 +10321,7 @@
     "message": "数据库隔离"
   },
   "app.settings.updates.database-operation.active-target": {
-    "message": "无法覆盖当前正在使用的数据库。请先重启 Axolotl 并切换更新通道。"
+    "message": "无法覆盖当前正在使用的数据库。请先重启 StarryIsle 并切换更新通道。"
   },
   "app.settings.updates.database-operation.beta-to-release": {
     "message": "从 Beta 复制到 Release"
@@ -10257,7 +10339,7 @@
     "message": "覆盖数据库？"
   },
   "app.settings.updates.database-operation.failed": {
-    "message": "无法复制数据库。请确认 Axolotl 未在使用目标数据库。"
+    "message": "无法复制数据库。请确认 StarryIsle 未在使用目标数据库。"
   },
   "app.settings.updates.database-operation.label": {
     "message": "数据库操作"
@@ -10314,7 +10396,7 @@
     "message": "只有通过加密签名验证的更新才会被安装。"
   },
   "app.settings.updates.up-to-date": {
-    "message": "Axolotl 已是最新版本。"
+    "message": "StarryIsle 已是最新版本。"
   },
   "app.shortcut-settings.change-shortcut": {
     "message": "更改「{action}」的快捷键"
@@ -10584,13 +10666,13 @@
     "message": "小鬼当家"
   },
   "app.skins.sign-in.axolotl-alt": {
-    "message": "Axolotl Launcher"
+    "message": "StarryIsle Launcher"
   },
   "app.skins.sign-in.button": {
     "message": "登录"
   },
   "app.skins.sign-in.description": {
-    "message": "请登录您的 Minecraft 账号，以便使用 Axolotl Launcher 的皮肤管理功能。"
+    "message": "请登录您的 Minecraft 账号，以便使用 StarryIsle Launcher 的皮肤管理功能。"
   },
   "app.skins.sign-in.title": {
     "message": "请登录"
@@ -10824,16 +10906,16 @@
     "message": "此版本暂未内置更新公告，请前往官网查看完整更新日志。"
   },
   "app.update-announcement.unknown-title": {
-    "message": "Axolotl Launcher 已更新"
+    "message": "StarryIsle Launcher 已更新"
   },
   "app.update-announcement.version": {
     "message": "版本 {version}"
   },
   "app.update-popup.body.download-complete": {
-    "message": "Axolotl Launcher v{version} 更新已下载完成！立即重启更新，或退出时自动安装。"
+    "message": "StarryIsle Launcher v{version} 更新已下载完成！立即重启更新，或退出时自动安装。"
   },
   "app.update-popup.body.metered": {
-    "message": "Axolotl Launcher v{version} 现已发布！由于你正在使用按流量计费的网络，该更新未自动下载。"
+    "message": "StarryIsle Launcher v{version} 现已发布！由于你正在使用按流量计费的网络，该更新未自动下载。"
   },
   "app.update-popup.changelog": {
     "message": "更新日志"
@@ -10863,7 +10945,7 @@
     "message": "正在安装版本 {version}"
   },
   "app.warning.running-as-admin": {
-    "message": "Axolotl 正在以管理员身份运行。此模式下无法拖拽导入文件，请以普通权限重新启动启动器。"
+    "message": "StarryIsle 正在以管理员身份运行。此模式下无法拖拽导入文件，请以普通权限重新启动启动器。"
   },
   "app.window-controls.close": {
     "message": "关闭"
@@ -11328,7 +11410,7 @@
     "message": "光影包"
   },
   "drop.help.title": {
-    "message": "我可以拖入什么到 Axolotl？"
+    "message": "我可以拖入什么到 StarryIsle？"
   },
   "drop.help.worlds-desc": {
     "message": "拖放存档文件夹来导入到实例。"
@@ -11889,7 +11971,7 @@
     "message": "版本隔离（存放于 versions/）"
   },
   "instance.settings.tabs.general.game-dir.managed-note": {
-    "message": "此实例使用 Axolotl 托管目录。"
+    "message": "此实例使用 StarryIsle 托管目录。"
   },
   "instance.settings.tabs.general.game-dir.move-note": {
     "message": "切换隔离仅更新启动器路径。请自行移动模组、存档和配置文件夹以保持一致。"
@@ -12462,7 +12544,7 @@
     "message": "{count} 个精确选择"
   },
   "instance.upgrade.customize.custom.description": {
-    "message": "为所选内容固定精确版本，其余依赖图由 Axolotl 求解。"
+    "message": "为所选内容固定精确版本，其余依赖图由 StarryIsle 求解。"
   },
   "instance.upgrade.customize.custom.discard-switch": {
     "message": "放弃并切换"
@@ -12567,7 +12649,7 @@
     "message": "继续前请处理自定义冲突。"
   },
   "instance.upgrade.customize.search-limit.body": {
-    "message": "Axolotl 未能在搜索上限内找到方案。请放宽一项自定义选择。"
+    "message": "StarryIsle 未能在搜索上限内找到方案。请放宽一项自定义选择。"
   },
   "instance.upgrade.customize.search-limit.title": {
     "message": "已达到搜索上限"
@@ -13479,13 +13561,13 @@
     "message": "已清除正版 Minecraft 登录记录"
   },
   "app.settings.privacy.external-scheme-description": {
-    "message": "响应来自浏览器及其他应用的 axolotl:// 链接。关闭后，外部的启动、安装与页面跳转将被阻止。"
+    "message": "响应来自浏览器及其他应用的 starryisle:// 链接。关闭后，外部的启动、安装与页面跳转将被阻止。"
   },
   "app.settings.privacy.external-scheme": {
     "message": "接受外部 Scheme URL"
   },
   "app.settings.privacy.privileged-scheme-description": {
-    "message": "允许 axolotl:// 链接修改设置与停止游戏进程。开启时需阅读风险警告，每次执行仍需你确认。"
+    "message": "允许 starryisle:// 链接修改设置与停止游戏进程。开启时需阅读风险警告，每次执行仍需你确认。"
   },
   "app.settings.privacy.privileged-scheme": {
     "message": "允许敏感scheme操作"
@@ -14241,7 +14323,7 @@
     "message": "外部游戏目录"
   },
   "app.settings.storage.externalHelp": {
-    "message": "这些目录由 Axolotl 之外的程序管理，不计入启动器总量。重叠目录只列出一次。"
+    "message": "这些目录由 StarryIsle 之外的程序管理，不计入启动器总量。重叠目录只列出一次。"
   },
   "app.settings.storage.analyzeMeta": {
     "message": "检查可清理文件"

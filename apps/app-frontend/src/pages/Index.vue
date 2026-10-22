@@ -34,6 +34,7 @@ import {
     type HomeGreetingEditorContext,
 } from '@/components/home/home-greeting-editor'
 import { getActivePlayerAccount } from '@/components/home/home-utils'
+import HomeCalendar from '@/components/home/HomeCalendar.vue'
 import HomeDailyChallenge from '@/components/home/HomeDailyChallenge.vue'
 import HomeDashboard from '@/components/home/HomeDashboard.vue'
 import HomeGreetingAccountModal from '@/components/home/HomeGreetingAccountModal.vue'
@@ -41,6 +42,7 @@ import HomeInstancePickerModal from '@/components/home/HomeInstancePickerModal.v
 import HomeMinecraftNews from '@/components/home/HomeMinecraftNews.vue'
 import HomeMinimal from '@/components/home/HomeMinimal.vue'
 import HomePlayInsights from '@/components/home/HomePlayInsights.vue'
+import { provideHomeDashboardRuntime } from '@/components/home/home-dashboard-runtime'
 import { useNetworkStatus } from '@/composables/useNetworkStatus'
 import { get_default_user, users } from '@/helpers/auth'
 import { DIRECT_LINKS_CHANGED_EVENT } from '@/helpers/direct-link-sync'
@@ -113,6 +115,9 @@ const recentProjectsInHomeFlag: FeatureFlag = 'worlds_in_home'
 breadcrumbs.setRootContext({ name: formatMessage(messages.home), link: route.path })
 
 const instances = ref<GameInstance[]>([])
+
+// 侧栏里的日历需要 dashboard 运行时；HomeDashboard 之外没有 provider
+provideHomeDashboardRuntime((error) => console.error('[home-calendar]', error))
 const playerName = ref<string | null>(null)
 const playerAccountId = ref<string | null>(null)
 const dashboardConfig = ref<HomeDashboardConfig | null>(null)
@@ -499,6 +504,11 @@ if (!instancesLoaded || instances.value.length > 0) void fetchPlayerName()
             :class="{ 'slide-enter-from': !animateSidebarShow }"
         >
             <HomePlayInsights />
+            <div class="flex-none border-0 border-b-[1px] border-solid border-[--brand-gradient-border]">
+                <div class="h-[21rem] min-h-0">
+                    <HomeCalendar :instances="instances" />
+                </div>
+            </div>
             <HomeDailyChallenge />
             <HomeMinecraftNews />
         </div>

@@ -1,177 +1,49 @@
 <div align="center">
-  <img src="./apps/app/icons/128x128.png" width="128" height="128" alt="Axolotl Launcher Logo" />
-  <h1>Axolotl Launcher</h1>
-  <p><strong>次世代 Minecraft 桌面客户端，全能、美观、全平台覆盖。</strong></p>
-
-  <p>
-    <a href="https://github.com/Mystic-Stars/Axolotl/actions">
-      <img src="https://img.shields.io/github/actions/workflow/status/Mystic-Stars/Axolotl/axolotl-ci.yml?style=for-the-badge&logo=github" alt="Desktop CI" />
-    </a>
-    <a href="https://github.com/Mystic-Stars/Axolotl/releases">
-      <img src="https://img.shields.io/github/downloads/Mystic-Stars/Axolotl/total?style=for-the-badge&logo=github" alt="Downloads" />
-    </a>
-    <a href="https://github.com/Mystic-Stars/Axolotl/stargazers">
-      <img src="https://img.shields.io/github/stars/Mystic-Stars/Axolotl?style=for-the-badge&logo=github&color=ffb800" alt="Stars" />
-    </a>
-    <a href="COPYING.md">
-      <img src="https://img.shields.io/badge/License-GPL_3.0-blue.svg?style=for-the-badge" alt="License" />
-    </a>
-  </p>
-
-  <p>
-    <a href="https://www.axlmc.org">官方网站</a> ｜
-    <a href="https://github.com/Mystic-Stars/Axolotl/releases/latest">下载最新版</a> ｜
-    <a href="CONTRIBUTING.md">参与贡献</a>
-    ｜ <a href="CODE_OF_CONDUCT.md">行为准则</a>
-  </p>
+  <img src="./apps/app/icons/128x128.png" width="128" height="128" alt="StarryIsle Launcher Logo" />
+  <h1>StarryIsle Launcher</h1>
+  <p><strong>基于 Axolotl Launcher 二次开发的 Minecraft Java 版第三方启动器。</strong></p>
 </div>
 
-<details open>
-<summary><strong>赞助与合作</strong></summary>
+> 本项目是 [Axolotl Launcher](https://github.com/Mystic-Stars/Axolotl) 的个人二次开发版本，遵循 GPL-3.0-only 继续开源。
+> 与原项目、Rinth, Inc.（Modrinth）及 Mojang 均无隶属或背书关系。
 
-感谢以下赞助商与合作伙伴对 Axolotl Launcher 的支持。
+## 这是什么
 
-<table>
-  <tr>
-    <td><img src="./.github/assets/codeflow-logo.png" width="72" alt="Codeflow Logo" /></td>
-    <td><strong>Codeflow</strong><br>更稳、更省地调用顶级 AI 模型<br>原生协议转发 · 无需海外网络 · 支付宝即充即用</td>
-    <td><a href="https://codeflow.asia/register?invite=4UHP2KYH">访问 Codeflow</a></td>
-  </tr>
-</table>
+StarryIsle 在原版基础上改动品牌与系统标识（应用名、图标、bundle identifier、deep-link 协议），
+功能继承自上游：Modrinth / CurseForge 内容浏览与安装、实例管理、多种账户登录、实验室工具（种子地图、配方生成器、皮肤编辑器）等。
 
-<a href="https://www.netlify.com">
-  <img src="https://www.netlify.com/assets/badges/netlify-badge-color-accent.svg" alt="Deploys by Netlify" />
-</a>
+- 应用标识：`com.starryisle.launcher`
+- 链接协议：`starryisle://`
+- 数据目录：`%APPDATA%\com.starryisle.launcher`（macOS/Linux 为对应配置目录）
 
-- [在爱发电支持 Axolotl Launcher](https://ifdian.net/a/Mystic-Stars) — 你的支持将帮助项目持续维护与改进
+## 从源码构建
 
-</details>
-
----
-
-**Axolotl Launcher（美西螈启动器）** 是一款免费、开源、跨平台的 Minecraft Java 版第三方启动器，支持在一个客户端中搜索、安装和更新来自 Modrinth 与 CurseForge 的模组、整合包、资源包和光影，并提供实例管理、多种账户认证、个性化外观与 Axolotl 实验室工具。
-
-本项目基于 [Modrinth App](https://github.com/modrinth/code) 构建，移除了不适用于本项目的商业化模块，专注于提供纯净、无广告的桌面启动体验。
-
-本项目与客户端项目 Axolotl Client 无任何关联。
-
-_(注：本项目是调用 Modrinth 公开 API 的独立客户端，与 Rinth, Inc. 无任何关联。)_
-
-## 核心优势
-
-- **真跨平台体验**：告别繁琐的环境配置，原生支持 Windows、macOS（完美兼容 Intel 与 Apple Silicon）及各类主流 Linux 发行版。
-- **现代化内容生态**：集成 Modrinth 和 CurseForge，可在启动器中一键浏览。游戏实例、整合包、模组、资源包及光影均可一键安装与升级，彻底告别手动管理依赖的痛苦。
-- **高度定制化**：无论是主题色调、背景图片，还是离线皮肤，核心功能与视觉展现均由你自由支配。
-- **All in one 全新体验**：启动器内置 “实验室” 功能，囊括种子地图、投影工坊等海量使用工具，带来全新原生轮椅体验。
-
-## 下载与安装
-
-请前往 [GitHub Releases](https://github.com/Mystic-Stars/Axolotl/releases/latest) 下载适合你操作系统的最新安装包。
-已安装的用户每次均可通过内置的 Tauri 签名校验机制，自动在后台完成更新，无需手动下载安装更新。
-
-| 系统平台                | 推荐下载文件                              |
-| ----------------------- | ----------------------------------------- |
-| **Windows** (10/11 x64) | 下载 `.exe` (NSIS) 安装程序               |
-| **macOS**               | 下载 `通用 .dmg` 镜像文件                 |
-| **Linux** (x64)         | 提供 `.AppImage`，`.deb`，`.rpm` 多种格式 |
-
-<details>
-<summary><b>Linux 包管理器快捷安装指令</b></summary>
-<br>
-
-**Arch Linux (AUR)**：
+需要 Node.js 24.15、pnpm 10.33、Rust 1.95、Tauri v2 系统依赖；Windows 上还需要 MSVC 生成工具、
+MinGW gcc（编译种子地图原生模块）与 JDK 17（编译内置 Java 组件）。
 
 ```bash
-# 源码构建版
-yay -S axolotl-launcher
-
-# 预编译二进制版
-yay -S axolotl-launcher-bin
+git clone --recursive https://github.com/yuxiaoao/starryisle-Launcher.git
+cd starryisle-Launcher
+corepack enable
+pnpm install --frozen-lockfile
+pnpm app:dev
 ```
 
-**Debian / Ubuntu (APT)**：
+打包与发布流程沿用上游：打 tag 触发 `.github/workflows/axolotl-release.yml`。
+发布前请先配置自己的 Tauri 签名密钥与更新源，并运行 `pnpm axolotl:brand-guard` 检查品牌一致性。
 
-```bash
-curl -fsSL https://ppa.axlmc.org/setup.sh | sudo bash
-sudo apt install axolotl-launcher
-```
+> 本地开发请设置 `THESEUS_CONFIG_DIR`，避免与已安装版本共用数据库（迁移是单向的）。
 
-**使用 Nix(启用Flake功能) 的任意发行版**：
+## 许可与署名
 
-> 小提示：
-> 由于 Axolotl Launcher 的主分支代码更新较快，可以在下面用到的网址后面加上`/?`和参数来锁定，以免过于频繁地更新。多个参数用`&`连接。
-> + 使用`shallow=1`避免克隆历史代码 \
->   `git+https://github.com/Mystic-Stars/Axolotl/?shallow=1`
-> + 使用`ref=`指定分支（例如`experiment/linux-cef-runtime`分支）\
->   `git+https://github.com/Mystic-Stars/Axolotl/?ref=experiment/linux-cef-runtime`
-> + 使用`ref=`指定版本标签（例如`v1.9.7-beta.2`）\
->   `git+https://github.com/Mystic-Stars/Axolotl/?ref=refs/tags/v1.9.7-beta.2`
-> + 使用`rev=`指定提交（例如`10827ade74f49958cefaa6fda05961c7502741ef`）\
->   `git+https://github.com/Mystic-Stars/Axolotl/?rev=10827ade74f49958cefaa6fda05961c7502741ef`
+- 本仓库整体按 **GPL-3.0-only** 分发，各子包的许可见对应目录下的 `COPYING.md` / `LICENSE`。
+- 原始作品版权归 Rinth, Inc.、Garbage Human Studio 及 Axolotl 贡献者所有；本二次开发版本的修改部分由
+  本仓库维护者保留相应权利，并同样以 GPL-3.0-only 授权。
+- Modrinth 名称与图形标识归 Rinth, Inc. 所有，本项目仅在描述兼容性时提及，不使用其品牌素材。
+- Minecraft 是 Mojang Synergies AB 的商标；本项目未获得 Mojang 或 Microsoft 的授权或背书。
+- 第三方组件（Blockbench、cubiomes、Deepslate 等）的许可见 `third-party/licenses/`。
 
-```bash
-nix profile add 'git+https://github.com/Mystic-Stars/Axolotl'
-```
+## 上游
 
-**使用 Home-Manager 的任意发行版**
-
-将此 Flake 加入你的 `flake.nix`
-```nix
-# flake.nix
-{
-  nixConfig = {
-    # 使用 Axolotl Launcher 的 Cachix 缓存。对安全性有疑问可以审查：
-    # axlmc.cachix.org 以及 github.com/Axolotl-Launcher/Axolotl-Cachix
-    extra-substituters = [
-      "https://axlmc.cachix.org"
-    ];
-    extra-trusted-public-keys = [
-      "axlmc.cachix.org-1:dmsRJqFQqLMfvRveerHV3DxDCW1wq1N+TX1+dryYWZU="
-    ];
-  };
-
-  inputs = {
-    # nixpkgs home-manager 等其他输入...
-    axolotl-launcher = {
-      url = "git+https://github.com/Mystic-Stars/Axolotl";
-    # inputs.nixpkgs.follows = "nixpkgs";
-    # ↑ 通常不建议跟随本地nixpkgs，因为nixpkgs版本不一致会难以命中缓存、从下载缓存回退成本地编译。
-    };
-  };
-  outputs = { axolotl-launcher, <其他输入>, ... }: {
-    homeConfigurations = {
-      <用户名> = home-manager.lib.homeManagerConfiguration {
-        modules = [
-          home.nix
-          axolotl-launcher.homeModules
-          # 其他模块
-        ];
-      };
-    };
-  };
-}
-```
-然后在 `home.nix` 中配置
-```nix
-# home.nix
-{
-  programs.axolotl-launcher = {
-    enable = true;
-  };
-}
-```
-可选属性
-| 键        | 类型    | 默认值  | 说明 |
-|-----------|---------|---------|--------------------------------------|
-| enable    | `bool`  | `false` | 设置为`true`以启用 Axolotl Launcher。 |
-| launchEnv | `attrs` | `{ }`   | Axolotl Launcher 启动时额外的环境变量。例如`{ HELLO = 1; world = "two"; }`能为 Axolotl Launcher 设置额外的环境变量`HELLO=1`和`world=two`。 |
-
-</details>
-
-## 参与项目开发
-
-Axolotl Launcher 的进步离不开社区的反馈与贡献。
-如果遇到 Bug 或有新的功能点子，欢迎提交 Issue。如需搭建本地开发环境或查阅打包发布规范，请阅读详细的 [贡献指南 (CONTRIBUTING.md)](CONTRIBUTING.md)。
-参与社区和贡献代码前，也请先阅读[行为准则 (CODE_OF_CONDUCT.md)](CODE_OF_CONDUCT.md)。
-
----
+- Axolotl Launcher：https://github.com/Mystic-Stars/Axolotl
+- 上游基于 Modrinth App：https://github.com/modrinth/code

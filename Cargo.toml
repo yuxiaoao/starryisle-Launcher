@@ -14,6 +14,8 @@ members = [
 edition = "2024"
 rust-version = "1.90.0"
 repository = "https://github.com/Mystic-Stars/Axolotl"
+authors = ["Tauri Programme within The Commons Conservancy"]
+license = "Apache-2.0 OR MIT"
 
 [workspace.dependencies]
 ariadne = { path = "packages/ariadne" }
@@ -125,7 +127,7 @@ tauri-plugin-http = "2.5.7"
 tauri-plugin-opener = "2.5.0"
 tauri-plugin-os = "2.3.1"
 tauri-plugin-single-instance = "2.3.4"
-tauri-plugin-updater = { git = "https://github.com/modrinth/plugins-workspace", rev = "0d30f2aa28ec668ce187d527da1c475da3c01cbc", default-features = false, features = [
+tauri-plugin-updater = { path = "../.vendor/modrinth-pw/plugins/updater", default-features = false, features = [
   "rustls-tls",
   "zip",
 ] }
@@ -207,7 +209,7 @@ unnested_or_patterns = "warn"
 wildcard_dependencies = "warn"
 
 [patch.crates-io]
-tauri-plugin-window-state = { git = "https://github.com/Lintern/plugins-workspace", branch = "v2" }
+tauri-plugin-window-state = { path = "../.vendor/lintern-pw/plugins/window-state" }
 
 [profile.dev]
 # Keep incremental on (Cargo default). Disabling it forces full crate rebuilds

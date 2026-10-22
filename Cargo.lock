@@ -6777,7 +6777,6 @@ dependencies = [
 [[package]]
 name = "tauri-plugin-updater"
 version = "2.10.1"
-source = "git+https://github.com/modrinth/plugins-workspace?rev=0d30f2aa28ec668ce187d527da1c475da3c01cbc#0d30f2aa28ec668ce187d527da1c475da3c01cbc"
 dependencies = [
  "base64 0.22.1",
  "dirs",
@@ -6809,7 +6808,6 @@ dependencies = [
 [[package]]
 name = "tauri-plugin-window-state"
 version = "2.4.1"
-source = "git+https://github.com/Lintern/plugins-workspace?branch=v2#9e8d76adda37134547cb251fdf1bd9043ab47935"
 dependencies = [
  "bitflags 2.13.1",
  "log",

@@ -38,7 +38,7 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { join, basename, dirname } from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
 
-const SETTINGS_DIR_NAME = 'red.ghs.axolotl'
+const SETTINGS_DIR_NAME = 'com.starryisle.launcher'
 const APP_DB = 'app.db'
 const CHANNELS = ['release', 'beta']
 

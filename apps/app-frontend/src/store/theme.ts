@@ -152,6 +152,9 @@ export type ThemeStore = {
     minimalHomeInstanceId: string | null
     closeBehavior: CloseBehavior
 
+    /** Whole-UI surface hue override (0-359); null keeps the theme's neutral surfaces. */
+    hueTint: number | null
+
     /** Whether the floating "back to top" button is shown on scrollable pages. */
     showScrollTop: boolean
     /** Whether quick scrolling shortcuts (Home/End/PageUp/PageDown) are active. */
@@ -203,6 +206,7 @@ export const DEFAULT_THEME_STORE: ThemeStore = {
     homeLayout: 'standard',
     minimalHomeInstanceId: null,
     closeBehavior: 'ask',
+    hueTint: null,
 
     showScrollTop: true,
     quickScrollEnabled: false,
@@ -224,6 +228,87 @@ export const DEFAULT_THEME_STORE: ThemeStore = {
     featureFlags: DEFAULT_FEATURE_FLAGS,
 }
 
+export const HUE_TINT_STORAGE_KEY = 'theme-surface-hue'
+export const BAR_TINT_STORAGE_KEY = 'theme-bar-targets'
+
+function parseCssColor(value: string): [number, number, number] | null {
+    const hex = /^#([0-9a-f]{6})$/i.exec(value)
+    if (hex) {
+        const n = parseInt(hex[1], 16)
+        return [(n >> 16) & 255, (n >> 8) & 255, n & 255]
+    }
+    const rgb = /^rgba?\(\s*([\d.]+)[,\s]+([\d.]+)[,\s]+([\d.]+)/i.exec(value)
+    if (rgb) return [Number(rgb[1]), Number(rgb[2]), Number(rgb[3])]
+    return null
+}
+
+function toHsl(rgb: [number, number, number]) {
+    const r = rgb[0] / 255
+    const g = rgb[1] / 255
+    const b = rgb[2] / 255
+    const max = Math.max(r, g, b)
+    const min = Math.min(r, g, b)
+    const l = (max + min) / 2
+    const d = max - min
+    if (d === 0) return { s: 0, l }
+    return { s: d / (1 - Math.abs(2 * l - 1)), l }
+}
+
+/**
+ * Paints the nav rail and/or the title bar with `hue`.
+ * `null` restores the theme's own bar colour.
+ */
+/**
+ * Resolves the bar colour for `hue` given the source surface lightness.
+ * Light themes sit near-white, so lightness has to come *down* to read as colour.
+ */
+export function hueTintHsl(hue: number, sourceLightness: number): string {
+    const saturation = 55
+    const isLight = sourceLightness > 0.5
+    const target = isLight
+        ? Math.min(sourceLightness - 0.18, 0.82)
+        : Math.max(sourceLightness + 0.1, 0.18)
+    return `hsl(${Math.round(hue)} ${saturation}% ${Math.round(target * 100)}%)`
+}
+
+/** The two preview swatches shown next to the interface hue slider. */
+export function hueTintSwatches(hue: number) {
+    const lightL = Math.round(Math.min(0.98 - 0.18, 0.82) * 100)
+    const darkL = Math.round(Math.max(0.12 + 0.1, 0.18) * 100)
+    return {
+        light: `hsl(${Math.round(hue)} 55% ${lightL}%)`,
+        dark: `hsl(${Math.round(hue)} 55% ${darkL}%)`,
+        lightHex: hslToHex(hue, 55, lightL),
+        darkHex: hslToHex(hue, 55, darkL),
+    }
+}
+
+/**
+ * Paints the nav rail, the title bar and the window shell with `hue`.
+ * `null` restores the theme's own bar colour.
+ */
+export function applyBarTint(hue: number | null) {
+    if (typeof document === 'undefined') return
+    const html = document.documentElement
+    html.style.removeProperty('--app-nav-bg')
+    html.style.removeProperty('--app-top-bg')
+    html.style.removeProperty('--app-shell-bg')
+    if (hue === null) return
+
+    const computed = getComputedStyle(html)
+    const rgb = parseCssColor(computed.getPropertyValue('--surface-bar').trim())
+    if (!rgb) return
+
+    const { l } = toHsl(rgb)
+    const bar = hueTintHsl(hue, l)
+
+    // The shell shares the bar colour so the window frame and the inner corners
+    // never show a second shade.
+    html.style.setProperty('--app-nav-bg', bar)
+    html.style.setProperty('--app-top-bg', bar)
+    html.style.setProperty('--app-shell-bg', bar)
+}
+
 export const useTheming = defineStore('themeStore', {
     state: () => DEFAULT_THEME_STORE,
     actions: {
@@ -235,6 +320,16 @@ export const useTheming = defineStore('themeStore', {
             }
 
             this.setThemeClass()
+        },
+        setHueTint(hue: number | null) {
+            this.hueTint = hue
+            applyBarTint(hue)
+            try {
+                if (hue === null) localStorage.removeItem(HUE_TINT_STORAGE_KEY)
+                else localStorage.setItem(HUE_TINT_STORAGE_KEY, String(hue))
+            } catch {
+                // storage may be unavailable; the in-memory value still applies
+            }
         },
         setAccentColor(newAccentColor: AccentColorSetting) {
             if (

@@ -2573,7 +2573,7 @@ async function copyTeleport() {
 async function copyShareLink() {
     try {
         const query = new URLSearchParams(createShareQuery(workspace))
-        await navigator.clipboard.writeText(`axolotl://lab/seed-map?${query.toString()}`)
+        await navigator.clipboard.writeText(`starryisle://lab/seed-map?${query.toString()}`)
         addNotification({ type: 'success', title: formatMessage(messages.shareCopied) })
     } catch (error) {
         handleError(error)

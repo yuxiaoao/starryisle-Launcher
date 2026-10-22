@@ -41,6 +41,7 @@ import {
     type HomeWidgetPlacement,
     type HomeWidgetPosition,
     type HomeWidgetSize,
+    type HomeWeatherCity,
     moveHomeWidget,
     packHomeWidgets,
     removeHomeWidget,
@@ -49,6 +50,7 @@ import {
     setHomeDashboardLayout,
     setHomeGreetingOptions,
     setHomeRecentLimit,
+    setHomeWeatherCity,
     setHomeWidgetPosition,
 } from '@/components/home/home-dashboard'
 import { provideHomeDashboardRuntime } from '@/components/home/home-dashboard-runtime'
@@ -59,6 +61,7 @@ import HomePinnedInstances from '@/components/home/HomePinnedInstances.vue'
 import HomePinnedServers from '@/components/home/HomePinnedServers.vue'
 import HomePinnedWorlds from '@/components/home/HomePinnedWorlds.vue'
 import HomeRecentWorlds from '@/components/home/HomeRecentWorlds.vue'
+import HomeWeather from '@/components/home/HomeWeather.vue'
 import HomeShortcutWidget from '@/components/home/HomeShortcutWidget.vue'
 import HomeWidgetPickerModal from '@/components/home/HomeWidgetPickerModal.vue'
 import type { GameInstance } from '@/helpers/types'
@@ -435,6 +438,10 @@ function setRecentLimit(id: string, limit: (typeof HOME_RECENT_LIMIT_OPTIONS)[nu
     emit('change', setHomeRecentLimit(props.config, id, limit))
 }
 
+function changeWeatherCity(id: string, city: HomeWeatherCity) {
+    emit('change', setHomeWeatherCity(props.config, id, city))
+}
+
 function openGreetingSettings(widget: HomeWidgetPlacement) {
     greetingSettings.value?.show(widget)
 }
@@ -664,6 +671,12 @@ defineExpose({ openWidgetPicker, setLayout })
                                 v-else-if="widget.kind === 'calendar'"
                                 :instances="instances"
                                 :dashboard-size="effectiveSize(widget)"
+                            />
+                            <HomeWeather
+                                v-else-if="widget.kind === 'weather'"
+                                :city="widget.options?.weatherCity"
+                                :dashboard-size="effectiveSize(widget)"
+                                @change-city="changeWeatherCity(widget.id, $event)"
                             />
                             <HomePinnedInstances
                                 v-else-if="widget.kind === 'pinned-instances'"

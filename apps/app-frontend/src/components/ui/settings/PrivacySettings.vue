@@ -61,7 +61,7 @@ const messages = defineMessages({
     externalSchemeDescription: {
         id: 'app.settings.privacy.external-scheme-description',
         defaultMessage:
-            'Respond to axolotl:// links from browsers and other apps. Turning this off blocks launches, installs and page jumps from outside.',
+            'Respond to starryisle:// links from browsers and other apps. Turning this off blocks launches, installs and page jumps from outside.',
     },
     privilegedScheme: {
         id: 'app.settings.privacy.privileged-scheme',
@@ -70,7 +70,7 @@ const messages = defineMessages({
     privilegedSchemeDescription: {
         id: 'app.settings.privacy.privileged-scheme-description',
         defaultMessage:
-            'Let axolotl:// links change settings and stop game processes. Turning this on requires reading a risk warning; every action still asks for your confirmation.',
+            'Let starryisle:// links change settings and stop game processes. Turning this on requires reading a risk warning; every action still asks for your confirmation.',
     },
     dataHandling: {
         id: 'app.settings.privacy.data-handling',

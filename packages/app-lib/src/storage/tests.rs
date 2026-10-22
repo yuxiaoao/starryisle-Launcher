@@ -290,7 +290,7 @@ async fn legacy_repository_and_launcher_files_are_classified_without_root_wrappe
  {
     let temp = tempfile::tempdir().unwrap();
     let directories = DirectoryInfo {
-        settings_dir: temp.path().join("red.ghs.axolotl"),
+        settings_dir: temp.path().join("com.starryisle.launcher"),
         config_dir: temp.path().join("data"),
         app_identifier: "test".into(),
     };

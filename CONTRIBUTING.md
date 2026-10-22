@@ -60,7 +60,7 @@ Remove-Item -Recurse -Force target\debug
 
 ### 应用数据目录与数据库迁移
 
-启动器把设置、数据库、日志与缓存放在同一个数据目录下，Windows 上是 `%APPDATA%\red.ghs.axolotl`，其中按更新通道分为 `release\app.db` 与 `beta\app.db`。
+启动器把设置、数据库、日志与缓存放在同一个数据目录下，Windows 上是 `%APPDATA%\com.starryisle.launcher`，其中按更新通道分为 `release\app.db` 与 `beta\app.db`。
 
 **本地构建与已安装的正式版共用这份数据目录。** 本地跑一次桌面应用，改动的就是正在使用的那份数据库，因此：
 
@@ -71,7 +71,7 @@ Remove-Item -Recurse -Force target\debug
 隔离数据目录有两种方式，推荐在开发时始终使用其中一种：
 
 ```powershell
-# 构建期：该构建写入 red.ghs.axolotl-<后缀>，与正式版互不影响
+# 构建期：该构建写入 com.starryisle.launcher-<后缀>，与正式版互不影响
 $env:AXOLOTL_DATA_DIR_SUFFIX = "pr538"
 pnpm app:build
 

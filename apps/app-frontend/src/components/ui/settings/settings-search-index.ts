@@ -513,7 +513,7 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
         label: message('app.settings.privacy.external-scheme', 'Allow external links'),
         description: message(
             'app.settings.privacy.external-scheme-description',
-            'Respond to axolotl:// links from browsers and other apps.',
+            'Respond to starryisle:// links from browsers and other apps.',
         ),
     },
     {
@@ -523,7 +523,7 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
         label: message('app.settings.privacy.privileged-scheme', 'Allow privileged link actions'),
         description: message(
             'app.settings.privacy.privileged-scheme-description',
-            'Let axolotl:// links change settings and stop game processes.',
+            'Let starryisle:// links change settings and stop game processes.',
         ),
     },
     // The instance-sync category had no entries at all, so none of its rows

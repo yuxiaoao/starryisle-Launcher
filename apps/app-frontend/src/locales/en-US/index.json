@@ -527,7 +527,42 @@
   "app.appearance-settings.accent-color.system-unsupported-label": {
     "message": "Follow system: System unsupported"
   },
-  "app.appearance-settings.accent-color.title": {
+  "app.appearance-settings.hue-tint.title": {
+    "message": "Interface hue"
+  },
+  "app.appearance-settings.hue-tint.description": {
+    "message": "Recolours the left nav rail and the top bar without touching icons or the accent colour."
+  },
+  "app.appearance-settings.hue-tint.reset": {
+    "message": "Reset"
+  },
+  "app.appearance-settings.hue-tint.enable": {
+    "message": "Enable interface hue"
+  },
+  "app.appearance-settings.hue-tint.enable-description": {
+    "message": "Recolours the left nav rail and the top bar with the selected hue."
+  },
+  "app.appearance-settings.hue-tint.tint-all": {
+    "message": "Left nav rail and top bar"
+  },
+  "app.appearance-settings.hue-tint.tint-nav": {
+    "message": "Left nav rail"
+  },
+  "app.appearance-settings.hue-tint.tint-shell": {
+    "message": "Window corners and frame"
+  },
+  "app.appearance-settings.hue-tint.tint-titlebar": {
+    "message": "Top bar"
+  },
+  "app.appearance-settings.hue-tint.hex": {
+    "message": "Hex"
+  },
+  "app.appearance-settings.hue-tint.light-theme": {
+    "message": "Light theme"
+  },
+  "app.appearance-settings.hue-tint.dark-theme": {
+    "message": "Dark theme"
+  },  "app.appearance-settings.accent-color.title": {
     "message": "Accent color"
   },
   "app.appearance-settings.advanced-rendering.description": {
@@ -555,10 +590,10 @@
     "message": "Hide to tray"
   },
   "app.appearance-settings.close-behavior.title": {
-    "message": "Choose how to close Axolotl Launcher"
+    "message": "Choose how to close StarryIsle Launcher"
   },
   "app.appearance-settings.color-theme.description": {
-    "message": "Select your preferred color theme for Axolotl Launcher."
+    "message": "Select your preferred color theme for StarryIsle Launcher."
   },
   "app.appearance-settings.color-theme.title": {
     "message": "Color theme"
@@ -1026,7 +1061,7 @@
     "message": "Remember my choice"
   },
   "app.close-launcher.title": {
-    "message": "Choose how to close Axolotl Launcher"
+    "message": "Choose how to close StarryIsle Launcher"
   },
   "app.close-launcher.tray": {
     "message": "Hide to tray"
@@ -2031,7 +2066,7 @@
     "message": "Debug information"
   },
   "app.error.directory-description": {
-    "message": "Axolotl Launcher cannot migrate to the selected directory. Contact support for help or cancel the directory change."
+    "message": "StarryIsle Launcher cannot migrate to the selected directory. Contact support for help or cancel the directory change."
   },
   "app.error.directory-title": {
     "message": "Could not change app directory"
@@ -2049,7 +2084,7 @@
     "message": "The connection to Microsoft, Xbox, or Minecraft services was rejected. These services may be blocked by your hosts file. See our support article for steps to fix the issue."
   },
   "app.error.loader-description": {
-    "message": "Axolotl Launcher could not find a loader version for this instance."
+    "message": "StarryIsle Launcher could not find a loader version for this instance."
   },
   "app.error.loader-fix": {
     "message": "Repair the instance using the button below."
@@ -2067,7 +2102,7 @@
     "message": "Sign in to Minecraft"
   },
   "app.error.network-description": {
-    "message": "Axolotl Launcher had trouble connecting to Microsoft services. This is often caused by a poor connection. Try again, and use our support article if the issue persists."
+    "message": "StarryIsle Launcher had trouble connecting to Microsoft services. This is often caused by a poor connection. Try again, and use our support article if the issue persists."
   },
   "app.error.network-issues": {
     "message": "Network issues"
@@ -2088,7 +2123,7 @@
     "message": "Using PC Game Pass, coming from Bedrock, or just bought the game?"
   },
   "app.error.permissions-description": {
-    "message": "Axolotl Launcher cannot write to the selected directory. Adjust its permissions and try again, or cancel the directory change."
+    "message": "StarryIsle Launcher cannot write to the selected directory. Adjust its permissions and try again, or cancel the directory change."
   },
   "app.error.permissions-title": {
     "message": "Change directory permissions"
@@ -2106,7 +2141,7 @@
     "message": "Not enough space"
   },
   "app.error.state-database-newer-description": {
-    "message": "The database was last opened by a newer version of Axolotl, which upgraded it to a format this version cannot read. Your instances and settings are still there."
+    "message": "The database was last opened by a newer version of StarryIsle, which upgraded it to a format this version cannot read. Your instances and settings are still there."
   },
   "app.error.state-database-newer-fix-downgrade": {
     "message": "If you are trying out a build rather than using the launcher normally, revert the database with scripts/axolotl/downgrade-app-db.mjs instead."
@@ -2115,10 +2150,10 @@
     "message": "To start the launcher again, either:"
   },
   "app.error.state-database-newer-fix-update": {
-    "message": "Reinstall the newer version of Axolotl - it opens this database as it is."
+    "message": "Reinstall the newer version of StarryIsle - it opens this database as it is."
   },
   "app.error.state-description": {
-    "message": "Axolotl Launcher failed to load correctly. A file may be corrupted or an essential file may be missing."
+    "message": "StarryIsle Launcher failed to load correctly. A file may be corrupted or an essential file may be missing."
   },
   "app.error.state-fix-internet": {
     "message": "Check your internet connection, then restart the app."
@@ -2130,7 +2165,7 @@
     "message": "Download and install the app again."
   },
   "app.error.state-title": {
-    "message": "Error initializing Axolotl Launcher"
+    "message": "Error initializing StarryIsle Launcher"
   },
   "app.error.support-article": {
     "message": "Support article"
@@ -2840,7 +2875,54 @@
   "app.home.widgets.options": {
     "message": "Widget options"
   },
-  "app.home.widgets.pinned-instances": {
+  "app.home.widgets.weather": {
+    "message": "Weather"
+  },
+  "app.home.widgets.weather-description": {
+    "message": "Current conditions for a city you pick. Uses Open-Meteo."
+  },
+  "app.home.weather.title": {
+    "message": "Weather"
+  },
+  "app.home.weather.change-city": {
+    "message": "Change city"
+  },
+  "app.home.weather.search-placeholder": {
+    "message": "Search for a city"
+  },
+  "app.home.weather.searching": {
+    "message": "Searching…"
+  },
+  "app.home.weather.no-results": {
+    "message": "No matching city"
+  },
+  "app.home.weather.loading": {
+    "message": "Loading weather…"
+  },
+  "app.home.weather.load-failed": {
+    "message": "Weather is unavailable. Try again later."
+  },
+  "app.home.weather.refresh": {
+    "message": "Refresh"
+  },
+  "app.home.weather.feels-like": {
+    "message": "Feels like"
+  },
+  "app.home.weather.high": {
+    "message": "High"
+  },
+  "app.home.weather.low": {
+    "message": "Low"
+  },
+  "app.home.weather.humidity": {
+    "message": "Humidity"
+  },
+  "app.home.weather.wind": {
+    "message": "Wind"
+  },
+  "app.home.weather.updated-at": {
+    "message": "Updated {time}"
+  },  "app.home.widgets.pinned-instances": {
     "message": "All pinned instances"
   },
   "app.home.widgets.pinned-instances-description": {
@@ -4563,7 +4645,7 @@
     "message": "Redstone"
   },
   "app.lab.recipe-generator.copyright.disclaimer-body": {
-    "message": "Minecraft assets are Copyright Mojang Studios / Microsoft and are used only to identify compatible content. Axolotl Launcher is not affiliated with or endorsed by Mojang Studios or Microsoft."
+    "message": "Minecraft assets are Copyright Mojang Studios / Microsoft and are used only to identify compatible content. StarryIsle Launcher is not affiliated with or endorsed by Mojang Studios or Microsoft."
   },
   "app.lab.recipe-generator.copyright.disclaimer-heading": {
     "message": "Unofficial tool"
@@ -5655,13 +5737,13 @@
     "message": "Copy /tp"
   },
   "app.lab.seed-map.copyright.disclaimer-body": {
-    "message": "Minecraft is a trademark of Mojang Synergies AB. Axolotl Launcher is not affiliated with or endorsed by Mojang or MinecraftSearch."
+    "message": "Minecraft is a trademark of Mojang Synergies AB. StarryIsle Launcher is not affiliated with or endorsed by Mojang or MinecraftSearch."
   },
   "app.lab.seed-map.copyright.disclaimer-heading": {
     "message": "Unofficial tool"
   },
   "app.lab.seed-map.copyright.engine-body": {
-    "message": "Map predictions are computed locally with xpple/cubiomes, based on cubiomes by Cubitect (MIT License), together with the Axolotl native integration."
+    "message": "Map predictions are computed locally with xpple/cubiomes, based on cubiomes by Cubitect (MIT License), together with the StarryIsle native integration."
   },
   "app.lab.seed-map.copyright.engine-heading": {
     "message": "Local map engine"
@@ -7548,7 +7630,7 @@
     "message": "Minecraft opened a different LAN port. Restart the tunnel before sharing it."
   },
   "app.multiplayer.hongshi.port-hint": {
-    "message": "Open a world to LAN. Axolotl will detect the port automatically; external games can use a manual port."
+    "message": "Open a world to LAN. StarryIsle will detect the port automatically; external games can use a manual port."
   },
   "app.multiplayer.hongshi.public-address": {
     "message": "Public address"
@@ -7839,7 +7921,7 @@
     "message": "Leave the tour"
   },
   "app.onboarding.action.start": {
-    "message": "Take the tour"
+    "message": "Get started"
   },
   "app.onboarding.ai.description": {
     "message": "Connect text-model providers once, choose the models you want available, or switch every AI feature off in one place."
@@ -8040,7 +8122,7 @@
     "message": "Choose where analysis runs"
   },
   "app.onboarding.mascot-alt": {
-    "message": "Axolotl guide"
+    "message": "StarryIsle guide"
   },
   "app.onboarding.offline-account.description": {
     "message": "Open Playing as in the sidebar to add an offline Minecraft account. You may need to sign in with an official Minecraft account on this device first."
@@ -8100,10 +8182,10 @@
     "message": "Translate Modrinth project titles, summaries, and descriptions while you browse. Keep the original, show both, or make the translation the main character."
   },
   "app.onboarding.translation.title": {
-    "message": "Translation, the Axolotl way"
+    "message": "Translation, the StarryIsle way"
   },
   "app.onboarding.updates.description": {
-    "message": "Choose when Axolotl checks for updates and whether it installs them for you."
+    "message": "Choose when StarryIsle checks for updates and whether it installs them for you."
   },
   "app.onboarding.updates.title": {
     "message": "Stay in the loop"
@@ -8136,7 +8218,7 @@
     "message": "Shows your current launcher or game activity in Discord when Discord is running."
   },
   "app.privacy-consent.intro": {
-    "message": "Choose what Axolotl may send or display. Nothing is sent until you confirm these choices."
+    "message": "Choose what StarryIsle may send or display. Nothing is sent until you confirm these choices."
   },
   "app.privacy-consent.privacy-policy": {
     "message": "Read the privacy policy"
@@ -8982,7 +9064,7 @@
     "message": "Preparing server..."
   },
   "app.servers.modpack.unsupported-loader-description": {
-    "message": "This modpack uses {loader}, but Axolotl can only start modpack servers with vanilla, Fabric, or Quilt. Support for {loader} is coming soon."
+    "message": "This modpack uses {loader}, but StarryIsle can only start modpack servers with vanilla, Fabric, or Quilt. Support for {loader} is coming soon."
   },
   "app.servers.modpack.unsupported-loader-title": {
     "message": "{loader} servers are not supported yet"
@@ -9468,7 +9550,7 @@
     "message": "Help support continued development"
   },
   "app.settings.about.attribution": {
-    "message": "Axolotl Launcher is a modified version of the open-source Modrinth codebase."
+    "message": "StarryIsle Launcher is a modified version of the open-source Modrinth codebase."
   },
   "app.settings.about.community-support": {
     "message": "Project & community"
@@ -9561,13 +9643,13 @@
     "message": "The tide is falling — keep your axolotls underwater!"
   },
   "app.settings.about.game.title": {
-    "message": "Axolotl merge"
+    "message": "StarryIsle merge"
   },
   "app.settings.about.license-attribution": {
     "message": "License & attribution"
   },
   "app.settings.about.not-affiliated": {
-    "message": "Modrinth is a trademark of Rinth, Inc. Axolotl Launcher is not affiliated with or endorsed by Rinth, Inc."
+    "message": "Modrinth is a trademark of Rinth, Inc. StarryIsle Launcher is not affiliated with or endorsed by Rinth, Inc."
   },
   "app.settings.about.original-source": {
     "message": "Original Modrinth source"
@@ -9681,7 +9763,7 @@
     "message": "Press Space or click to start"
   },
   "app.settings.about.run.title": {
-    "message": "Axolotl run"
+    "message": "StarryIsle run"
   },
   "app.settings.about.run.tnt": {
     "message": "TNT"
@@ -11301,13 +11383,13 @@
     "message": "Allow external links"
   },
   "app.settings.privacy.external-scheme-description": {
-    "message": "Respond to axolotl:// links from browsers and other apps. Turning this off blocks launches, installs and page jumps from outside."
+    "message": "Respond to starryisle:// links from browsers and other apps. Turning this off blocks launches, installs and page jumps from outside."
   },
   "app.settings.privacy.privileged-scheme": {
     "message": "Allow privileged link actions"
   },
   "app.settings.privacy.privileged-scheme-description": {
-    "message": "Let axolotl:// links change settings and stop game processes. Turning this on requires reading a risk warning; every action still asks for your confirmation."
+    "message": "Let starryisle:// links change settings and stop game processes. Turning this on requires reading a risk warning; every action still asks for your confirmation."
   },
   "app.settings.privacy.section-title": {
     "message": "Privacy & data sharing"
@@ -11334,7 +11416,7 @@
     "message": "You are currently running in portable mode. The app directory is fixed and cannot be changed."
   },
   "app.settings.resources.axolotl-data-directory": {
-    "message": "Axolotl data directory"
+    "message": "StarryIsle data directory"
   },
   "app.settings.resources.chinese-names": {
     "message": "Add known Chinese names to downloads"
@@ -11400,7 +11482,7 @@
     "message": "Minecraft directories"
   },
   "app.settings.resources.minecraft-directories-description": {
-    "message": "Add one or more .minecraft folders for instances that use an external game directory. These folders are kept separate from Axolotl data."
+    "message": "Add one or more .minecraft folders for instances that use an external game directory. These folders are kept separate from StarryIsle data."
   },
   "app.settings.resources.minecraft-directory-mode": {
     "message": "Game directory mode"
@@ -11715,7 +11797,7 @@
     "message": "External game directories"
   },
   "app.settings.storage.externalHelp": {
-    "message": "These directories are managed outside Axolotl and are excluded from the launcher total. Overlapping directories are listed once."
+    "message": "These directories are managed outside StarryIsle and are excluded from the launcher total. Overlapping directories are listed once."
   },
   "app.settings.storage.externalMetadata": {
     "message": "Linked instances also use this folder. Files with uncertain usage are kept."
@@ -12288,7 +12370,7 @@
     "message": "Copy Release data to Beta?"
   },
   "app.settings.updates.channel.description": {
-    "message": "Choose which launcher versions Axolotl receives."
+    "message": "Choose which launcher versions StarryIsle receives."
   },
   "app.settings.updates.channel.label": {
     "message": "Channel"
@@ -12300,7 +12382,7 @@
     "message": "Stable, tested features and fixes. Updates arrive less often."
   },
   "app.settings.updates.channel.restart-description": {
-    "message": "Restart Axolotl now to start using the new update channel, or restart manually later."
+    "message": "Restart StarryIsle now to start using the new update channel, or restart manually later."
   },
   "app.settings.updates.channel.restart-development-description": {
     "message": "The new update channel will be used after you manually restart the development session."
@@ -12351,7 +12433,7 @@
     "message": "Database isolation"
   },
   "app.settings.updates.database-operation.active-target": {
-    "message": "Cannot overwrite the database currently in use. Restart Axolotl and switch channels first."
+    "message": "Cannot overwrite the database currently in use. Restart StarryIsle and switch channels first."
   },
   "app.settings.updates.database-operation.beta-to-release": {
     "message": "Copy Beta to Release"
@@ -12369,7 +12451,7 @@
     "message": "Overwrite database?"
   },
   "app.settings.updates.database-operation.failed": {
-    "message": "The database could not be copied. Please make sure Axolotl is not using the target database."
+    "message": "The database could not be copied. Please make sure StarryIsle is not using the target database."
   },
   "app.settings.updates.database-operation.label": {
     "message": "Database operation"
@@ -12426,7 +12508,7 @@
     "message": "Updates are installed only when their cryptographic signature is valid."
   },
   "app.settings.updates.up-to-date": {
-    "message": "Axolotl is up to date."
+    "message": "StarryIsle is up to date."
   },
   "app.shortcut-settings.change-shortcut": {
     "message": "Change the shortcut for {action}"
@@ -12696,13 +12778,13 @@
     "message": "Tiny Takeover"
   },
   "app.skins.sign-in.axolotl-alt": {
-    "message": "Axolotl Launcher"
+    "message": "StarryIsle Launcher"
   },
   "app.skins.sign-in.button": {
     "message": "Sign In"
   },
   "app.skins.sign-in.description": {
-    "message": "Please sign into your Minecraft account to use the skin management features of Axolotl Launcher."
+    "message": "Please sign into your Minecraft account to use the skin management features of StarryIsle Launcher."
   },
   "app.skins.sign-in.title": {
     "message": "Please sign in"
@@ -12939,16 +13021,16 @@
     "message": "This version does not have a bundled announcement yet. Visit the website for the full changelog."
   },
   "app.update-announcement.unknown-title": {
-    "message": "Axolotl Launcher was updated"
+    "message": "StarryIsle Launcher was updated"
   },
   "app.update-announcement.version": {
     "message": "Version {version}"
   },
   "app.update-popup.body.download-complete": {
-    "message": "Axolotl Launcher v{version} has finished downloading. Reload to update now, or automatically when you close Axolotl Launcher."
+    "message": "StarryIsle Launcher v{version} has finished downloading. Reload to update now, or automatically when you close StarryIsle Launcher."
   },
   "app.update-popup.body.metered": {
-    "message": "Axolotl Launcher v{version} is available now! Since you're on a metered network, we didn't automatically download it."
+    "message": "StarryIsle Launcher v{version} is available now! Since you're on a metered network, we didn't automatically download it."
   },
   "app.update-popup.changelog": {
     "message": "Changelog"
@@ -12978,7 +13060,7 @@
     "message": "Installing version {version}"
   },
   "app.warning.running-as-admin": {
-    "message": "Axolotl is running as administrator. Drag-and-drop file import is disabled in this mode; please restart the launcher without administrator privileges."
+    "message": "StarryIsle is running as administrator. Drag-and-drop file import is disabled in this mode; please restart the launcher without administrator privileges."
   },
   "app.window-controls.close": {
     "message": "Close"
@@ -13443,7 +13525,7 @@
     "message": "Shader Packs"
   },
   "drop.help.title": {
-    "message": "What can I drop into Axolotl?"
+    "message": "What can I drop into StarryIsle?"
   },
   "drop.help.worlds-desc": {
     "message": "Drag world save folders to import them into an instance."
@@ -14010,7 +14092,7 @@
     "message": "Version isolated (stored in versions/)"
   },
   "instance.settings.tabs.general.game-dir.managed-note": {
-    "message": "This instance uses the Axolotl-managed folder."
+    "message": "This instance uses the StarryIsle-managed folder."
   },
   "instance.settings.tabs.general.game-dir.move-note": {
     "message": "Switching isolation only updates the launcher path. Move the mods, saves, and config folders yourself to match."
@@ -14583,7 +14665,7 @@
     "message": "{count, plural, one {# exact choice} other {# exact choices}}"
   },
   "instance.upgrade.customize.custom.description": {
-    "message": "Fix exact versions for selected content and let Axolotl solve the remaining dependency graph."
+    "message": "Fix exact versions for selected content and let StarryIsle solve the remaining dependency graph."
   },
   "instance.upgrade.customize.custom.discard-switch": {
     "message": "Discard and switch"
@@ -14637,7 +14719,7 @@
     "message": "Update dependency"
   },
   "instance.upgrade.customize.description": {
-    "message": "Choose how aggressively Axolotl should update content in this instance."
+    "message": "Choose how aggressively StarryIsle should update content in this instance."
   },
   "instance.upgrade.customize.effective-changes": {
     "message": "Effective changes"
@@ -14688,7 +14770,7 @@
     "message": "Resolve custom conflicts before continuing."
   },
   "instance.upgrade.customize.search-limit.body": {
-    "message": "Axolotl couldn't find a solution within the search limit. Try relaxing one of your custom choices."
+    "message": "StarryIsle couldn't find a solution within the search limit. Try relaxing one of your custom choices."
   },
   "instance.upgrade.customize.search-limit.title": {
     "message": "Search limit reached"

@@ -122,3 +122,11 @@ apps/app/resources/blockbench-skin/
 start-dev.ps1
 
 apps/app/resources/seed-map/
+# --- local build artifacts / secrets (added for the StarryIsle fork) ---
+.gradle/
+**/.gradle/
+*.pfx
+*.cer
+*.orig*
+apps/app/gen/schemas/
+third-party/blockbench/

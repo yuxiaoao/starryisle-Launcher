@@ -202,11 +202,26 @@ import { setupAuthProvider } from '@/providers/setup/auth'
 import { setupLoadingStateProvider } from '@/providers/setup/loading-state'
 import { useError } from '@/store/error.js'
 import { useTheming } from '@/store/state'
+import { applyBarTint, HUE_TINT_STORAGE_KEY } from '@/store/theme'
 
 import { AppNotificationManager } from './providers/app-notifications'
 import { AppPopupNotificationManager } from './providers/app-popup-notifications'
 
 const themeStore = useTheming()
+
+try {
+    const storedHue = localStorage.getItem(HUE_TINT_STORAGE_KEY)
+    if (storedHue !== null) themeStore.setHueTint(Number(storedHue))
+} catch {
+    // ignore unavailable storage
+}
+
+applyBarTint(themeStore.hueTint)
+
+watch(
+    () => themeStore.selectedTheme,
+    () => applyBarTint(themeStore.hueTint),
+)
 /** While a dialog is open no shortcut fires, including the one being recorded. */
 const { hasModal } = useModalStack()
 const router = useRouter()
@@ -308,14 +323,6 @@ providePopupNotificationManager(popupNotificationManager)
 const { addPopupNotification } = popupNotificationManager
 
 const appVersion = getVersion()
-const isBetaBuild = ref(false)
-void appVersion
-    .then((version) => {
-        isBetaBuild.value = version.includes('-beta')
-    })
-    .catch((error) => {
-        console.warn('Failed to read the app version for the Beta label', error)
-    })
 const tauriApiClient = new TauriModrinthClient({
     userAgent: async () => AxolotlBrandConfig.userAgent(await appVersion, await getOsType()),
     labrinthBaseUrl: config.labrinthBaseUrl,
@@ -2880,7 +2887,7 @@ provideAppUpdateDownloadProgress(appUpdateDownload)
         />
         <UnknownPackWarningModal ref="unknownPackWarningModal" />
         <div
-            class="app-grid-navbar bg-surface-bar flex flex-col p-[0.5rem] pt-0 gap-[0.5rem] w-[--left-bar-width] overflow-hidden"
+            class="app-grid-navbar flex flex-col p-[0.5rem] pt-0 gap-[0.5rem] w-[--left-bar-width] overflow-hidden"
         >
             <NavRail>
                 <NavButton
@@ -3033,10 +3040,7 @@ provideAppUpdateDownloadProgress(appUpdateDownload)
                 <LogInIcon class="text-brand" />
             </NavButton>
         </div>
-        <AppTitlebar
-            class="app-grid-statusbar bg-surface-bar h-[--top-bar-height]"
-            :is-beta-build="isBetaBuild"
-        >
+        <AppTitlebar class="app-grid-statusbar h-[--top-bar-height]">
             <div class="flex min-w-0 mr-3">
                 <Suspense>
                     <AppActionBar />
@@ -3518,7 +3522,7 @@ provideAppUpdateDownloadProgress(appUpdateDownload)
     grid-template-rows: auto 1fr;
     position: relative;
     //z-index: 0;
-    background-color: var(--surface-3);
+    background-color: var(--app-shell-bg, var(--surface-3));
     height: 100vh;
 }
 
@@ -3561,13 +3565,10 @@ provideAppUpdateDownloadProgress(appUpdateDownload)
     background-color: transparent;
 }
 
-.app-grid-layout.has-custom-background,
-.app-grid-layout.has-transparent-background:not(.has-native-decorations) {
-    &:not(.is-maximized) {
-        border-radius: 8px;
-        clip-path: inset(0 round 8px);
-        overflow: hidden;
-    }
+.app-grid-layout:not(.has-native-decorations):not(.is-maximized) {
+    border-radius: 8px;
+    clip-path: inset(0 round 8px);
+    overflow: hidden;
 }
 
 .app-grid-layout.has-custom-background {
@@ -3579,6 +3580,14 @@ provideAppUpdateDownloadProgress(appUpdateDownload)
 
         backdrop-filter: none;
         -webkit-backdrop-filter: none;
+    }
+
+    .app-grid-navbar {
+        background-color: var(--app-nav-bg, var(--surface-3)) !important;
+    }
+
+    .app-grid-statusbar {
+        background-color: var(--app-top-bg, var(--surface-3)) !important;
     }
 }
 
@@ -3972,5 +3981,14 @@ body.modrinth-console-fullscreen-active .app-sidebar {
     .profile-card {
         right: 8rem;
     }
+}
+
+/* Interface hue paints the nav rail and title bar. */
+.app-grid-navbar {
+    background-color: var(--app-nav-bg, var(--surface-bar));
+}
+
+.app-grid-statusbar {
+    background-color: var(--app-top-bg, var(--surface-bar));
 }
 </style>
