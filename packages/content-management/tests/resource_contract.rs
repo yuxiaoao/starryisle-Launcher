@@ -293,6 +293,23 @@ fn active_dependency_edges_preserve_every_parent_and_optional_decisions() {
         serde_json::from_value::<ResourcePlanDecision>(encoded).unwrap(),
         required
     );
+    for (decision, kind) in [
+        (
+            ResourcePlanDecision::IgnoreDependencies,
+            "ignoreDependencies",
+        ),
+        (
+            ResourcePlanDecision::SkipUnwritableFiles,
+            "skipUnwritableFiles",
+        ),
+    ] {
+        let encoded = serde_json::to_value(&decision).unwrap();
+        assert_eq!(encoded, json!({"kind": kind}));
+        assert_eq!(
+            serde_json::from_value::<ResourcePlanDecision>(encoded).unwrap(),
+            decision
+        );
+    }
 }
 
 #[test]

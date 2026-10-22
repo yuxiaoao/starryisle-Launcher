@@ -311,6 +311,7 @@ pub(crate) async fn prepare_rollback(
         local_metadata: Default::default(),
         retained_requirements: Vec::new(),
         resolve_dependencies: true,
+        skip_unwritable_files: false,
         import_files: Default::default(),
         naming: Default::default(),
         plan,

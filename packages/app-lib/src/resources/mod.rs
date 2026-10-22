@@ -20,6 +20,7 @@ pub mod providers;
 pub mod search;
 mod service;
 pub mod updates;
+mod write_access;
 
 pub(crate) use service::valid_artifact;
 pub use service::{CachePolicy, QueryOutcome, ResourceService};

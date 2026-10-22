@@ -322,6 +322,7 @@ pub async fn resource_prepare_operation<R: tauri::Runtime>(
     locators: Option<std::collections::HashMap<SelectionId, String>>,
     request_id: RequestId,
     on_progress: Option<tauri::ipc::JavaScriptChannelId>,
+    resolve_dependencies: Option<bool>,
 ) -> Result<ResourceOperationPlan> {
     let (_guard, cancel) = request(&request_id)?;
     let on_progress = on_progress
@@ -357,6 +358,7 @@ pub async fn resource_prepare_operation<R: tauri::Runtime>(
         install_dependencies.unwrap_or(true),
         &cancel,
         Some(&progress),
+        resolve_dependencies.unwrap_or(true),
     )
     .await?;
     Ok(

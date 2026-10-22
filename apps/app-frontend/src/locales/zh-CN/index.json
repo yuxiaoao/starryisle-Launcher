@@ -13647,6 +13647,24 @@
   "app.resources.route.retry": {
     "message": "重试"
   },
+  "app.resources.operation.install-selected-only": {
+    "message": "强制安装所选内容"
+  },
+  "app.resources.operation.selected-only": {
+    "message": "仅安装所选内容，不检查或安装依赖。"
+  },
+  "app.resources.operation.skip-unwritable": {
+    "message": "强制安装可写文件"
+  },
+  "app.resources.operation.file-not-writable": {
+    "message": "无法写入 {path}。请关闭占用该文件的程序，或跳过此文件。"
+  },
+  "app.resources.operation.file-write-skipped": {
+    "message": "无法写入 {path}，将跳过此文件。"
+  },
+  "app.resources.operation.no-writable-files": {
+    "message": "没有可写入的文件，无法继续安装。"
+  },
   "app.resources.operation.header": {
     "message": "审核内容变更"
   },

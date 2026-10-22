@@ -1219,6 +1219,7 @@ async fn local_plan(
         local_metadata: Default::default(),
         retained_requirements: Vec::new(),
         resolve_dependencies: true,
+        skip_unwritable_files: false,
         import_files: Default::default(),
         naming: Default::default(),
         plan: plan.clone(),
@@ -1232,6 +1233,189 @@ async fn local_plan(
     };
     sqlx::query("INSERT INTO resource_operation_plans(id, instance_id, revision, payload) VALUES (?, 'instance', 1, ?)").bind(id.as_str()).bind(serde_json::to_string(&draft).unwrap()).execute(&state.pool).await.unwrap();
     plan
+}
+
+#[tokio::test]
+async fn forced_writes_skip_readonly_files_without_changing_their_database_or_history()
+ {
+    for readonly_during_review in [false, true] {
+        let (_temp, state, original, _, root) = fixture().await;
+        std::fs::write(root.join("new.zip"), b"new bytes").unwrap();
+        let target =
+            artifact(SourceId::modrinth(), "root0000", "new", b"new bytes");
+        let plan = local_plan(
+            &state,
+            original.clone(),
+            target.clone(),
+            "new.zip",
+            None,
+        )
+        .await;
+        let mut draft = plans::load(&state.pool, &plan.id, plan.revision)
+            .await
+            .unwrap();
+        let mut added = plan.actions[0].clone();
+        added.entry_id = InstalledEntryId::new("added-entry").unwrap();
+        added.node_id = SelectionId::new("added-root").unwrap();
+        added.kind = ResourceActionKind::Install;
+        added.current = None;
+        added.target =
+            artifact(SourceId::modrinth(), "added000", "new", b"new bytes");
+        added.target_relative_path = "resourcepacks/added.zip".into();
+        let mut node = plan.nodes[0].clone();
+        node.id = added.node_id.clone();
+        node.root_selection_ids = vec![node.id.clone()];
+        node.resource = ResourceRef::Source {
+            project: added.target.reference.release.project.clone(),
+        };
+        node.artifact = Some(added.target.clone());
+        draft.plan.nodes.push(node);
+        draft.plan.active_roots.push(added.node_id.clone());
+        draft
+            .local_files
+            .insert(added.entry_id.clone(), "new.zip".into());
+        draft.plan.actions.push(added);
+        let current_path = root.join(&original.relative_path);
+        let permissions =
+            std::fs::metadata(&current_path).unwrap().permissions();
+        let mut readonly = permissions.clone();
+        readonly.set_readonly(true);
+        if readonly_during_review {
+            std::fs::set_permissions(&current_path, readonly.clone()).unwrap();
+        }
+        super::super::write_access::review_at_root(&mut draft, &root).unwrap();
+        assert_eq!(
+            draft
+                .plan
+                .issues
+                .iter()
+                .any(|issue| issue.code == ResourceIssueCode::FileNotWritable
+                    && issue.blocking),
+            readonly_during_review
+        );
+        draft.skip_unwritable_files = true;
+        super::super::write_access::review_at_root(&mut draft, &root).unwrap();
+        assert_eq!(
+            draft.plan.actions.len(),
+            if readonly_during_review { 1 } else { 2 }
+        );
+        sqlx::query(
+            "UPDATE resource_operation_plans SET payload = ? WHERE id = ?",
+        )
+        .bind(serde_json::to_string(&draft).unwrap())
+        .bind(plan.id.as_str())
+        .execute(&state.pool)
+        .await
+        .unwrap();
+        std::fs::set_permissions(&current_path, readonly).unwrap();
+        let result = execute("instance", &draft.plan, None, &state).await;
+        std::fs::set_permissions(&current_path, permissions).unwrap();
+        result.unwrap();
+        assert_eq!(std::fs::read(&current_path).unwrap(), b"old bytes");
+        assert_eq!(
+            std::fs::read(root.join("resourcepacks/added.zip")).unwrap(),
+            b"new bytes"
+        );
+        let installed =
+            plans::installed(&state.pool, "instance").await.unwrap();
+        assert_eq!(installed.len(), 2);
+        assert_eq!(
+            installed
+                .iter()
+                .find(|entry| entry.entry_id == original.entry_id)
+                .unwrap(),
+            &original
+        );
+        assert_eq!(
+            sqlx::query_scalar::<_, i64>(
+                "SELECT COUNT(*) FROM resource_history"
+            )
+            .fetch_one(&state.pool)
+            .await
+            .unwrap(),
+            0
+        );
+        assert_eq!(
+            sqlx::query_scalar::<_, i64>(
+                "SELECT completed FROM resource_operation_plans WHERE id = ?"
+            )
+            .bind(plan.id.as_str())
+            .fetch_one(&state.pool)
+            .await
+            .unwrap(),
+            1
+        );
+        let mut invalid = draft.clone();
+        invalid.plan.actions[0].target_relative_path = "../outside.zip".into();
+        super::super::write_access::review_at_root(&mut invalid, &root)
+            .unwrap();
+        assert!(
+            invalid
+                .plan
+                .issues
+                .iter()
+                .any(|issue| issue.code == ResourceIssueCode::InvalidPath
+                    && issue.blocking)
+        );
+        assert!(!root.parent().unwrap().join("outside.zip").exists());
+        assert!(
+            sqlx::query("PRAGMA foreign_key_check")
+                .fetch_all(&state.pool)
+                .await
+                .unwrap()
+                .is_empty()
+        );
+        state.pool.close().await;
+    }
+}
+
+#[cfg(windows)]
+#[tokio::test]
+async fn forced_writes_detect_windows_files_open_without_delete_sharing() {
+    use std::os::windows::fs::OpenOptionsExt;
+    let (_temp, state, original, _, root) = fixture().await;
+    let target =
+        artifact(SourceId::modrinth(), "root0000", "new", b"new bytes");
+    let plan =
+        local_plan(&state, original.clone(), target, "new.zip", None).await;
+    let mut draft = plans::load(&state.pool, &plan.id, plan.revision)
+        .await
+        .unwrap();
+    let locked = std::fs::OpenOptions::new()
+        .read(true)
+        .share_mode(1)
+        .open(root.join(&original.relative_path))
+        .unwrap();
+    super::super::write_access::review_at_root(&mut draft, &root).unwrap();
+    assert!(
+        draft
+            .plan
+            .issues
+            .iter()
+            .any(|issue| issue.code == ResourceIssueCode::FileNotWritable
+                && issue.blocking)
+    );
+    draft.skip_unwritable_files = true;
+    super::super::write_access::review_at_root(&mut draft, &root).unwrap();
+    assert!(draft.plan.actions.is_empty());
+    assert!(
+        draft
+            .plan
+            .issues
+            .iter()
+            .any(|issue| issue.code == ResourceIssueCode::FileWriteSkipped
+                && !issue.blocking)
+    );
+    assert_eq!(
+        std::fs::read(root.join(&original.relative_path)).unwrap(),
+        b"old bytes"
+    );
+    drop(locked);
+    assert_eq!(
+        plans::installed(&state.pool, "instance").await.unwrap(),
+        vec![original]
+    );
+    state.pool.close().await;
 }
 
 #[tokio::test]

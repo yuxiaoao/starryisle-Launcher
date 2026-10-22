@@ -8670,6 +8670,24 @@
   "app.resources.operation.header": {
     "message": "Review content changes"
   },
+  "app.resources.operation.install-selected-only": {
+    "message": "Force install selected content only"
+  },
+  "app.resources.operation.selected-only": {
+    "message": "Only the selected content will be installed. Dependencies will not be checked or installed."
+  },
+  "app.resources.operation.skip-unwritable": {
+    "message": "Force install writable files"
+  },
+  "app.resources.operation.file-not-writable": {
+    "message": "Cannot write {path}. Close any program using this file or skip it."
+  },
+  "app.resources.operation.file-write-skipped": {
+    "message": "{path} will be skipped because it cannot be written."
+  },
+  "app.resources.operation.no-writable-files": {
+    "message": "No writable files remain to install."
+  },
   "app.resources.operation.identity-unconfirmed": {
     "message": "The selected resource could not be identified reliably."
   },

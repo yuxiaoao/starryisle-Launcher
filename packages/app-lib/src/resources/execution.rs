@@ -613,6 +613,56 @@ pub(crate) async fn execute(
     if current_revision != plan.instance_revision {
         return Err(input("instance changed since resource review"));
     }
+    let mut executable = draft.clone();
+    if executable.skip_unwritable_files {
+        super::write_access::review_at_root(&mut executable, &root)
+            .map_err(|error| input(error.to_string()))?;
+        if executable.plan.issues.iter().any(|issue| issue.blocking) {
+            return Err(input(
+                "resource files changed since review; refresh the preview",
+            ));
+        }
+        let retained: std::collections::HashSet<_> = executable
+            .plan
+            .actions
+            .iter()
+            .map(|action| &action.entry_id)
+            .collect();
+        downloads = plan
+            .actions
+            .iter()
+            .zip(downloads)
+            .filter_map(|(action, file)| {
+                retained.contains(&action.entry_id).then_some(file)
+            })
+            .collect();
+    }
+    let draft = &executable;
+    let plan = &executable.plan;
+    if let Some(reporter) = &reporter {
+        let skipped = plan
+            .issues
+            .iter()
+            .filter(|issue| issue.code == ResourceIssueCode::FileWriteSkipped)
+            .map(|issue| {
+                crate::install::InstallJobEventKind::ContentFileSkipped {
+                    path: issue.message.clone(),
+                    reason: "File cannot be written".into(),
+                    project_id: None,
+                    version_id: None,
+                    manual_url: None,
+                }
+            })
+            .collect::<Vec<_>>();
+        if !skipped.is_empty() {
+            reporter.record_events(skipped).await?;
+        }
+    }
+    if plan.actions.is_empty() {
+        sqlx::query("UPDATE resource_operation_plans SET completed = 1 WHERE id = ? AND revision = ?")
+            .bind(plan.id.as_str()).bind(plan.revision).execute(&state.pool).await?;
+        return Ok(());
+    }
     for parent in retained_parents.values() {
         if !matches_file(
             &checked_path(&root, &parent.relative_path)?,

@@ -49,6 +49,8 @@ pub(crate) struct OperationDraft {
     #[serde(default = "resolve_dependencies_default")]
     pub resolve_dependencies: bool,
     #[serde(default)]
+    pub skip_unwritable_files: bool,
+    #[serde(default)]
     pub naming: super::naming::NamingPreferences,
     pub plan: ResourceOperationPlan,
     pub install_dependencies: bool,
@@ -95,11 +97,7 @@ fn dependency_analysis_issue(
     let allow_install = plan.intent == ResourceOperationIntent::Install;
     issue(
         plan,
-        if allow_install {
-            ResourceIssueCode::DependencyAnalysisFailed
-        } else {
-            ResourceIssueCode::SourceUnavailable
-        },
+        ResourceIssueCode::DependencyAnalysisFailed,
         node,
         !allow_install,
         message,
@@ -1132,24 +1130,29 @@ impl ResourceService {
     ) -> ResourceResult<OperationDraft> {
         let mut draft = draft;
         let mut retained_warning = None;
-        draft.retained_requirements = match self
-            .retained_requirements(
-                &draft.plan.selections,
-                installed,
-                &draft.local_metadata,
-                cancel,
-            )
-            .await
-        {
-            Ok(requirements) => requirements,
-            Err(error)
-                if draft.plan.intent == ResourceOperationIntent::Install
-                    && dependency_source_failed(&error) =>
+        draft.retained_requirements = if !draft.resolve_dependencies {
+            Vec::new()
+        } else {
+            match self
+                .retained_requirements(
+                    &draft.plan.selections,
+                    installed,
+                    &draft.local_metadata,
+                    cancel,
+                )
+                .await
             {
-                retained_warning = Some(error.to_string());
-                Vec::new()
+                Ok(requirements) => requirements,
+                Err(error)
+                    if draft.plan.intent
+                        == ResourceOperationIntent::Install
+                        && dependency_source_failed(&error) =>
+                {
+                    retained_warning = Some(error.to_string());
+                    Vec::new()
+                }
+                Err(error) => return Err(error),
             }
-            Err(error) => return Err(error),
         };
         let original = draft.clone();
         let mut seeded: HashMap<SelectionKey, Vec<String>> = HashMap::new();
@@ -2625,6 +2628,7 @@ pub async fn prepare(
         install_dependencies,
         cancel,
         None,
+        true,
     )
     .await
 }
@@ -2636,6 +2640,7 @@ pub async fn prepare_with_progress(
     install_dependencies: bool,
     cancel: &CancellationToken,
     progress: OperationProgress<'_>,
+    resolve_dependencies: bool,
 ) -> ResourceResult<ResourceOperationPlan> {
     // A span would repeat this selection list on every nested HTTP/file log.
     // Keep it on one event and bound batch-install diagnostics.
@@ -2652,7 +2657,7 @@ pub async fn prepare_with_progress(
         cancel,
         None,
         progress,
-        true,
+        resolve_dependencies,
     )
     .await
 }
@@ -2730,6 +2735,7 @@ pub(crate) async fn prepare_with_installed(
             .await?,
         retained_requirements: Vec::new(),
         resolve_dependencies,
+        skip_unwritable_files: false,
         import_files: Default::default(),
         naming: {
             let settings = crate::state::Settings::get(&state.pool).await?;
@@ -2776,13 +2782,14 @@ pub(crate) async fn prepare_with_installed(
         .await?
         .entries
     };
-    let draft = state
+    let mut draft = state
         .resources()
         .await?
         .build_operation_with_progress(
             draft, &target, &installed, cancel, progress,
         )
         .await?;
+    super::write_access::review(&mut draft, &state).await?;
     if cancel.is_cancelled() {
         return Err(ResourceError::Canceled);
     }
@@ -2843,6 +2850,13 @@ impl ResourceService {
         let previous_issues = draft.plan.issues.clone();
         for decision in decisions {
             match decision {
+                ResourcePlanDecision::IgnoreDependencies => {
+                    draft.resolve_dependencies = false;
+                    draft.install_dependencies = false;
+                }
+                ResourcePlanDecision::SkipUnwritableFiles => {
+                    draft.skip_unwritable_files = true;
+                }
                 ResourcePlanDecision::AddRequired { ref node_id }
                 | ResourcePlanDecision::AddOptional { ref node_id } => {
                     let expected = if matches!(
@@ -2996,13 +3010,14 @@ pub async fn revise_with_progress(
         channels: update_channels(instance.instance.update_channel),
     };
     let installed = installed(&state.pool, &draft.plan.instance_id).await?;
-    let draft = state
+    let mut draft = state
         .resources()
         .await?
         .revise_operation_with_progress(
             draft, decisions, &target, &installed, cancel, progress,
         )
         .await?;
+    super::write_access::review(&mut draft, &state).await?;
     if cancel.is_cancelled() {
         return Err(ResourceError::Canceled);
     }

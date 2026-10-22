@@ -161,6 +161,24 @@ async fn dependency_analysis_failure_keeps_root_validation_and_other_resolved_de
         .unwrap();
     assert_eq!(built.plan.actions.len(), 2);
     assert!(!built.plan.issues.iter().any(|issue| issue.blocking));
+    let selected_only = service
+        .revise_operation(
+            built,
+            vec![ResourcePlanDecision::IgnoreDependencies],
+            &target(),
+            &[],
+            &CancellationToken::new(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(selected_only.plan.actions.len(), 1);
+    assert_eq!(selected_only.plan.nodes.len(), 1);
+    assert!(selected_only.plan.edges.is_empty());
+    assert!(!selected_only.plan.issues.iter().any(|issue| issue.blocking));
+    assert_eq!(
+        selected_only.plan.actions[0].target.reference,
+        root.artifacts[0].reference
+    );
     let mut request = draft(
         vec![selection("root", &absent, None)],
         ResourceOperationIntent::Install,
@@ -178,6 +196,18 @@ async fn dependency_analysis_failure_keeps_root_validation_and_other_resolved_de
         .await
         .unwrap();
     assert!(failed.plan.issues.iter().any(|issue| issue.blocking));
+    let forced = service
+        .revise_operation(
+            failed,
+            vec![ResourcePlanDecision::IgnoreDependencies],
+            &target(),
+            &[],
+            &CancellationToken::new(),
+        )
+        .await
+        .unwrap();
+    assert!(forced.plan.issues.iter().any(|issue| issue.blocking
+        && issue.code == ResourceIssueCode::SourceUnavailable));
     service.cache().close().await;
 }
 
@@ -246,6 +276,18 @@ async fn retained_dependency_lookup_failure_does_not_block_a_new_install() {
             .any(|issue| issue.code
                 == ResourceIssueCode::DependencyAnalysisFailed)
     );
+    let forced = service
+        .revise_operation(
+            built,
+            vec![ResourcePlanDecision::IgnoreDependencies],
+            &target(),
+            &[installed(&offline, "offline", "mods/offline.jar")],
+            &CancellationToken::new(),
+        )
+        .await
+        .unwrap();
+    assert!(forced.plan.issues.is_empty(), "{:?}", forced.plan.issues);
+    assert!(forced.retained_requirements.is_empty());
     service.cache().close().await;
 }
 
@@ -1124,6 +1166,7 @@ fn draft(
         local_metadata: Default::default(),
         retained_requirements: Vec::new(),
         resolve_dependencies: true,
+        skip_unwritable_files: false,
         import_files: Default::default(),
         naming: Default::default(),
         plan: ResourceOperationPlan {

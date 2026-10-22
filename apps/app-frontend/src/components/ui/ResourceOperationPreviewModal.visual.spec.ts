@@ -188,7 +188,7 @@ function ready() {
     )
 }
 
-it('queues an install with dependency analysis warnings and shows the warning on the install button', async () => {
+it('requires an explicit roots-only preview after dependency analysis fails', async () => {
     ready()
     const reviewed = {
         ...plan(),
@@ -203,6 +203,12 @@ it('queues an install with dependency analysis warnings and shows the warning on
         ],
     } as ResourceOperationPlan
     vi.mocked(resourcePrepareOperation).mockResolvedValue(reviewed)
+    vi.mocked(resourceRevisePlan).mockResolvedValue({
+        ...reviewed,
+        revision: 2,
+        issues: [],
+        nodes: [root],
+    })
     vi.mocked(resourceQueuePlan).mockResolvedValue({ job_id: 'queued' } as never)
     const wrapper = mount(ResourceOperationPreviewModal, {
         global: {
@@ -229,13 +235,28 @@ it('queues an install with dependency analysis warnings and shows the warning on
         const button = wrapper
             .findAll('button')
             .find((button) => button.text() === 'Queue changes')!
-        expect(button.attributes('disabled')).toBeUndefined()
+        expect(button.attributes('disabled')).toBeDefined()
         expect(button.attributes('data-tooltip')).toBe(
             'Dependency analysis failed. The instance may not work correctly.',
         )
+        await wrapper
+            .findAll('button')
+            .find((button) => button.text() === 'Force install selected content only')!
+            .trigger('click')
+        await flushPromises()
+        expect(resourceRevisePlan).toHaveBeenCalledWith(
+            reviewed.id,
+            reviewed.revision,
+            [{ kind: 'ignoreDependencies' }],
+            expect.any(AbortSignal),
+            expect.any(Function),
+        )
+        expect(resourceQueuePlan).not.toHaveBeenCalled()
+        expect(wrapper.text()).toContain('Dependencies will not be checked or installed')
+        expect(button.attributes('disabled')).toBeUndefined()
         await button.trigger('click')
         await flushPromises()
-        expect(resourceQueuePlan).toHaveBeenCalledExactlyOnceWith(reviewed.id, reviewed.revision)
+        expect(resourceQueuePlan).toHaveBeenCalledExactlyOnceWith(reviewed.id, 2)
         expect((await result)?.job_id).toBe('queued')
     } finally {
         wrapper.unmount()
@@ -279,6 +300,167 @@ it('does not bypass blocking file validation when dependency analysis also faile
         expect(button.attributes('disabled')).toBeDefined()
         await button.trigger('click')
         expect(resourceQueuePlan).not.toHaveBeenCalled()
+        expect(
+            wrapper.findAll('button').some((button) => button.text().startsWith('Force install')),
+        ).toBe(false)
+        await wrapper.vm.cancel()
+        expect(await result).toBeNull()
+    } finally {
+        wrapper.unmount()
+    }
+})
+
+it('combines dependency fallback with skipped files and submits only the writable roots', async () => {
+    ready()
+    const writable = { ...root, id: 'writable', rootSelectionIds: ['writable'] }
+    const action = {
+        ...plan().actions[0],
+        nodeId: 'writable',
+        entryId: 'writable-entry',
+        targetRelativePath: 'mods/writable.jar',
+    }
+    const reviewed = {
+        ...plan(),
+        intent: 'install',
+        activeRoots: ['root', 'writable'],
+        nodes: [root, writable],
+        actions: [...plan().actions, action],
+        issues: [
+            {
+                code: 'fileNotWritable',
+                selectionId: 'root',
+                blocking: true,
+                message: 'mods/locked.jar',
+            },
+        ],
+    } as ResourceOperationPlan
+    vi.mocked(resourcePrepareOperation).mockResolvedValue({
+        ...reviewed,
+        issues: [
+            ...reviewed.issues,
+            {
+                code: 'dependencyAnalysisFailed',
+                selectionId: 'root',
+                blocking: false,
+                message: 'offline',
+            },
+        ],
+    })
+    vi.mocked(resourceRevisePlan).mockResolvedValueOnce(reviewed)
+    vi.mocked(resourceRevisePlan).mockResolvedValue({
+        ...reviewed,
+        revision: 2,
+        actions: [action],
+        issues: [
+            {
+                code: 'fileWriteSkipped',
+                selectionId: 'root',
+                blocking: false,
+                message: 'mods/locked.jar',
+            },
+        ],
+    })
+    vi.mocked(resourceQueuePlan).mockResolvedValue({ job_id: 'queued' } as never)
+    const wrapper = mount(ResourceOperationPreviewModal)
+    const result = wrapper.vm.showInstallSelection({
+        instanceId: 'instance',
+        instanceName: 'Instance',
+        selections: [],
+        installDependencies: true,
+    })
+    try {
+        await flushPromises()
+        const queue = () =>
+            wrapper.findAll('button').find((button) => button.text() === 'Queue changes')!
+        expect(queue().attributes('disabled')).toBeDefined()
+        await wrapper
+            .findAll('button')
+            .find((button) => button.text() === 'Force install selected content only')!
+            .trigger('click')
+        await flushPromises()
+        expect(wrapper.text()).toContain('Dependencies will not be checked or installed')
+        await wrapper
+            .findAll('button')
+            .find((button) => button.text() === 'Force install writable files')!
+            .trigger('click')
+        await flushPromises()
+        expect(resourceQueuePlan).not.toHaveBeenCalled()
+        expect(resourceRevisePlan).toHaveBeenCalledWith(
+            reviewed.id,
+            1,
+            [{ kind: 'skipUnwritableFiles' }],
+            expect.any(AbortSignal),
+            expect.any(Function),
+        )
+        expect(wrapper.text()).toContain('mods/locked.jar will be skipped')
+        expect(queue().attributes('disabled')).toBeUndefined()
+        await queue().trigger('click')
+        await flushPromises()
+        expect((await result)?.activeRoots).toEqual(['writable'])
+        expect(resourceQueuePlan).toHaveBeenCalledExactlyOnceWith(reviewed.id, 2)
+    } finally {
+        wrapper.unmount()
+    }
+})
+
+it('can prepare selected content without dependencies after analysis rejects the entire preview', async () => {
+    ready()
+    vi.mocked(resourcePrepareOperation)
+        .mockRejectedValueOnce(new Error('dependency analysis failed'))
+        .mockRejectedValueOnce(new Error('temporary failure'))
+        .mockResolvedValueOnce({ ...plan(), intent: 'install' })
+    const wrapper = mount(ResourceOperationPreviewModal)
+    const result = wrapper.vm.showInstall({
+        instanceId: 'instance',
+        instanceName: 'Instance',
+        selections: [],
+        installDependencies: true,
+    })
+    try {
+        await flushPromises()
+        await wrapper
+            .findAll('button')
+            .find((button) => button.text() === 'Force install selected content only')!
+            .trigger('click')
+        await flushPromises()
+        await wrapper
+            .findAll('button')
+            .find((button) => button.text() === 'Retry')!
+            .trigger('click')
+        await flushPromises()
+        expect(resourcePrepareOperation).toHaveBeenLastCalledWith(
+            'instance',
+            'install',
+            [],
+            true,
+            expect.any(AbortSignal),
+            undefined,
+            undefined,
+            expect.any(Function),
+            false,
+        )
+        expect(wrapper.text()).toContain('Dependencies will not be checked or installed')
+        expect(resourceQueuePlan).not.toHaveBeenCalled()
+        vi.mocked(resourceQueuePlan).mockRejectedValueOnce(
+            new Error('instance changed after review'),
+        )
+        await wrapper
+            .findAll('button')
+            .find((button) => button.text() === 'Queue changes')!
+            .trigger('click')
+        await flushPromises()
+        expect(resourcePrepareOperation).toHaveBeenLastCalledWith(
+            'instance',
+            'install',
+            [],
+            true,
+            expect.any(AbortSignal),
+            undefined,
+            undefined,
+            expect.any(Function),
+            false,
+        )
+        expect(wrapper.text()).toContain('Dependencies will not be checked or installed')
         await wrapper.vm.cancel()
         expect(await result).toBeNull()
     } finally {
@@ -567,6 +749,15 @@ it('data packs require a real world and a failed world switch cannot queue the p
                 ?.attributes('disabled'),
         ).toBeDefined()
         expect(resourceQueuePlan).not.toHaveBeenCalled()
+        vi.mocked(resourcePrepareOperation).mockResolvedValueOnce(plan())
+        await wrapper
+            .findAll('button')
+            .find((button) => button.text() === 'Force install selected content only')!
+            .trigger('click')
+        await flushPromises()
+        const forcedWorld = vi.mocked(resourcePrepareOperation).mock.lastCall!
+        expect(forcedWorld[2][0].scope).toEqual({ kind: 'world', relativePath: 'saves/two' })
+        expect(forcedWorld[8]).toBe(false)
         await wrapper
             .findAll('button')
             .find((button) => button.text() === 'Cancel')!
@@ -878,6 +1069,7 @@ it('refreshes a stale reviewed plan before queueing and keeps the selected root 
             importFiles,
             locators,
             expect.any(Function),
+            true,
         )
         vi.mocked(resourceQueuePlan).mockResolvedValueOnce({ job_id: 'refreshed-job' } as Awaited<
             ReturnType<typeof resourceQueuePlan>

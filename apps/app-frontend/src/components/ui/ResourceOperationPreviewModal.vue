@@ -135,6 +135,31 @@ const messages = defineMessages({
         id: 'app.resources.operation.artifact-mismatch',
         defaultMessage: 'The selected installed entry does not match this item.',
     },
+    installSelectedOnly: {
+        id: 'app.resources.operation.install-selected-only',
+        defaultMessage: 'Force install selected content only',
+    },
+    selectedOnly: {
+        id: 'app.resources.operation.selected-only',
+        defaultMessage:
+            'Only the selected content will be installed. Dependencies will not be checked or installed.',
+    },
+    skipUnwritable: {
+        id: 'app.resources.operation.skip-unwritable',
+        defaultMessage: 'Force install writable files',
+    },
+    fileNotWritable: {
+        id: 'app.resources.operation.file-not-writable',
+        defaultMessage: 'Cannot write {path}. Close any program using this file or skip it.',
+    },
+    fileWriteSkipped: {
+        id: 'app.resources.operation.file-write-skipped',
+        defaultMessage: '{path} will be skipped because it cannot be written.',
+    },
+    noWritableFiles: {
+        id: 'app.resources.operation.no-writable-files',
+        defaultMessage: 'No writable files remain to install.',
+    },
 })
 
 type OperationInput = {
@@ -170,6 +195,7 @@ const needsWorld = computed(
 const queueing = ref(false)
 const closing = ref(false)
 const queueFailed = ref(false)
+const dependenciesIgnored = ref(false)
 const error = ref<string | null>(null)
 const names = ref<Record<string, { title: string; iconUrl: string | null; summary?: string }>>({})
 let controller: AbortController | null = null
@@ -191,6 +217,10 @@ function issueNotice(issue: PlanIssue): Notice | null {
     const node = plan.value?.nodes.find((candidate) => candidate.id === issue.selectionId)
     const text = (() => {
         switch (issue.code) {
+            case 'fileNotWritable':
+                return formatMessage(messages.fileNotWritable, { path: issue.message })
+            case 'fileWriteSkipped':
+                return formatMessage(messages.fileWriteSkipped, { path: issue.message })
             case 'manualDownloadRequired':
                 return formatMessage(messages.manualDownload, {
                     name: node ? name(node) : (issue.selectionId ?? ''),
@@ -259,11 +289,45 @@ const canApply = computed(
     () =>
         !busy.value &&
         !queueing.value &&
+        !dependencyAnalysisFailed.value &&
         (plan.value?.actions.length ?? 0) > 0 &&
         !plan.value?.issues.some((issue) => issue.blocking),
 )
 const dependencyAnalysisFailed = computed(
     () => plan.value?.issues.some((issue) => issue.code === 'dependencyAnalysisFailed') ?? false,
+)
+const canIgnoreDependencies = computed(() => {
+    if (busy.value || queueing.value || dependenciesIgnored.value) return false
+    if (!plan.value)
+        return !!error.value && !queueFailed.value && (!needsWorld.value || !!targetWorld.value)
+    return (
+        plan.value.issues.some(
+            (issue) =>
+                issue.code === 'dependencyAnalysisFailed' ||
+                (issue.blocking && ['versionConflict', 'missingDependency'].includes(issue.code)),
+        ) &&
+        !plan.value.issues.some(
+            (issue) =>
+                issue.blocking &&
+                ![
+                    'dependencyAnalysisFailed',
+                    'versionConflict',
+                    'missingDependency',
+                    'fileNotWritable',
+                ].includes(issue.code),
+        )
+    )
+})
+const canSkipUnwritable = computed(
+    () =>
+        !busy.value &&
+        !queueing.value &&
+        !dependencyAnalysisFailed.value &&
+        plan.value?.issues.some((issue) => issue.code === 'fileNotWritable') &&
+        !plan.value.issues.some((issue) => issue.blocking && issue.code !== 'fileNotWritable'),
+)
+const hasSkippedWrites = computed(
+    () => plan.value?.issues.some((issue) => issue.code === 'fileWriteSkipped') ?? false,
 )
 function name(node: ResourceDependencyNode) {
     return (
@@ -366,6 +430,7 @@ async function run(
         signal: AbortSignal,
         onProgress: (progress: ResourceOperationProgress) => void,
     ) => Promise<ResourceOperationPlan>,
+    ignoreDependencies = dependenciesIgnored.value,
 ) {
     const current = generation
     controller?.abort()
@@ -374,7 +439,7 @@ async function run(
     busy.value = true
     progressNodes.value = new Map()
     error.value = null
-    retryAction = () => run(action)
+    retryAction = () => run(action, ignoreDependencies)
     let acceptingProgress = true
     try {
         const value = await action(signal, (progress) => {
@@ -391,7 +456,9 @@ async function run(
         })
         if (current !== generation || signal.aborted) return
         plan.value = value
+        dependenciesIgnored.value = ignoreDependencies
         void enrich(value, signal, current)
+        return value
     } catch (failure) {
         if (current === generation && !signal.aborted)
             error.value = resourceOperationError(failure, formatMessage)
@@ -406,8 +473,10 @@ async function run(
 async function revise(decision: ResourcePlanDecision) {
     const value = plan.value
     if (!value || busy.value) return
-    await run((signal, onProgress) =>
-        resourceRevisePlan(value.id, value.revision, [decision], signal, onProgress),
+    return await run(
+        (signal, onProgress) =>
+            resourceRevisePlan(value.id, value.revision, [decision], signal, onProgress),
+        decision.kind === 'ignoreDependencies' || dependenciesIgnored.value,
     )
 }
 function hide() {
@@ -427,6 +496,7 @@ function show(value: OperationInput): Promise<InstallJobSnapshot | null> {
     names.value = {}
     error.value = null
     queueFailed.value = false
+    dependenciesIgnored.value = false
     retryAction = null
     worldOptions.value = []
     targetWorld.value = null
@@ -469,43 +539,59 @@ function show(value: OperationInput): Promise<InstallJobSnapshot | null> {
     void prepareInput(value)
     return result
 }
-async function prepareInput(value: OperationInput) {
-    await run((signal, onProgress) =>
-        value.selections
-            ? resourcePrepareOperation(
-                  value.instanceId,
-                  'install',
-                  value.selections,
-                  value.installDependencies,
-                  signal,
-                  value.importFiles,
-                  value.locators,
-                  onProgress,
-              )
-            : resourcePrepareEntryOperation(
-                  value.instanceId,
-                  value.intent,
-                  value.entryIds,
-                  value.release ?? null,
-                  value.installDependencies,
-                  signal,
-                  onProgress,
-              ),
+async function prepareInput(
+    value: OperationInput,
+    resolveDependencies = !dependenciesIgnored.value,
+) {
+    return await run(
+        (signal, onProgress) =>
+            value.selections
+                ? resourcePrepareOperation(
+                      value.instanceId,
+                      'install',
+                      value.selections,
+                      value.installDependencies,
+                      signal,
+                      value.importFiles,
+                      value.locators,
+                      onProgress,
+                      resolveDependencies,
+                  )
+                : resourcePrepareEntryOperation(
+                      value.instanceId,
+                      value.intent,
+                      value.entryIds,
+                      value.release ?? null,
+                      value.installDependencies,
+                      signal,
+                      onProgress,
+                      resolveDependencies,
+                  ),
+        !resolveDependencies,
     )
+}
+async function ignoreDependencies() {
+    if (plan.value) await revise({ kind: 'ignoreDependencies' })
+    else if (input.value) await prepareInput(withTargetWorld(input.value), false)
+}
+function withTargetWorld(value: OperationInput): OperationInput {
+    return {
+        ...value,
+        selections: value.selections?.map((selection) =>
+            selection.resourceType === 'dataPack' && targetWorld.value
+                ? {
+                      ...selection,
+                      scope: { kind: 'world' as const, relativePath: targetWorld.value },
+                  }
+                : selection,
+        ),
+    }
 }
 function selectWorld(path: string) {
     if (!input.value || busy.value) return
     targetWorld.value = path
     plan.value = null
-    const value = {
-        ...input.value,
-        selections: input.value.selections?.map((selection) =>
-            selection.resourceType === 'dataPack'
-                ? { ...selection, scope: { kind: 'world' as const, relativePath: path } }
-                : selection,
-        ),
-    }
-    void prepareInput(value)
+    void prepareInput(withTargetWorld(input.value))
 }
 async function apply() {
     if (!plan.value || !canApply.value) return
@@ -518,7 +604,19 @@ async function apply() {
     try {
         const job = await resourceQueuePlan(reviewed.id, reviewed.revision)
         if (generation !== current) return
-        submittedRoots.value = [...reviewed.activeRoots]
+        const skippedRoots = new Set(
+            reviewed.issues
+                .filter((issue) => issue.code === 'fileWriteSkipped')
+                .flatMap((issue) => {
+                    const node = reviewed.nodes.find((node) => node.id === issue.selectionId)
+                    return node?.rootSelectionIds?.length
+                        ? node.rootSelectionIds
+                        : issue.selectionId
+                          ? [issue.selectionId]
+                          : []
+                }),
+        )
+        submittedRoots.value = reviewed.activeRoots.filter((root) => !skippedRoots.has(root))
         resolveShow = null
         closing.value = true
         await nextTick()
@@ -560,6 +658,7 @@ async function refresh() {
             value.importFiles,
             value.locators,
             onProgress,
+            !dependenciesIgnored.value,
         )
         const retainedExceptions = current.exceptions.filter((exception) =>
             prepared.nodes.some(
@@ -652,6 +751,12 @@ defineExpose({ show, showInstall, showInstallSelection, cancel })
                         instance: input?.instanceName ?? '',
                     })
                 }}
+            </p>
+            <p
+                v-if="dependenciesIgnored && plan && !busy"
+                class="m-0 text-sm text-[var(--color-text-tertiary)]"
+            >
+                {{ formatMessage(messages.selectedOnly) }}
             </p>
             <div v-if="error" class="flex flex-col gap-2" role="alert">
                 <p class="m-0">{{ error }}</p>
@@ -851,7 +956,7 @@ defineExpose({ show, showInstall, showInstallSelection, cancel })
                 "
                 class="m-0"
             >
-                {{ formatMessage(messages.empty) }}
+                {{ formatMessage(hasSkippedWrites ? messages.noWritableFiles : messages.empty) }}
             </p>
         </div>
         <template #actions>
@@ -859,6 +964,16 @@ defineExpose({ show, showInstall, showInstallSelection, cancel })
                 <Button :disabled="busy" @click="modal?.hide()">{{
                     formatMessage(messages.cancel)
                 }}</Button>
+                <Button v-if="canIgnoreDependencies" color="orange" @click="ignoreDependencies">
+                    {{ formatMessage(messages.installSelectedOnly) }}
+                </Button>
+                <Button
+                    v-if="canSkipUnwritable"
+                    color="orange"
+                    @click="revise({ kind: 'skipUnwritableFiles' })"
+                >
+                    {{ formatMessage(messages.skipUnwritable) }}
+                </Button>
                 <Button
                     v-tooltip="
                         dependencyAnalysisFailed

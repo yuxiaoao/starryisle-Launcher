@@ -408,6 +408,8 @@ function operationProgressChannel(
     return channel
 }
 export type ResourcePlanDecision =
+    | { kind: 'ignoreDependencies' }
+    | { kind: 'skipUnwritableFiles' }
     | { kind: 'addRequired'; nodeId: string }
     | { kind: 'addOptional'; nodeId: string }
     | { kind: 'removeOptional'; nodeId: string }
@@ -424,6 +426,7 @@ export function resourcePrepareOperation(
     importFiles?: Record<string, string>,
     locators?: Record<string, string>,
     onProgress?: (progress: ResourceOperationProgress) => void,
+    resolveDependencies = true,
 ) {
     return resourceRequest<ResourceOperationPlan>(
         'resource_prepare_operation',
@@ -435,6 +438,7 @@ export function resourcePrepareOperation(
             importFiles: importFiles ?? null,
             locators: locators ?? null,
             onProgress: operationProgressChannel(onProgress, signal),
+            resolveDependencies,
         },
         signal,
     )
