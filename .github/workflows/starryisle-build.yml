@@ -21,6 +21,7 @@ jobs:
     runs-on: windows-2025
     env:
       SQLX_OFFLINE: 'true'
+      CARGO_PROFILE_RELEASE_LTO: 'true'
       CARGO_TERM_COLOR: always
 
     steps:
