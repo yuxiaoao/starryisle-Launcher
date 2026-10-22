@@ -156,6 +156,71 @@ it('returning from history without a valid tab query displays active downloads',
     }
 })
 
+it.each(['downloading_content', 'downloading_pack_file', 'downloading_minecraft'] as const)(
+    '%s keeps byte progress visible through individual file activity',
+    async (phase) => {
+        const jobs = ref<InstallJobSnapshot[]>([
+            {
+                ...downloadingJob('local'),
+                phase,
+                progress:
+                    phase === 'downloading_content'
+                        ? { current: 5, total: 10, secondary: { current: 50, total: 100 } }
+                        : { current: 50, total: 100 },
+                items: [
+                    {
+                        id: 'working-file',
+                        name: 'working.jar',
+                        status: 'verifying',
+                        bytes_downloaded: 10,
+                    },
+                    {
+                        id: 'downloading-file',
+                        name: 'downloading.jar',
+                        status: 'downloading',
+                        bytes_downloaded: 40,
+                    },
+                ],
+            },
+        ])
+        fixture.manager = {
+            initializationState: ref('ready'),
+            jobs,
+            activeJobs: jobs,
+            historyJobs: ref([]),
+            legacyDownloads: ref([]),
+        }
+        const wrapper = mount(Downloads, { global: { directives: { tooltip: () => {} } } })
+        try {
+            for (const status of [
+                'verifying',
+                'writing',
+                'connecting',
+                'waiting_for_resource',
+                'waiting_for_database',
+                'finalizing',
+            ] as const) {
+                jobs.value[0].items[0].status = status
+                await nextTick()
+                const bar = wrapper.get('[role="progressbar"]')
+                expect(bar.attributes('aria-label')).toBe('50 / 100')
+                expect(bar.attributes('aria-valuenow')).toBe('50')
+            }
+            jobs.value[0] = {
+                ...jobs.value[0],
+                phase: 'extracting_overrides',
+                progress: null,
+            }
+            await nextTick()
+            const bar = wrapper.get('[role="progressbar"]')
+            expect(bar.attributes('aria-label')).toBe('Extracting overrides')
+            expect(bar.attributes('aria-valuenow')).toBeUndefined()
+        } finally {
+            wrapper.unmount()
+        }
+    },
+)
+
 it.each(['curse_forge', 'local'] as const)(
     '%s extraction clears the previous download percentage and accepts new phase progress',
     async (provider) => {

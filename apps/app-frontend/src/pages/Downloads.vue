@@ -1218,26 +1218,6 @@ function progressText(job: InstallJobSnapshot) {
         }
         return formatMessage(messages.verifyingDownloadedFiles)
     }
-    const finalStage = job.items.find(
-        (item) =>
-            item.status === 'waiting_for_resource' ||
-            item.status === 'worker_started' ||
-            item.status === 'connecting' ||
-            item.status === 'writing' ||
-            item.status === 'verifying' ||
-            item.status === 'metadata' ||
-            item.status === 'waiting_for_database' ||
-            item.status === 'finalizing',
-    )
-    if (finalStage) return statusLabel(finalStage.status)
-    const progress = effectiveInstallProgress(job)
-    if (
-        job.status === 'running' &&
-        hasDeterminateInstallProgress(progress) &&
-        progress.current >= progress.total &&
-        activeRequestItems(job).length === 0
-    )
-        return statusLabel('verifying')
     if (textSource.type === 'bytes')
         return `${formatBytes(textSource.current)} / ${formatBytes(textSource.total)}`
     if (textSource.type === 'items') return `${textSource.current} / ${textSource.total}`
