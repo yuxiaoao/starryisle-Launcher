@@ -604,6 +604,152 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn multimc_lwjgl_platform_rules_preserve_supported_and_foreign_libraries()
+     {
+        let directory = tempfile::tempdir().unwrap();
+        let platforms = [
+            "freebsd",
+            "linux-arm32",
+            "linux-arm64",
+            "linux-ppc64le",
+            "linux",
+            "osx",
+            "osx-arm64",
+            "windows",
+            "windows-arm64",
+        ];
+        let libraries: Vec<_> = platforms.iter().map(|platform| json!({
+            "name": format!("org.lwjgl:lwjgl-natives-{platform}:3.4.3"),
+            "rules": [{"action": "allow", "os": {"name": platform}}],
+            "downloads": {"artifact": {"url": format!("https://example.com/natives-{platform}.jar")}}
+        })).collect();
+        write_profile(
+            directory.path(),
+            json!([
+                {"uid":"org.lwjgl3", "version":"3.4.3"},
+                {"uid":"net.minecraft", "version":"1.7.10"}
+            ]),
+            &[("org.lwjgl3", json!({"libraries": libraries}))],
+        );
+        let profile = MultiMcProfile::from_root(directory.path().to_path_buf())
+            .await
+            .unwrap();
+        let mut info = baseline();
+        profile
+            .apply(&mut info, None, &directory.path().join("cache"))
+            .await
+            .unwrap();
+        let restored: VersionInfo =
+            serde_json::from_value(serde_json::to_value(&info).unwrap())
+                .unwrap();
+        assert_eq!(restored.libraries.len(), platforms.len() + 1);
+        for library in restored
+            .libraries
+            .iter()
+            .filter(|library| library.rules.is_some())
+        {
+            let platform = library.rules.as_ref().unwrap()[0]
+                .os
+                .as_ref()
+                .unwrap()
+                .name
+                .as_ref()
+                .unwrap();
+            let native =
+                daedalus::minecraft::Os::native_arch(std::env::consts::ARCH);
+            let expected = *platform == native || *platform == native.get_os();
+            assert_eq!(
+                super::super::parse_rules(
+                    library.rules.as_ref().unwrap(),
+                    std::env::consts::ARCH,
+                    &super::super::QuickPlayType::None,
+                    true
+                ),
+                expected
+            );
+        }
+    }
+
+    /// Run with AXOLOTL_TEST_MULTIMC_ARCHIVE pointing to a local MultiMC export.
+    #[tokio::test]
+    #[ignore = "requires an external local MultiMC archive"]
+    async fn local_multimc_archive_profile_applies() {
+        let path = PathBuf::from(
+            std::env::var_os("AXOLOTL_TEST_MULTIMC_ARCHIVE")
+                .expect("set AXOLOTL_TEST_MULTIMC_ARCHIVE"),
+        );
+        let detected =
+            crate::api::pack::detect::detect_local_pack_sync(&path).unwrap();
+        assert_eq!(
+            detected.format,
+            crate::api::pack::detect::LocalPackFormat::MmcExport
+        );
+        let directory = tempfile::tempdir().unwrap();
+        let mut archive =
+            zip::ZipArchive::new(std::fs::File::open(path).unwrap()).unwrap();
+        for index in 0..archive.len() {
+            let mut entry = archive.by_index(index).unwrap();
+            let name = crate::api::pack::detect::decode_zip_entry_name(
+                entry.name_raw(),
+            );
+            let Some(relative) = name.strip_prefix(&detected.base_folder)
+            else {
+                continue;
+            };
+            if entry.is_dir()
+                || !(relative == "mmc-pack.json"
+                    || relative.starts_with("patches/")
+                        && relative.ends_with(".json")
+                    || relative.starts_with("libraries/")
+                        && relative.ends_with(".jar"))
+            {
+                continue;
+            }
+            assert!(safe_maven_relative_path(relative));
+            let destination = directory.path().join(relative);
+            std::fs::create_dir_all(destination.parent().unwrap()).unwrap();
+            std::io::copy(
+                &mut entry,
+                &mut std::fs::File::create(destination).unwrap(),
+            )
+            .unwrap();
+        }
+        let profile = MultiMcProfile::from_root(directory.path().to_path_buf())
+            .await
+            .unwrap();
+        let mut info = baseline();
+        profile
+            .apply(&mut info, None, &directory.path().join("cache"))
+            .await
+            .unwrap();
+        let restored: VersionInfo =
+            serde_json::from_value(serde_json::to_value(&info).unwrap())
+                .unwrap();
+        assert!(!restored.libraries.is_empty());
+        let selected: Vec<_> = restored
+            .libraries
+            .iter()
+            .filter(|library| {
+                library.rules.as_ref().is_none_or(|rules| {
+                    super::super::parse_rules(
+                        rules,
+                        std::env::consts::ARCH,
+                        &super::super::QuickPlayType::None,
+                        true,
+                    )
+                })
+            })
+            .collect();
+        assert!(!selected.is_empty());
+        eprintln!(
+            "Applied local MultiMC profile: {} libraries, {} selected for this platform, main class {}",
+            restored.libraries.len(),
+            selected.len(),
+            restored.main_class
+        );
+    }
+
+    #[tokio::test]
     async fn multimc_gtnh_bootstrap_libraries_and_arguments_are_preserved() {
         let directory = tempfile::tempdir().unwrap();
         gtnh_profile(directory.path());

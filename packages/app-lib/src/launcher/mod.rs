@@ -3386,6 +3386,51 @@ mod linked_rule_tests {
     use super::*;
     use d::minecraft::{FeatureRule, OsRule, Rule};
 
+    #[test]
+    fn freebsd_rules_do_not_enable_foreign_libraries_or_disable_host_libraries()
+    {
+        for arch in ["x86", "x86_64", "aarch64", "arm"] {
+            let allowed: Vec<Rule> =
+                serde_json::from_value(serde_json::json!([
+                    {"action": "allow", "os": {"name": "freebsd"}}
+                ]))
+                .unwrap();
+            assert_eq!(
+                parse_rules(&allowed, arch, &QuickPlayType::None, true),
+                cfg!(target_os = "freebsd")
+            );
+            let excluded: Vec<Rule> =
+                serde_json::from_value(serde_json::json!([
+                    {"action": "allow"},
+                    {"action": "disallow", "os": {"name": "freebsd"}}
+                ]))
+                .unwrap();
+            assert_eq!(
+                parse_rules(&excluded, arch, &QuickPlayType::None, true),
+                !cfg!(target_os = "freebsd")
+            );
+        }
+    }
+
+    #[test]
+    fn linux_ppc64le_rules_only_apply_to_the_matching_java_architecture() {
+        for arch in
+            ["x86", "x86_64", "aarch64", "arm", "ppc64le", "powerpc64le"]
+        {
+            let allowed: Vec<Rule> =
+                serde_json::from_value(serde_json::json!([
+                    {"action": "allow", "os": {"name": "linux-ppc64le"}}
+                ]))
+                .unwrap();
+            let matches = cfg!(target_os = "linux")
+                && matches!(arch, "ppc64le" | "powerpc64le");
+            assert_eq!(
+                parse_rules(&allowed, arch, &QuickPlayType::None, true),
+                matches
+            );
+        }
+    }
+
     fn rule(
         action: RuleAction,
         os: Option<OsRule>,

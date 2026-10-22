@@ -1274,6 +1274,62 @@ mod tests {
     use super::*;
     use serde_json::json;
 
+    #[test]
+    fn cleanroom_and_forge_profiles_accept_additional_lwjgl_platforms() {
+        for (id, minecraft) in [
+            ("1.12.2-cleanroom-0.7.5", "1.12.2"),
+            ("1.7.10-forge", "1.7.10"),
+        ] {
+            let input = json!({
+                "id": id,
+                "inheritsFrom": minecraft,
+                "releaseTime": "2026-10-15T00:00:00Z",
+                "time": "2026-10-15T00:00:00Z",
+                "type": "release",
+                "arguments": {"jvm": [{
+                    "rules": [{"action": "allow", "os": {"name": "freebsd"}}],
+                    "value": "-Dorg.lwjgl.librarypath=natives/freebsd"
+                }]},
+                "libraries": [{
+                    "name": "org.lwjgl:lwjgl:3.3.6:natives-freebsd",
+                    "rules": [{"action": "allow", "os": {"name": "freebsd"}}],
+                    "natives": {"freebsd": "natives-freebsd"}
+                }, {
+                    "name": "org.lwjgl:lwjgl-natives-linux-ppc64le:3.4.3",
+                    "rules": [{"action": "allow", "os": {"name": "linux-ppc64le"}}]
+                }]
+            });
+            let profile: PartialVersionInfo =
+                serde_json::from_value(input).unwrap();
+            let library = &profile.libraries[0];
+            assert_eq!(
+                library.rules.as_ref().unwrap()[0].os.as_ref().unwrap().name,
+                Some(crate::minecraft::Os::Freebsd)
+            );
+            assert_eq!(
+                library.natives.as_ref().unwrap()
+                    [&crate::minecraft::Os::Freebsd],
+                "natives-freebsd"
+            );
+            assert_eq!(
+                profile.libraries[1].rules.as_ref().unwrap()[0]
+                    .os
+                    .as_ref()
+                    .unwrap()
+                    .name,
+                Some(crate::minecraft::Os::LinuxPpc64le)
+            );
+            let restored: PartialVersionInfo =
+                serde_json::from_value(serde_json::to_value(&profile).unwrap())
+                    .unwrap();
+            assert_eq!(restored.id, id);
+            assert_eq!(restored.inherits_from, minecraft);
+            assert!(
+                restored.arguments.unwrap().contains_key(&ArgumentType::Jvm)
+            );
+        }
+    }
+
     fn library(name: &str) -> Library {
         Library {
             downloads: None,

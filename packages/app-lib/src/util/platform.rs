@@ -141,6 +141,8 @@ pub fn classpath_separator(java_arch: &str) -> &'static str {
         | Os::Linux
         | Os::LinuxArm32
         | Os::LinuxArm64
+        | Os::LinuxPpc64le
+        | Os::Freebsd
         | Os::Universal
         | Os::Unknown => ":",
         Os::Windows | Os::WindowsArm64 => ";",
