@@ -37,9 +37,11 @@ if (values['installer-only']) {
     const target = values.target
     if (target && !/^[a-z0-9_-]+$/.test(target)) throw new Error('Invalid target triple')
     const targetDirectory = path.join(root, 'target', ...(target ? [target] : []), profile)
+    // The binary is named after the configured product, which forks may rename.
+    const { productName } = JSON.parse(fs.readFileSync(path.join(app, 'tauri.conf.json'), 'utf8'))
     const binary = path.join(
         targetDirectory,
-        `Axolotl Launcher${process.platform === 'win32' ? '.exe' : ''}`,
+        `${productName}${process.platform === 'win32' ? '.exe' : ''}`,
     )
     const args = ['tauri', 'build', '--ci', '--no-bundle', '--config', 'tauri-release.conf.json']
     if (target) args.push('--target', target)
