@@ -35,52 +35,6 @@ export const ANNOUNCEMENT_CHANGE_TYPES: readonly AnnouncementChangeType[] = [
  */
 export const launcherAnnouncements: readonly LauncherAnnouncement[] = [
     {
-        id: 'launcher-1.0.2',
-        version: '1.0.2',
-        publishedAt: '2026-10-24',
-        title: {
-            'en-US': 'StarryIsle Launcher 1.0.2',
-            'zh-CN': 'StarryIsle Launcher 1.0.2',
-        },
-        changes: {
-            changed: [
-                {
-                    'en-US':
-                        'Every remaining Axolotl label in the interface now reads StarryIsle: the create instance dialog, settings, error messages and lab tools.',
-                    'zh-CN':
-                        '界面中残留的 Axolotl 文案统一改为 StarryIsle：创建实例对话框、设置页、错误提示与实验工具。',
-                },
-            ],
-        },
-    },
-    {
-        id: 'launcher-1.0.1',
-        version: '1.0.1',
-        publishedAt: '2026-10-24',
-        title: {
-            'en-US': 'StarryIsle Launcher 1.0.1',
-            'zh-CN': 'StarryIsle Launcher 1.0.1',
-        },
-        changes: {
-            removed: [
-                {
-                    'en-US': 'Automatic updates that connected to the Axolotl update service.',
-                    'zh-CN': '移除了连接 Axolotl 更新服务的自动更新功能。',
-                },
-            ],
-            fixed: [
-                {
-                    'en-US': 'The update log no longer lists Axolotl Launcher releases.',
-                    'zh-CN': '更新日志不再显示 Axolotl Launcher 的历史版本。',
-                },
-            ],
-        },
-        notes: {
-            'en-US': 'New versions are announced on this project\u2019s GitHub releases.',
-            'zh-CN': '新版本只在本项目的 GitHub Releases 页面发布。',
-        },
-    },
-    {
         id: 'launcher-1.0.0',
         version: '1.0.0',
         publishedAt: '2026-10-24',
@@ -104,8 +58,9 @@ export const launcherAnnouncements: readonly LauncherAnnouncement[] = [
             changed: [
                 {
                     'en-US':
-                        'Rebranded the launcher as StarryIsle, including the installer and deep link.',
-                    'zh-CN': '启动器更名为 StarryIsle，安装器与深链接同步更新。',
+                        'Rebranded the launcher as StarryIsle, including the installer, deep link and every interface label.',
+                    'zh-CN':
+                        '启动器更名为 StarryIsle，安装器、深链接与界面文案同步更新。',
                 },
                 {
                     'en-US': 'Reworked the default home layout and the widget picker.',
@@ -116,6 +71,16 @@ export const launcherAnnouncements: readonly LauncherAnnouncement[] = [
                     'zh-CN': '合并上游最新修复：下载、世界列表与性能改进。',
                 },
             ],
+            removed: [
+                {
+                    'en-US': 'Automatic updates that connected to the Axolotl update service.',
+                    'zh-CN': '移除了连接 Axolotl 更新服务的自动更新功能。',
+                },
+            ],
+        },
+        notes: {
+            'en-US': 'New versions are published on this project\u2019s GitHub releases.',
+            'zh-CN': '新版本只在本项目的 GitHub Releases 页面发布。',
         },
     },
 ]
