@@ -47,7 +47,7 @@ const node = (
     type,
     name,
     size: { actual: bytes, symlink: 0 },
-    paths: [{ path: `D:/Minecraft/Axolotl/${id}`, kind: 'directory' }],
+    paths: [{ path: `D:/Minecraft/StarryIsle/${id}`, kind: 'directory' }],
     children,
 })
 const categories = () => [
@@ -57,7 +57,7 @@ const categories = () => [
                 node('mods', 'mods', 1200000000, undefined, [
                     {
                         ...node('mod.jar', 'folder', 1000, 'mod.jar'),
-                        paths: [{ path: 'D:/Minecraft/Axolotl/mods/mod.jar', kind: 'file' }],
+                        paths: [{ path: 'D:/Minecraft/StarryIsle/mods/mod.jar', kind: 'file' }],
                     },
                 ]),
             ]),
@@ -239,7 +239,7 @@ it.each([1024, 680])('storage overview and cleanup use real components at %i px'
     await flushPromises()
     expect(disclosure.open).toBe(false)
     expect(openStoragePaths).toHaveBeenLastCalledWith([
-        { path: 'D:/Minecraft/Axolotl/instance-1', kind: 'directory' },
+        { path: 'D:/Minecraft/StarryIsle/instance-1', kind: 'directory' },
     ])
     expect(instanceRow.element.getBoundingClientRect().height).toBe(
         referenceRow.element.getBoundingClientRect().height,
@@ -252,7 +252,7 @@ it.each([1024, 680])('storage overview and cleanup use real components at %i px'
     modsRow.get('button[aria-label="在文件管理器中打开文件夹"]').element.click()
     await flushPromises()
     expect(openStoragePaths).toHaveBeenLastCalledWith([
-        { path: 'D:/Minecraft/Axolotl/mods', kind: 'directory' },
+        { path: 'D:/Minecraft/StarryIsle/mods', kind: 'directory' },
     ])
     const fileRow = wrapper.findAll('.tree-row').find((row) => row.text().includes('mod.jar'))!
     expect(fileRow.find('button[aria-label="在文件管理器中打开文件夹"]').exists()).toBe(false)

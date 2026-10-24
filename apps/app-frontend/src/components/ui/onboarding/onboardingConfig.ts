@@ -241,7 +241,7 @@ export const onboardingMessages = defineMessages({
     },
     translationTitle: {
         id: 'app.onboarding.translation.title',
-        defaultMessage: 'Translation, the Axolotl way',
+        defaultMessage: 'Translation, the StarryIsle way',
     },
     translationDescription: {
         id: 'app.onboarding.translation.description',
@@ -291,7 +291,7 @@ export const onboardingMessages = defineMessages({
     updatesDescription: {
         id: 'app.onboarding.updates.description',
         defaultMessage:
-            'Choose when Axolotl checks for updates and whether it installs them for you.',
+            'Choose when StarryIsle checks for updates and whether it installs them for you.',
     },
     clickTab: {
         id: 'app.onboarding.action.click-tab',
@@ -472,7 +472,7 @@ export const onboardingMessages = defineMessages({
             'Open a local .litematic or .schem file, or choose one from an installed instance. The 3D workspace keeps viewing, measurement, layer controls, materials, and local edits together.',
     },
     skip: { id: 'app.onboarding.action.skip', defaultMessage: 'Leave the tour' },
-    mascotAlt: { id: 'app.onboarding.mascot-alt', defaultMessage: 'Axolotl guide' },
+    mascotAlt: { id: 'app.onboarding.mascot-alt', defaultMessage: 'StarryIsle guide' },
 })
 
 const step = (

@@ -1027,7 +1027,7 @@ const messages = defineMessages({
     runningAsAdmin: {
         id: 'app.warning.running-as-admin',
         defaultMessage:
-            'Axolotl is running as administrator. Drag-and-drop file import is disabled in this mode; please restart the launcher without administrator privileges.',
+            'StarryIsle is running as administrator. Drag-and-drop file import is disabled in this mode; please restart the launcher without administrator privileges.',
     },
     restarting: {
         id: 'app.restarting',
@@ -1035,7 +1035,7 @@ const messages = defineMessages({
     },
     closeLauncherTitle: {
         id: 'app.close-launcher.title',
-        defaultMessage: 'Choose how to close Axolotl Launcher',
+        defaultMessage: 'Choose how to close StarryIsle Launcher',
     },
     closeLauncherDirect: {
         id: 'app.close-launcher.direct',
@@ -2525,11 +2525,11 @@ const updatePopupMessages = defineMessages({
     },
     meteredBody: {
         id: 'app.update-popup.body.metered',
-        defaultMessage: `Axolotl Launcher v{version} is available now! Since you're on a metered network, we didn't automatically download it.`,
+        defaultMessage: `StarryIsle Launcher v{version} is available now! Since you're on a metered network, we didn't automatically download it.`,
     },
     downloadedBody: {
         id: 'app.update-popup.body.download-complete',
-        defaultMessage: `Axolotl Launcher v{version} has finished downloading. Reload to update now, or automatically when you close Axolotl Launcher.`,
+        defaultMessage: `StarryIsle Launcher v{version} has finished downloading. Reload to update now, or automatically when you close StarryIsle Launcher.`,
     },
     reload: {
         id: 'app.update-popup.reload',

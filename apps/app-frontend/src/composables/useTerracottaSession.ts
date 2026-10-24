@@ -71,7 +71,7 @@ export function useTerracottaSession() {
         isExportingReport.value = true
         try {
             const report = await terracotta.getDiagnosticReport()
-            await exportErrorLogs(report, 'Axolotl multiplayer error report')
+            await exportErrorLogs(report, 'StarryIsle multiplayer error report')
         } catch (error: unknown) {
             handleError(error)
         } finally {

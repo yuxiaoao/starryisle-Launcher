@@ -269,7 +269,7 @@ const overtimeCount = ref(0)
 // Reports when the run is finished so the host may replace it with another game.
 watch(gameOver, (value) => emit('settled', value), { immediate: true })
 const messages = defineMessages({
-    title: { id: 'app.settings.about.game.title', defaultMessage: 'Axolotl merge' },
+    title: { id: 'app.settings.about.game.title', defaultMessage: 'StarryIsle merge' },
     score: { id: 'app.settings.about.game.score', defaultMessage: 'Score: {score}' },
     highestLevel: {
         id: 'app.settings.about.game.highest-level',
@@ -761,7 +761,7 @@ function prepareBallSprite(src: string, level: number) {
     image.src = src
 }
 
-function drawAxolotl(piece: Piece) {
+function drawStarryIsle(piece: Piece) {
     if (!context) return
     const isRainbow = piece.level === colors.length - 1
     const spawnProgress = Math.min(1, (elapsed - piece.spawnAt) / 0.22)
@@ -936,7 +936,7 @@ function draw() {
         context.stroke()
     }
     context.restore()
-    for (const piece of pieces) drawAxolotl(piece)
+    for (const piece of pieces) drawStarryIsle(piece)
     for (const shockwave of shockwaves) {
         const progress = Math.min(1, shockwave.age / shockwave.duration)
         const ringRadius = shockwave.maxRadius * easeOutCubic(progress)

@@ -1218,7 +1218,7 @@
     "defaultMessage": "Game directory"
   },
   "creation-flow.modal.custom-setup.game-dir.managed": {
-    "defaultMessage": "Axolotl directory"
+    "defaultMessage": "StarryIsle directory"
   },
   "creation-flow.modal.custom-setup.game-version-type.alpha": {
     "defaultMessage": "April Fools"
@@ -1482,7 +1482,7 @@
     "defaultMessage": "Confirm"
   },
   "drop.symlink_method.copy_desc": {
-    "defaultMessage": "Copy to Axolotl directory"
+    "defaultMessage": "Copy to StarryIsle directory"
   },
   "drop.symlink_method.copy_title": {
     "defaultMessage": "Copy files"
@@ -1587,7 +1587,7 @@
     "defaultMessage": "Cache"
   },
   "drop.symlink_method.stats_cache_tooltip": {
-    "defaultMessage": "Axolotl cache"
+    "defaultMessage": "StarryIsle cache"
   },
   "drop.symlink_method.stats_files": {
     "defaultMessage": "{files} files"

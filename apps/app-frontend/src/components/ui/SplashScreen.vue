@@ -5,7 +5,7 @@
                 class="absolute h-screen w-full flex flex-col justify-center items-center gap-4 z-[9998]"
                 data-tauri-drag-region
             >
-                <img class="app-logo" src="@/assets/axolotl.png" alt="Axolotl Launcher" />
+                <img class="app-logo" src="@/assets/axolotl.png" alt="StarryIsle Launcher" />
                 <ProgressBar
                     class="max-w-xs"
                     :progress="Math.min(loadingProgress, 100)"

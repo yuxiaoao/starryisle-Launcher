@@ -3666,7 +3666,7 @@
     "message": "複製檔案"
   },
   "drop.symlink_method.copy_desc": {
-    "message": "複製到 Axolotl 目錄"
+    "message": "複製到 StarryIsle 目錄"
   },
   "drop.symlink_method.symlink_title": {
     "message": "符號連結"
@@ -4266,7 +4266,7 @@
     "message": "缓存"
   },
   "drop.symlink_method.stats_cache_tooltip": {
-    "message": "Axolotl 缓存"
+    "message": "StarryIsle 缓存"
   },
   "drop.symlink_method.stats_local": {
     "message": "复用"

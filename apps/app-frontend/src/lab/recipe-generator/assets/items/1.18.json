@@ -4034,7 +4034,7 @@
 		},
 		{
 			"id": "minecraft:axolotl_bucket",
-			"readable": "Bucket of Axolotl",
+			"readable": "Bucket of StarryIsle",
 			"texture": "2ba8a52ff0c780d2.png"
 		},
 		{
@@ -5179,7 +5179,7 @@
 		},
 		{
 			"id": "minecraft:axolotl_spawn_egg",
-			"readable": "Axolotl Spawn Egg",
+			"readable": "StarryIsle Spawn Egg",
 			"texture": "95b0d85c43d04096.png"
 		},
 		{

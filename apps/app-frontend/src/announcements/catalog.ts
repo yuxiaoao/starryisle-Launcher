@@ -35,6 +35,25 @@ export const ANNOUNCEMENT_CHANGE_TYPES: readonly AnnouncementChangeType[] = [
  */
 export const launcherAnnouncements: readonly LauncherAnnouncement[] = [
     {
+        id: 'launcher-1.0.2',
+        version: '1.0.2',
+        publishedAt: '2026-10-24',
+        title: {
+            'en-US': 'StarryIsle Launcher 1.0.2',
+            'zh-CN': 'StarryIsle Launcher 1.0.2',
+        },
+        changes: {
+            changed: [
+                {
+                    'en-US':
+                        'Every remaining Axolotl label in the interface now reads StarryIsle: the create instance dialog, settings, error messages and lab tools.',
+                    'zh-CN':
+                        '界面中残留的 Axolotl 文案统一改为 StarryIsle：创建实例对话框、设置页、错误提示与实验工具。',
+                },
+            ],
+        },
+    },
+    {
         id: 'launcher-1.0.1',
         version: '1.0.1',
         publishedAt: '2026-10-24',

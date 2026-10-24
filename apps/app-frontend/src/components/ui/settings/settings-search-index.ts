@@ -36,7 +36,7 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
         label: message('app.appearance-settings.color-theme.title', 'Color theme'),
         description: message(
             'app.appearance-settings.color-theme.description',
-            'Select your preferred color theme for Axolotl Launcher.',
+            'Select your preferred color theme for StarryIsle Launcher.',
         ),
     },
     {
@@ -364,7 +364,7 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
         targetId: 'settings-target-appearance-close-behavior',
         label: message(
             'app.appearance-settings.close-behavior.title',
-            'Choose how to close Axolotl Launcher',
+            'Choose how to close StarryIsle Launcher',
         ),
         keywords: [
             message('app.appearance-settings.close-behavior.close', 'Close directly'),
@@ -744,7 +744,7 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
         id: 'storage-app-directory',
         categoryId: 'storage-backups',
         targetId: 'settings-target-storage-app-directory',
-        label: message('app.settings.resources.axolotl-data-directory', 'Axolotl data directory'),
+        label: message('app.settings.resources.axolotl-data-directory', 'StarryIsle data directory'),
     },
     {
         id: 'storage-minecraft-directories',

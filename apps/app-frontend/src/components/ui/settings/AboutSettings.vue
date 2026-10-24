@@ -245,12 +245,12 @@ const messages = defineMessages({
     attribution: {
         id: 'app.settings.about.attribution',
         defaultMessage:
-            'Axolotl Launcher is a modified version of the open-source Modrinth codebase.',
+            'StarryIsle Launcher is a modified version of the open-source Modrinth codebase.',
     },
     notAffiliated: {
         id: 'app.settings.about.not-affiliated',
         defaultMessage:
-            'Modrinth is a trademark of Rinth, Inc. Axolotl Launcher is not affiliated with or endorsed by Rinth, Inc.',
+            'Modrinth is a trademark of Rinth, Inc. StarryIsle Launcher is not affiliated with or endorsed by Rinth, Inc.',
     },
     originalSource: {
         id: 'app.settings.about.original-source',
