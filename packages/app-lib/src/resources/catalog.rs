@@ -41,7 +41,9 @@ impl ResourceService {
         let mut offline = std::collections::HashSet::new();
         if matches!(
             policy,
-            CachePolicy::UseFresh | CachePolicy::StaleWhileRevalidate
+            CachePolicy::UseFresh
+                | CachePolicy::Revalidate
+                | CachePolicy::StaleWhileRevalidate
         ) && !cancel.is_cancelled()
         {
             let failed: Vec<_> = results.iter().enumerate().filter_map(|(index, result)| matches!(result, Err(error) if !matches!(error, ResourceError::Canceled)).then_some(index)).collect();
@@ -160,8 +162,20 @@ impl ResourceService {
                 slug: None,
             }
         };
-        let result = if policy == CachePolicy::UseFresh {
-            self.presentation_query(source, query, cancel).await?
+        let result = if matches!(
+            policy,
+            CachePolicy::UseFresh | CachePolicy::Revalidate
+        ) {
+            self.presentation_many_with_policy(
+                source,
+                vec![query],
+                cancel,
+                policy,
+            )
+            .await
+            .into_iter()
+            .next()
+            .ok_or(ResourceError::Unavailable)??
         } else {
             self.query(source, query, policy, cancel).await?
         };

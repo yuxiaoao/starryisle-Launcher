@@ -59,7 +59,6 @@ vi.mock('@modrinth/ui', async () => {
         ...Object.fromEntries(
             [
                 'Admonition',
-                'Badge',
                 'BulletDivider',
                 'Card',
                 'Combobox',
@@ -70,6 +69,10 @@ vi.mock('@modrinth/ui', async () => {
                 'TagItem',
             ].map((name) => [name, control]),
         ),
+        Badge: defineComponent({
+            props: ['type'],
+            setup: (props) => () => h('span', { 'data-status-label': '' }, props.type),
+        }),
         ProgressBar,
         Button: (await import('../../../../packages/ui/src/components/base/buttons/Button.vue'))
             .default,
@@ -130,6 +133,62 @@ function downloadingJob(provider: InstallJobSnapshot['provider']): InstallJobSna
         items: [],
     }
 }
+
+it('renders archive byte progress and aligns source and status with manual download actions', async () => {
+    const pack: InstallJobSnapshot = {
+        ...downloadingJob('modrinth'),
+        phase: 'downloading_pack_file',
+        progress: { current: 25, total: 100 },
+        items: [
+            {
+                id: 'pack.mrpack',
+                name: 'Pack archive.mrpack',
+                source: 'official',
+                status: 'downloading',
+                bytes_downloaded: 25,
+                bytes_total: 100,
+                manual_url: 'https://example.test/manual',
+            },
+        ],
+    }
+    const jobs = ref([pack])
+    fixture.manager = {
+        initializationState: ref('ready'),
+        jobs,
+        activeJobs: jobs,
+        historyJobs: ref([]),
+        legacyDownloads: ref([]),
+    }
+    const wrapper = mount(Downloads, {
+        attachTo: document.body,
+        global: { directives: { tooltip: () => {} } },
+    })
+    try {
+        const bar = wrapper.get('[role="progressbar"]')
+        expect(bar.attributes('aria-valuenow')).toBe('25')
+        expect(bar.attributes('aria-label')).toBe('25 / 100')
+        await wrapper
+            .findAll('button')
+            .find((button) => button.text() === 'Details')!
+            .trigger('click')
+        const row = wrapper.get('tbody tr')
+        const cells = row.findAll('td')
+        const source = cells[0].get('span.text-xs')
+        const status = cells[1].get('[data-status-label]')
+        expect(source.text()).toBe('Official')
+        expect(status.text()).toBe('Downloading')
+        const sourceRect = source.element.getBoundingClientRect()
+        const statusRect = status.element.getBoundingClientRect()
+        expect(
+            Math.abs(sourceRect.y + sourceRect.height / 2 - statusRect.y - statusRect.height / 2),
+        ).toBeLessThan(1)
+        expect(row.element.getBoundingClientRect().height).toBeLessThanOrEqual(56)
+        expect(cells[0].text()).toContain('Open')
+        expect(cells[1].text()).not.toContain('Official')
+    } finally {
+        wrapper.unmount()
+    }
+})
 
 it('returning from history without a valid tab query displays active downloads', async () => {
     fixture.route = reactive({ query: { tab: 'history' } as Record<string, unknown> })

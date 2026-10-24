@@ -1,5 +1,9 @@
 //! Short-lived route circuit breaker for native transfers.
 
+use crate::util::download::constants::{
+    NATIVE_BREAKER_JITTER_MAX, NATIVE_BREAKER_JITTER_MIN,
+    NATIVE_BREAKER_MAX_EXPONENT,
+};
 use crate::util::fetch::{DownloadRoute, ProxyPolicy};
 use parking_lot::Mutex;
 use rand::Rng;
@@ -7,13 +11,11 @@ use std::collections::HashMap;
 use std::sync::LazyLock;
 use std::time::{Duration, Instant};
 
-const FAILURE_THRESHOLD: u32 = 3;
-/// Upper bound for any single cooldown. A server-provided `Retry-After` is
-/// honoured up to this value instead of being truncated to a second, which
-/// would let a client retry while the server is still asking it to wait.
-const MAX_COOLDOWN: Duration = Duration::from_secs(60);
-const DEFAULT_COOLDOWN: Duration = Duration::from_secs(1);
-
+use crate::util::download::constants::{
+    NATIVE_BREAKER_DEFAULT_COOLDOWN as DEFAULT_COOLDOWN,
+    NATIVE_BREAKER_FAILURE_THRESHOLD as FAILURE_THRESHOLD,
+    NATIVE_BREAKER_MAX_COOLDOWN as MAX_COOLDOWN,
+};
 /// Why a route failed. Each cause keeps its own failure counter and cooldown,
 /// so a burst of `429` responses cannot delay a route that is failing to
 /// connect for an unrelated reason.
@@ -169,9 +171,10 @@ fn record_failure_for_cause(
 fn backoff_cooldown(consecutive_failures: u32) -> Duration {
     let exponent = consecutive_failures
         .saturating_sub(FAILURE_THRESHOLD)
-        .min(6);
+        .min(NATIVE_BREAKER_MAX_EXPONENT);
     let base = DEFAULT_COOLDOWN.saturating_mul(1 << exponent);
-    let jitter = rand::thread_rng().gen_range(0.8..=1.2);
+    let jitter = rand::thread_rng()
+        .gen_range(NATIVE_BREAKER_JITTER_MIN..=NATIVE_BREAKER_JITTER_MAX);
     Duration::from_secs_f64(base.as_secs_f64() * jitter)
 }
 

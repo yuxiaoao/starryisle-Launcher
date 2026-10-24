@@ -196,12 +196,11 @@ impl FriendsSocket {
                                                 let connected_to = sockets.lock().get(&to_socket).cloned();
                                                 if let Some(connected_to) = connected_to
                                                     && let InternalTunnelSocket::Listening(local_addr) = *connected_to
-                                                        && let Ok(new_stream) = TcpStream::connect(local_addr).await {
-                                                            if let Some((read, cancel)) = InternalTunnelSocket::register_connection(&sockets, to_socket, &connected_to, new_socket, new_stream) {
+                                                        && let Ok(new_stream) = TcpStream::connect(local_addr).await
+                                                            && let Some((read, cancel)) = InternalTunnelSocket::register_connection(&sockets, to_socket, &connected_to, new_socket, new_stream) {
                                                                 Self::socket_read_loop(write_handle.clone(), sockets.clone(), read, new_socket, cancel);
                                                                 continue;
                                                             }
-                                                        }
                                                 let _ = Self::send_message(&write_handle, ClientToServerMessage::SocketClose { socket: new_socket }).await;
                                             },
                                             ServerToClientMessage::SocketClosed { socket } => {

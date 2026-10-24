@@ -1,7 +1,19 @@
 //! Theseus state management system
+use crate::util::download::constants::MAX_CONCURRENT_INSTALL_JOBS;
+use crate::util::download::constants::{
+    AUTO_DOWNLOAD_CONCURRENCY_INITIAL, AUTO_DOWNLOAD_CONCURRENCY_MAX,
+    AUTO_DOWNLOAD_CONCURRENCY_MIN, AUTO_DOWNLOAD_CONCURRENCY_STEP,
+    AUTO_DOWNLOAD_EXPANSION_ERROR_RATE, AUTO_DOWNLOAD_PRESSURE_ERROR_RATE,
+    AUTO_DOWNLOAD_PRESSURE_WINDOWS, AUTO_DOWNLOAD_PROBE_COOLDOWN,
+    AUTO_DOWNLOAD_SAMPLE_INTERVAL, AUTO_DOWNLOAD_TRIAL_WINDOWS,
+    AUTO_DOWNLOAD_UTILIZATION_WINDOWS, DOWNLOAD_CONCURRENCY_HARD_MAX,
+};
+use crate::util::download::constants::{
+    AUTO_DOWNLOAD_MIN_GAIN_PERCENT, AUTO_DOWNLOAD_PERCENT_BASE,
+};
 use crate::util::fetch::{FetchSemaphore, IoSemaphore};
 use dashmap::DashMap;
-use parking_lot::RwLock;
+use parking_lot::{Mutex, RwLock};
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 use std::sync::atomic::{
@@ -9,7 +21,7 @@ use std::sync::atomic::{
 };
 use std::time::{Duration, Instant};
 use tokio::sync::Mutex as AsyncMutex;
-use tokio::sync::{OnceCell, Semaphore};
+use tokio::sync::{OnceCell, Semaphore, watch};
 use tokio_util::sync::CancellationToken;
 use uuid::Uuid;
 
@@ -33,6 +45,8 @@ mod game_options;
 pub(crate) use self::game_options::*;
 
 mod proxy_settings;
+
+pub(crate) mod curseforge_settings;
 
 mod installer_settings;
 
@@ -89,16 +103,49 @@ pub mod server_join_log;
 // Global state
 // RwLock on state only has concurrent reads, except for config dir change which takes control of the State
 static LAUNCHER_STATE: OnceCell<Arc<State>> = OnceCell::const_new();
-const MAX_CONCURRENT_INSTALL_JOBS: usize = 1;
-const AUTO_DOWNLOAD_CONCURRENCY_INITIAL: usize = 64;
-const AUTO_DOWNLOAD_CONCURRENCY_MIN: usize = 16;
-const AUTO_DOWNLOAD_CONCURRENCY_MAX: usize = 128;
-const AUTO_DOWNLOAD_CONCURRENCY_STEP: usize = 8;
-/// Number of consecutive pressured sample windows required before the global
-/// download concurrency backs off. Host-level throttling reacts immediately.
-const AUTO_DOWNLOAD_PRESSURE_WINDOWS: usize = 2;
-const AUTO_DOWNLOAD_SAMPLE_INTERVAL: Duration = Duration::from_secs(3);
-const AUTO_DOWNLOAD_PROBE_COOLDOWN: Duration = Duration::from_secs(30);
+/// Pauses maintenance loops that only serve the launcher UI while the main
+/// window is destroyed in lightweight mode.
+pub(crate) struct MaintenanceGate {
+    paused: watch::Sender<bool>,
+}
+
+impl MaintenanceGate {
+    fn new() -> Self {
+        let (paused, _) = watch::channel(false);
+        Self { paused }
+    }
+
+    pub(crate) fn set_paused(&self, paused: bool) {
+        let _ = self.paused.send_replace(paused);
+    }
+
+    pub(crate) fn is_paused(&self) -> bool {
+        *self.paused.borrow()
+    }
+
+    /// Waits while the gate is paused. Returns whether this call observed a
+    /// pause, so callers can catch up on work skipped in the meantime.
+    pub(crate) async fn wait_until_resumed(&self) -> bool {
+        let mut receiver = self.paused.subscribe();
+        let mut was_paused = false;
+        while *receiver.borrow_and_update() {
+            was_paused = true;
+            if receiver.changed().await.is_err() {
+                break;
+            }
+        }
+        was_paused
+    }
+}
+
+/// The CurseForge API key set in the launcher, if any. Returns `None` while the
+/// launcher state is still initializing, which lets synchronous callers fall
+/// back to the key from the environment or the build without waiting.
+pub(crate) fn curseforge_api_key_override_if_ready() -> Option<String> {
+    State::get_if_initialized()
+        .and_then(|state| state.curseforge_api_key_override())
+}
+
 pub struct State {
     /// Information on the location of files used in the launcher
     pub directories: DirectoryInfo,
@@ -143,6 +190,11 @@ pub struct State {
     /// Process manager
     pub process_manager: ProcessManager,
 
+    /// Gate pausing maintenance loops that only serve the launcher UI.
+    pub(crate) maintenance_gate: MaintenanceGate,
+    /// Handles for the long-running maintenance loops, aborted on shutdown.
+    pub(crate) background_tasks: Mutex<Vec<tokio::task::JoinHandle<()>>>,
+
     // NOTE: we explicitly must NOT store the app identifier in the state object,
     // because creating the state object is fallible (e.g. database missing),
     // but we rely on the app identifier to create the state (data dir).
@@ -161,6 +213,12 @@ pub struct State {
 
     pub(crate) pool: SqlitePool,
     resource_service: OnceCell<Arc<crate::resources::ResourceService>>,
+
+    /// CurseForge API key set in the launcher. Takes precedence over the key
+    /// from the environment or the build, which stays the fallback until the
+    /// user sets one here.
+    curseforge_api_key: RwLock<Option<String>>,
+    curseforge_api_key_update: AsyncMutex<()>,
 
     // Cloning reqwest::Client retains its underlying connection pool.
     configured_http_client: RwLock<crate::util::fetch::DownloadClients>,
@@ -496,6 +554,13 @@ async fn shrink_semaphore(
 }
 
 impl AutoConcurrencyController {
+    fn discard_contaminated_sample(&mut self, current: usize) -> usize {
+        self.high_utilization_windows = 0;
+        self.probe
+            .take()
+            .map_or(current, |probe| probe.previous_target)
+    }
+
     fn next_target(
         &mut self,
         now: Instant,
@@ -511,7 +576,8 @@ impl AutoConcurrencyController {
         // A single throttled window is handled by the per-host limiter; the
         // global concurrency only backs off when pressure persists across
         // several samples, and then in small steps instead of a big cut.
-        let pressured = sample.throttles > 0 || error_rate >= 0.05;
+        let pressured = sample.throttles > 0
+            || error_rate >= AUTO_DOWNLOAD_PRESSURE_ERROR_RATE;
         if pressured {
             self.high_utilization_windows = 0;
             self.probe = None;
@@ -532,11 +598,13 @@ impl AutoConcurrencyController {
         if let Some(probe) = &mut self.probe {
             probe.windows += 1;
             probe.throughput = probe.throughput.saturating_add(sample.bytes);
-            if probe.windows >= 2 {
+            if probe.windows >= AUTO_DOWNLOAD_TRIAL_WINDOWS {
                 let average = probe.throughput / probe.windows as u64;
                 let productive = probe.baseline_throughput > 0
-                    && average.saturating_mul(100)
-                        >= probe.baseline_throughput.saturating_mul(105);
+                    && average.saturating_mul(AUTO_DOWNLOAD_PERCENT_BASE)
+                        >= probe
+                            .baseline_throughput
+                            .saturating_mul(AUTO_DOWNLOAD_MIN_GAIN_PERCENT);
                 let previous = probe.previous_target;
                 self.probe = None;
                 if !productive {
@@ -549,7 +617,7 @@ impl AutoConcurrencyController {
         }
 
         if self.cooldown_until.is_some_and(|until| until > now)
-            || error_rate >= 0.02
+            || error_rate >= AUTO_DOWNLOAD_EXPANSION_ERROR_RATE
             || sample.throttles > 0
         {
             self.high_utilization_windows = 0;
@@ -563,7 +631,9 @@ impl AutoConcurrencyController {
         } else {
             self.high_utilization_windows = 0;
         }
-        if self.high_utilization_windows < 2 || current >= ceiling {
+        if self.high_utilization_windows < AUTO_DOWNLOAD_UTILIZATION_WINDOWS
+            || current >= ceiling
+        {
             return current;
         }
 
@@ -601,48 +671,59 @@ impl State {
             );
         }
 
-        let config_sync_state = Arc::clone(state);
-        tokio::task::spawn(async move {
-            instances::config_sync::run(config_sync_state).await;
+        let config_sync_task = tokio::task::spawn({
+            let state = Arc::clone(state);
+            async move {
+                instances::config_sync::run(state).await;
+            }
         });
+        state.background_tasks.lock().push(config_sync_task);
 
-        let concurrency_state = Arc::clone(state);
-        tokio::spawn(async move {
-            concurrency_state.run_auto_concurrency_controller().await;
+        let concurrency_task = tokio::spawn({
+            let state = Arc::clone(state);
+            async move {
+                state.run_auto_concurrency_controller().await;
+            }
         });
+        state.background_tasks.lock().push(concurrency_task);
 
         crate::telemetry::start(Arc::clone(state));
 
-        tokio::task::spawn(async move {
+        let preload_task = tokio::spawn(async move {
             crate::google_ip::preload().await;
         });
+        state.background_tasks.lock().push(preload_task);
 
-        tokio::task::spawn(async move {
-            crate::util::fetch::cleanup_stale_partial_downloads(vec![
-                state.directories.metadata_dir(),
-                state.directories.caches_dir(),
-            ]);
+        let maintenance_task = tokio::spawn({
+            let state = Arc::clone(state);
+            async move {
+                crate::util::fetch::cleanup_stale_partial_downloads(vec![
+                    state.directories.metadata_dir(),
+                    state.directories.caches_dir(),
+                ]);
 
-            instances::watcher::watch_instances_init(
-                &state.file_watcher,
-                &state.directories,
-                &state.pool,
-            )
-            .await;
+                instances::watcher::watch_instances_init(
+                    &state.file_watcher,
+                    &state.directories,
+                    &state.pool,
+                )
+                .await;
 
-            let res = tokio::try_join!(
-                state.discord_rpc.clear_to_default(true),
-                instances::refresh_all_instances(),
-                Settings::migrate(&state.pool),
-                ModrinthCredentials::refresh_all(),
-            );
+                let res = tokio::try_join!(
+                    state.discord_rpc.clear_to_default(true),
+                    instances::refresh_all_instances(),
+                    Settings::migrate(&state.pool),
+                    ModrinthCredentials::refresh_all(),
+                );
 
-            if let Err(e) = res {
-                tracing::error!("Error running discord RPC: {e}");
+                if let Err(e) = res {
+                    tracing::error!("Error running discord RPC: {e}");
+                }
+
+                // Axolotl does not connect to Modrinth's private friends socket.
             }
-
-            // Axolotl does not connect to Modrinth's private friends socket.
         });
+        state.background_tasks.lock().push(maintenance_task);
 
         Ok(())
     }
@@ -723,6 +804,21 @@ impl State {
         crate::state::proxy_settings::get(&self.pool).await
     }
 
+    pub fn curseforge_api_key_override(&self) -> Option<String> {
+        self.curseforge_api_key.read().clone()
+    }
+
+    pub async fn update_curseforge_api_key(
+        &self,
+        api_key: Option<String>,
+    ) -> crate::Result<()> {
+        let _update = self.curseforge_api_key_update.lock().await;
+        let api_key = curseforge_settings::normalize(api_key);
+        curseforge_settings::set(&self.pool, api_key.as_deref()).await?;
+        *self.curseforge_api_key.write() = api_key;
+        Ok(())
+    }
+
     pub async fn update_proxy_config(
         &self,
         config: &crate::util::proxy::ProxyConfig,
@@ -735,7 +831,9 @@ impl State {
             settings.doh_enabled,
         )?;
         crate::state::proxy_settings::set(&self.pool, config).await?;
-        *self.configured_http_client.write() = client;
+        let mut current = self.configured_http_client.write();
+        current.endpoints.close();
+        *current = client;
         Ok(())
     }
 
@@ -759,17 +857,40 @@ impl State {
             settings.ignore_ssl_errors,
             settings.doh_enabled,
         )?;
-        *self.configured_http_client.write() = client;
+        let mut current = self.configured_http_client.write();
+        current.endpoints.close();
+        *current = client;
         Ok(())
     }
 
+    pub fn network_scope(&self) -> String {
+        self.download_clients().scope
+    }
+
     pub(crate) fn configured_http_client(&self) -> reqwest::Client {
-        self.configured_http_client.read().metadata.clone()
+        self.download_clients().metadata
     }
 
     pub(crate) fn download_clients(
         &self,
     ) -> crate::util::fetch::DownloadClients {
+        // Try the existing settings-update lock: a concurrent settings writer
+        // owns replacement, while active requests keep their original snapshot.
+        if let Ok(_update) = self.configured_http_client_update.try_lock() {
+            let current = self.configured_http_client.read().clone();
+            match current.refresh_system_proxy() {
+                Ok(Some(rebuilt)) => {
+                    *self.configured_http_client.write() = rebuilt;
+                    tracing::info!(
+                        "Rebuilt network clients after system proxy configuration changed"
+                    );
+                }
+                Ok(None) => {}
+                Err(_) => tracing::warn!(
+                    "Could not rebuild network clients after system proxy configuration changed"
+                ),
+            }
+        }
         self.configured_http_client.read().clone()
     }
 
@@ -850,13 +971,27 @@ impl State {
 
     async fn run_auto_concurrency_controller(self: Arc<Self>) {
         let mut interval = tokio::time::interval(AUTO_DOWNLOAD_SAMPLE_INTERVAL);
+        interval
+            .set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
         interval.tick().await;
         let mut controller = AutoConcurrencyController::default();
+        let mut trial_lease = None;
+        let mut trial_revision =
+            crate::util::download::endpoint_selection::tuning::TRIALS
+                .snapshot(Instant::now())
+                .0;
         loop {
             interval.tick().await;
+            if self.maintenance_gate.is_paused() && self.download_work_is_idle()
+            {
+                self.maintenance_gate.wait_until_resumed().await;
+            }
             crate::util::download::local_resources::sample_cpu().await;
+            crate::util::download::h2_pool::observe_adaptive_connections()
+                .await;
             if !self.auto_concurrent_downloads.load(Ordering::Acquire) {
                 controller = AutoConcurrencyController::default();
+                trial_lease = None;
                 self.download_sample_bytes.swap(0, Ordering::AcqRel);
                 self.download_sample_requests.swap(0, Ordering::AcqRel);
                 self.download_sample_errors.swap(0, Ordering::AcqRel);
@@ -882,12 +1017,42 @@ impl State {
                     AUTO_DOWNLOAD_CONCURRENCY_MIN,
                     AUTO_DOWNLOAD_CONCURRENCY_MAX,
                 );
-            let target = controller.next_target(
+            use crate::util::download::endpoint_selection::tuning::{
+                TRIALS, TrialKind,
+            };
+            let now = Instant::now();
+            let (revision, owner) = TRIALS.snapshot(now);
+            if trial_lease.as_ref().is_some_and(|lease: &crate::util::download::endpoint_selection::tuning::TrialLease| !lease.valid(now))
+                || owner.is_some_and(|owner| owner != TrialKind::Files)
+                || (trial_lease.is_none() && revision != trial_revision)
+            {
+                trial_lease = None;
+                let previous = controller.discard_contaminated_sample(current);
+                if previous != current { self.resize_download_concurrency(previous); }
+                trial_revision = TRIALS.snapshot(now).0;
+                continue;
+            }
+            let mut target = controller.next_target(
                 Instant::now(),
                 current,
                 ceiling,
                 sample,
             );
+            if target > current && trial_lease.is_none() {
+                trial_lease = TRIALS.acquire(
+                    TrialKind::Files,
+                    now,
+                    Duration::from_secs(15),
+                );
+                if trial_lease.is_none() {
+                    controller.probe = None;
+                    target = current;
+                }
+            }
+            if controller.probe.is_none() {
+                trial_lease = None;
+            }
+            trial_revision = TRIALS.snapshot(now).0;
             if target != current {
                 tracing::info!(
                     current,
@@ -904,8 +1069,13 @@ impl State {
         }
     }
 
+    fn download_work_is_idle(&self) -> bool {
+        self.download_active_connections.load(Ordering::Acquire) == 0
+            && self.install_job_cancellations.is_empty()
+    }
+
     fn resize_download_concurrency(self: &Arc<Self>, target: usize) {
-        let target = target.clamp(1, 256);
+        let target = target.clamp(1, DOWNLOAD_CONCURRENCY_HARD_MAX);
         self.download_concurrency_target
             .store(target, Ordering::Release);
 
@@ -962,6 +1132,39 @@ impl State {
         }
     }
 
+    /// Pauses maintenance loops that only feed the launcher UI and drops
+    /// caches that are stale while the main window is destroyed.
+    pub fn pause_background_services(&self) {
+        self.maintenance_gate.set_paused(true);
+        self.trim_idle_caches();
+    }
+
+    /// Resumes the maintenance loops paused for lightweight mode.
+    pub fn resume_background_services(&self) {
+        self.maintenance_gate.set_paused(false);
+    }
+
+    /// Aborts the maintenance loops and closes the Discord IPC connection;
+    /// intended for the app-exit path.
+    pub async fn shutdown(&self) {
+        for task in self.background_tasks.lock().drain(..) {
+            task.abort();
+        }
+        self.discord_rpc.disconnect().await;
+        self.trim_idle_caches();
+    }
+
+    fn trim_idle_caches(&self) {
+        let mut active_log_ids: Vec<String> = self
+            .process_manager
+            .get_all()
+            .into_iter()
+            .map(|metadata| metadata.instance_id)
+            .collect();
+        active_log_ids.extend(crate::api::servers::running_server_ids());
+        process::remove_inactive_log_buffers(&active_log_ids);
+    }
+
     pub fn get_if_initialized() -> Option<Arc<Self>> {
         LAUNCHER_STATE.get().map(Arc::clone)
     }
@@ -994,6 +1197,7 @@ impl State {
         let api_semaphore =
             FetchSemaphore(Semaphore::new(download_concurrency));
         let auto_prefers_mirror = settings.auto_prefers_mirror();
+        let curseforge_api_key = curseforge_settings::get(&pool).await?;
         let proxy_config = proxy_settings::get(&pool).await?;
         let configured_http_client =
             crate::util::fetch::DownloadClients::build(
@@ -1070,11 +1274,15 @@ impl State {
             install_job_operation_locks: DashMap::new(),
             discord_rpc,
             process_manager,
+            maintenance_gate: MaintenanceGate::new(),
+            background_tasks: Mutex::new(Vec::new()),
             friends_socket,
             restart_after_pending_update: AtomicBool::new(false),
             instance_locks: Arc::new(InstanceLockManager::default()),
             pool,
             resource_service: OnceCell::new(),
+            curseforge_api_key: RwLock::new(curseforge_api_key),
+            curseforge_api_key_update: AsyncMutex::new(()),
             configured_http_client: RwLock::new(configured_http_client),
             configured_http_client_update: AsyncMutex::new(()),
             file_watcher,
@@ -1148,6 +1356,7 @@ pub(crate) async fn test_state(
     pool: SqlitePool,
 ) -> crate::Result<Arc<State>> {
     let file_watcher = instances::watcher::init_watcher().await?;
+    let curseforge_api_key = curseforge_settings::get(&pool).await?;
     let proxy_config = proxy_settings::get(&pool).await?;
     let settings = Settings::get(&pool).await?;
     let configured_http_client = crate::util::fetch::DownloadClients::build(
@@ -1186,11 +1395,15 @@ pub(crate) async fn test_state(
         install_job_operation_locks: DashMap::new(),
         discord_rpc: DiscordGuard::init()?,
         process_manager: ProcessManager::new(),
+        maintenance_gate: MaintenanceGate::new(),
+        background_tasks: Mutex::new(Vec::new()),
         friends_socket: FriendsSocket::new(),
         restart_after_pending_update: AtomicBool::new(false),
         instance_locks: Arc::new(InstanceLockManager::default()),
         pool,
         resource_service: OnceCell::new(),
+        curseforge_api_key: RwLock::new(curseforge_api_key),
+        curseforge_api_key_update: AsyncMutex::new(()),
         configured_http_client: RwLock::new(configured_http_client),
         configured_http_client_update: AsyncMutex::new(()),
         file_watcher,
@@ -1198,6 +1411,55 @@ pub(crate) async fn test_state(
         synced_options_lock: Arc::new(AsyncMutex::new(())),
         game_locale_indexer: Default::default(),
     }))
+}
+
+#[cfg(test)]
+mod maintenance_gate_tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn gate_resolves_immediately_when_not_paused() {
+        let gate = MaintenanceGate::new();
+        assert!(!gate.wait_until_resumed().await);
+    }
+
+    #[tokio::test]
+    async fn gate_waits_while_paused_and_reports_the_pause() {
+        let gate = MaintenanceGate::new();
+        gate.set_paused(true);
+        assert!(gate.is_paused());
+
+        assert!(
+            tokio::time::timeout(
+                Duration::from_millis(50),
+                gate.wait_until_resumed()
+            )
+            .await
+            .is_err(),
+            "the waiter must stay pending while the gate is paused"
+        );
+
+        let (was_paused, ()) = tokio::join!(gate.wait_until_resumed(), async {
+            tokio::time::sleep(Duration::from_millis(50)).await;
+            gate.set_paused(false);
+        });
+        assert!(was_paused);
+        assert!(!gate.is_paused());
+    }
+
+    #[tokio::test]
+    async fn repeated_pauses_resolve_with_a_single_resume() {
+        let gate = MaintenanceGate::new();
+        gate.set_paused(true);
+        gate.set_paused(true);
+
+        let (was_paused, ()) = tokio::join!(gate.wait_until_resumed(), async {
+            tokio::time::sleep(Duration::from_millis(50)).await;
+            gate.set_paused(false);
+        });
+        assert!(was_paused);
+        assert!(!gate.is_paused());
+    }
 }
 
 #[cfg(test)]
@@ -1212,6 +1474,17 @@ mod auto_concurrency_tests {
             errors: 0,
             throttles: 0,
         }
+    }
+
+    #[test]
+    fn contaminated_trial_restores_previous_target_and_requires_new_baseline() {
+        let now = Instant::now();
+        let mut controller = AutoConcurrencyController::default();
+        controller.next_target(now, 64, 128, healthy(64, 100));
+        assert_eq!(controller.next_target(now, 64, 128, healthy(64, 100)), 72);
+        assert_eq!(controller.discard_contaminated_sample(72), 64);
+        assert!(controller.probe.is_none());
+        assert_eq!(controller.next_target(now, 64, 128, healthy(64, 100)), 64);
     }
 
     #[test]

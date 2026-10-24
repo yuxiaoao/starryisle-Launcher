@@ -5,7 +5,9 @@
 //! applied uniformly to every download.
 
 pub(crate) mod authority_scheduler;
+pub(crate) mod constants;
 pub(crate) mod diagnostics;
+pub(crate) mod endpoint_selection;
 pub mod h2_download;
 pub mod h2_pool;
 pub(crate) mod h2_range;
@@ -28,6 +30,7 @@ pub(crate) mod range_output;
 pub(crate) mod retired_sources;
 pub(crate) mod route_health;
 pub(crate) mod route_policy;
+pub(crate) mod stream_output;
 pub(crate) mod verified_file;
 pub(crate) fn task_concurrency_limit(state: &crate::State) -> Option<usize> {
     Some(state.download_concurrency())

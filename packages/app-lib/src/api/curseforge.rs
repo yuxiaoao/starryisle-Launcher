@@ -17,7 +17,18 @@ use crate::state::{
     DependencyResolutionTarget, DependencySelectionReason, DownloadSourceMode,
     EditInstance, InstanceInstallStage, InstanceLink, ModLoader,
     ModrinthProjectId, ModrinthVersionId, ProjectType, ReleaseChannel,
-    Settings,
+    Settings, curseforge_api_key_override_if_ready, curseforge_settings,
+};
+use crate::util::download::constants::CURSEFORGE_OVERRIDE_EXTRACTION_CONCURRENCY as OVERRIDE_EXTRACTION_CONCURRENCY;
+use crate::util::download::constants::MODPACK_DATABASE_BATCH_SIZE;
+use crate::util::download::constants::MODPACK_DATABASE_FLUSH_INTERVAL;
+use crate::util::download::constants::MODPACK_DATABASE_QUEUE_CAPACITY;
+use crate::util::download::constants::MODPACK_FILE_INSTALL_ATTEMPTS;
+use crate::util::download::constants::MODPACK_METADATA_CONCURRENCY;
+use crate::util::download::constants::MODPACK_VERIFICATION_CONCURRENCY;
+use crate::util::download::constants::MODPACK_VERIFICATION_QUEUE_CAPACITY;
+use crate::util::download::constants::{
+    CURSEFORGE_H2_RANGE_THRESHOLD, CURSEFORGE_REQUESTED_H2_RANGES,
 };
 use crate::util::fetch::{
     ContentValidation, DownloadRequest, DownloadRouteSource, FetchProgressFn,
@@ -61,13 +72,7 @@ use curseforge_mapping::{
 const API_BASE_URL: &str = "https://api.curseforge.com";
 const MINECRAFT_GAME_ID: u32 = 432;
 const MAX_PAGE_SIZE: u32 = 50;
-const MODPACK_FILE_INSTALL_ATTEMPTS: usize = 3;
-const MODPACK_METADATA_CONCURRENCY: usize = 4;
-const MODPACK_VERIFICATION_CONCURRENCY: usize = 4;
-const MODPACK_DATABASE_BATCH_SIZE: usize = 25;
-const MODPACK_DATABASE_FLUSH_INTERVAL: Duration = Duration::from_millis(500);
-const MODPACK_VERIFICATION_QUEUE_CAPACITY: usize = 128;
-const MODPACK_DATABASE_QUEUE_CAPACITY: usize = 128;
+
 const DEPENDENCY_RELATION_EMBEDDED: u32 = 1;
 const DEPENDENCY_RELATION_OPTIONAL: u32 = 2;
 pub(crate) const DEPENDENCY_RELATION_REQUIRED: u32 = 3;
@@ -79,9 +84,11 @@ pub(crate) const QUILTED_FABRIC_API_CURSEFORGE_PROJECT_ID: u32 = 634179;
 const CURSEFORGE_LOADER_QUILT: u32 = 5;
 const MAX_DEPENDENCY_DEPTH: usize = 32;
 const DEPENDENCY_PLAN_TTL: Duration = Duration::from_secs(10 * 60);
-const OVERRIDE_EXTRACTION_CONCURRENCY: usize = 4;
 
 static UNAUTHORIZED: AtomicBool = AtomicBool::new(false);
+/// Bumped whenever the effective key is replaced. A response that arrives after
+/// that can only describe the previous key, so it must not change the flag.
+static API_KEY_GENERATION: AtomicU64 = AtomicU64::new(0);
 static CATEGORY_CACHE: LazyLock<RwLock<Option<Vec<CurseForgeCategory>>>> =
     LazyLock::new(|| RwLock::new(None));
 static MANUAL_IMPORT_SCAN_LOCK: LazyLock<tokio::sync::Mutex<()>> =
@@ -165,16 +172,6 @@ static CLIENT: LazyLock<reqwest::Client> = LazyLock::new(|| {
         .expect("CurseForge client configuration should be valid")
 });
 
-static PROXY_CLIENT: LazyLock<reqwest::Client> = LazyLock::new(|| {
-    reqwest::Client::builder()
-        .connect_timeout(Duration::from_secs(15))
-        .read_timeout(Duration::from_secs(30))
-        .redirect(reqwest::redirect::Policy::none())
-        .user_agent(crate::launcher_user_agent())
-        .build()
-        .expect("CurseForge proxy client configuration should be valid")
-});
-
 #[cfg(debug_assertions)]
 static LOCAL_CLIENT: LazyLock<reqwest::Client> = LazyLock::new(|| {
     reqwest::Client::builder()
@@ -195,10 +192,23 @@ pub enum CurseForgeCapabilityStatus {
     Unauthorized,
 }
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum CurseForgeApiKeySource {
+    /// Set by the user in the launcher.
+    Override,
+    /// Injected when the launcher was built, or exported as
+    /// `AXOLOTL_CURSEFORGE_API_KEY` before starting it.
+    Launcher,
+    /// No key is available at all.
+    Missing,
+}
+
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct CurseForgeCapability {
     pub status: CurseForgeCapabilityStatus,
     pub configured: bool,
+    pub key_source: CurseForgeApiKeySource,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -574,7 +584,9 @@ pub(crate) async fn stage_curseforge_upgrade_file(
         .join("curseforge")
         .join(project_id.to_string())
         .join(file_id.to_string())
-        .join(&file.file_name);
+        .join(crate::util::io::sanitize_download_file_name(
+            &file.file_name,
+        )?);
     let tracking = path.display().to_string();
     download_curseforge_path(
         &url,
@@ -915,7 +927,9 @@ pub(crate) async fn get_modpack_expected_members_with_reporter(
             .join("modpacks")
             .join(project_id.to_string())
             .join(file_id.to_string())
-            .join(&pack_file.file_name)
+            .join(crate::util::io::sanitize_download_file_name(
+                &pack_file.file_name,
+            )?)
             .display()
             .to_string();
         reporter
@@ -1061,7 +1075,8 @@ pub(crate) async fn get_modpack_expected_members_with_reporter(
             project_type,
             expected_relative_path: format!(
                 "{}/{}",
-                target_folder, file.file_name
+                target_folder,
+                crate::util::io::sanitize_download_file_name(&file.file_name)?
             ),
             required: member.required,
             expected_sha1: file
@@ -1111,7 +1126,8 @@ pub struct CurseForgeFingerprintResult {
 }
 
 pub fn capability() -> CurseForgeCapability {
-    let configured = api_key().is_some();
+    let (key, key_source) = api_key_with_source();
+    let configured = key.is_some();
     let status = if !configured {
         CurseForgeCapabilityStatus::MissingKey
     } else if UNAUTHORIZED.load(Ordering::Relaxed) {
@@ -1120,10 +1136,49 @@ pub fn capability() -> CurseForgeCapability {
         CurseForgeCapabilityStatus::Ready
     };
 
-    CurseForgeCapability { status, configured }
+    CurseForgeCapability {
+        status,
+        configured,
+        key_source,
+    }
+}
+
+/// Stores the API key the user entered in the launcher. `None` removes the
+/// override so the key the launcher was started or built with applies again,
+/// when there is one.
+pub async fn set_api_key_override(
+    api_key: Option<String>,
+) -> crate::Result<CurseForgeCapability> {
+    let state = State::get().await?;
+    state.update_curseforge_api_key(api_key).await?;
+    // Invalidate responses still in flight for the previous key before clearing
+    // the flag, so they cannot report an outdated status for the new one.
+    API_KEY_GENERATION.fetch_add(1, Ordering::Relaxed);
+    UNAUTHORIZED.store(false, Ordering::Relaxed);
+    Ok(capability())
+}
+
+fn api_key_generation() -> u64 {
+    API_KEY_GENERATION.load(Ordering::Relaxed)
+}
+
+/// Applies the authorization outcome of a response only while it still belongs
+/// to the current key, so a late response cannot speak for a replaced one.
+fn record_key_response(generation: u64, unauthorized: bool) {
+    if generation != api_key_generation() {
+        return;
+    }
+    UNAUTHORIZED.store(unauthorized, Ordering::Relaxed);
+}
+
+/// The API key the user entered in the launcher, if any, for redisplaying it.
+pub async fn api_key_override() -> crate::Result<Option<String>> {
+    let state = State::get().await?;
+    Ok(state.curseforge_api_key_override())
 }
 
 pub async fn validate_credentials() -> crate::Result<CurseForgeCapability> {
+    let generation = api_key_generation();
     let _: CurseForgeResponse<Vec<CurseForgeProject>> = request_json(
         Method::GET,
         "/v1/mods/search",
@@ -1136,7 +1191,7 @@ pub async fn validate_credentials() -> crate::Result<CurseForgeCapability> {
         MirrorPolicy::OfficialOnly,
     )
     .await?;
-    UNAUTHORIZED.store(false, Ordering::Relaxed);
+    record_key_response(generation, false);
     Ok(capability())
 }
 
@@ -1459,7 +1514,7 @@ pub async fn get_download_url(
 
 use curseforge_download::resolve_download_url as resolve_curseforge_download_url;
 
-fn derived_curseforge_download_url(
+pub(crate) fn derived_curseforge_download_url(
     file_id: u32,
     file_name: &str,
 ) -> crate::Result<String> {
@@ -1625,7 +1680,9 @@ async fn install_world_file(
     };
 
     let staging_directory = tempfile::tempdir()?;
-    let staging_path = staging_directory.path().join(&file.file_name);
+    let staging_path = staging_directory.path().join(
+        crate::util::io::sanitize_download_file_name(&file.file_name)?,
+    );
     let tracking_path = format!("worlds/{}/{}", project.id, file.id);
     download_curseforge_path(
         &download_url,
@@ -3483,7 +3540,9 @@ async fn download_modpack_archive_with_reporter(
             .join("modpacks")
             .join(project_id.to_string())
             .join(file_id.to_string())
-            .join(&pack_file.file_name)
+            .join(crate::util::io::sanitize_download_file_name(
+                &pack_file.file_name,
+            )?)
             .display()
             .to_string();
         reporter
@@ -3920,12 +3979,13 @@ pub async fn install_modpack_with_reporter(
                         manifest_file.file_id
                     ))
                 })?;
-                let original_relative_path = format!("{folder}/{}", meta.file_name);
+                let file_name = crate::util::io::sanitize_download_file_name(&meta.file_name)?;
+                let original_relative_path = format!("{folder}/{file_name}");
                 let localized_candidate = (project_type != "mod" && project_type != "world")
                     .then(|| {
                         chinese_file_title_for_curseforge_slug(&project.slug)
                             .and_then(|title| {
-                                localized_content_file_name(&meta.file_name, &title)
+                                localized_content_file_name(&file_name, &title)
                             })
                             .map(|file_name| format!("{folder}/{file_name}"))
                     })
@@ -4491,9 +4551,14 @@ async fn retry_modpack_file_install(
         match result {
             Ok(item_result) if !item_result.installed.is_empty() => {
                 let installed_path = &item_result.installed[0].relative_path;
+                let expected_name =
+                    crate::util::io::sanitize_download_file_name(
+                        expected_file_name,
+                    )
+                    .ok();
                 if project_type == ProjectType::Mod.get_name()
                     && Path::new(installed_path).file_name()
-                        != Some(std::ffi::OsStr::new(expected_file_name))
+                        != expected_name.as_deref().map(std::ffi::OsStr::new)
                 {
                     failure_reason = format!(
                         "CurseForge install context mismatch: project_id={} file_id={} expected_file={} installed_path={}",
@@ -4947,12 +5012,13 @@ pub(crate) async fn install_local_manifest_files(
                         manifest_file.file_id
                     ))
                 })?;
-                let original_relative_path = format!("{folder}/{}", meta.file_name);
+                let file_name = crate::util::io::sanitize_download_file_name(&meta.file_name)?;
+                let original_relative_path = format!("{folder}/{file_name}");
                 let localized_candidate = (project_type != "mod" && project_type != "world")
                     .then(|| {
                         chinese_file_title_for_curseforge_slug(&project.slug)
                             .and_then(|title| {
-                                localized_content_file_name(&meta.file_name, &title)
+                                localized_content_file_name(&file_name, &title)
                             })
                             .map(|file_name| format!("{folder}/{file_name}"))
                     })
@@ -6212,7 +6278,9 @@ pub(crate) async fn prepare_curseforge_content_change_action(
             .join("curseforge")
             .join(item.project_id.to_string())
             .join(item.file_id.to_string())
-            .join(&item.file_name);
+            .join(crate::util::io::sanitize_download_file_name(
+                &item.file_name,
+            )?);
         let id = format!("curseforge:{}:{}", item.project_id, item.file_id);
         action.files.push(crate::install::ContentChangeFile {
 			id: id.clone(),
@@ -7618,8 +7686,9 @@ async fn install_manual_download(
     if download.project_type == "world" {
         validate_world_archive_name(&download.file_name)?;
         let verified_directory = tempfile::tempdir()?;
-        let verified_source =
-            verified_directory.path().join(&download.file_name);
+        let verified_source = verified_directory.path().join(
+            crate::util::io::sanitize_download_file_name(&download.file_name)?,
+        );
         crate::state::materialize_verified_project_download_copy(
             source_path,
             &verified_source,
@@ -7640,19 +7709,19 @@ async fn install_manual_download(
     }
     let project_type = managed_project_type(&download.project_type)?;
     let target_folder = manual_download_target_folder(download, project_type)?;
+    let file_name =
+        crate::util::io::sanitize_download_file_name(&download.file_name)?;
     let state = State::get().await?;
     let localized_candidate = if project_type == ProjectType::Mod {
         None
     } else {
         chinese_file_title_for_curseforge_slug(&download.project_slug)
-            .and_then(|title| {
-                localized_content_file_name(&download.file_name, &title)
-            })
+            .and_then(|title| localized_content_file_name(&file_name, &title))
             .map(|file_name| format!("{target_folder}/{file_name}"))
     };
     let relative_path = crate::state::resolve_content_install_relative_path(
         instance_id,
-        format!("{target_folder}/{}", download.file_name),
+        format!("{target_folder}/{file_name}"),
         localized_candidate,
         &state.pool,
     )
@@ -8815,8 +8884,8 @@ fn curseforge_integrity(
 }
 
 const fn curseforge_modpack_h2_range_concurrency(size: u64) -> Option<usize> {
-    if size >= 64 * 1024 * 1024 {
-        Some(4)
+    if size >= CURSEFORGE_H2_RANGE_THRESHOLD {
+        Some(CURSEFORGE_REQUESTED_H2_RANGES)
     } else {
         None
     }
@@ -8912,7 +8981,9 @@ async fn download_curseforge_archive(
         .join("modpacks")
         .join(project_id.to_string())
         .join(file_id.to_string())
-        .join(&file.file_name);
+        .join(crate::util::io::sanitize_download_file_name(
+            &file.file_name,
+        )?);
     let tracking_item_id = path.display().to_string();
     download_curseforge_path(
         url,
@@ -9465,15 +9536,14 @@ async fn download_installed_file(
         .into());
     }
     let state = State::get().await?;
-    validate_file_name(&file.file_name)?;
+    let file_name =
+        crate::util::io::sanitize_download_file_name(&file.file_name)?;
     let folder = content_target_folder(project_type, world_name)?;
     let localized_candidate = if project_type == ProjectType::Mod {
         None
     } else {
         chinese_file_title_for_curseforge_slug(project_slug)
-            .and_then(|title| {
-                localized_content_file_name(&file.file_name, &title)
-            })
+            .and_then(|title| localized_content_file_name(&file_name, &title))
             .map(|file_name| format!("{folder}/{file_name}"))
     };
     let relative_path = match pre_resolved_relative_path {
@@ -9481,7 +9551,7 @@ async fn download_installed_file(
         None => {
             crate::state::resolve_content_install_relative_path(
                 instance_id,
-                format!("{folder}/{}", file.file_name),
+                format!("{folder}/{file_name}"),
                 localized_candidate,
                 &state.pool,
             )
@@ -9494,7 +9564,11 @@ async fn download_installed_file(
     if project_type == ProjectType::Mod
         && let Some(expected_file_name) = expected_file_name
         && Path::new(&relative_path).file_name()
-            != Some(std::ffi::OsStr::new(expected_file_name))
+            != Some(std::ffi::OsStr::new(
+                &crate::util::io::sanitize_download_file_name(
+                    expected_file_name,
+                )?,
+            ))
     {
         return Err(ErrorKind::OtherError(format!(
             "CurseForge install context mismatch before download: expected_file={expected_file_name} installed_path={relative_path}",
@@ -9642,7 +9716,8 @@ async fn fingerprint_and_sha1_file(
     } else {
         acquire.await?
     };
-    const BUFFER_SIZE: usize = 256 * 1024;
+
+    use crate::util::download::constants::CURSEFORGE_VERIFY_BUFFER_SIZE as BUFFER_SIZE;
     let mut file = tokio::fs::File::open(path).await?;
     let mut buffer = vec![0_u8; BUFFER_SIZE];
     let mut sha1 = sha1_smol::Sha1::new();
@@ -10000,11 +10075,33 @@ impl From<CurseForgeProject> for UnifiedSearchHit {
 }
 
 pub(crate) fn api_key() -> Option<String> {
-    std::env::var("AXOLOTL_CURSEFORGE_API_KEY")
+    api_key_with_source().0
+}
+
+/// A key set in the launcher wins over `AXOLOTL_CURSEFORGE_API_KEY`, which in
+/// turn wins over the one this build was given. Either of the launcher sources
+/// can be absent: builds without `CURSEFORGE_API_KEY` stay valid, they just
+/// cannot reach the official API until a key is provided.
+fn api_key_with_source() -> (Option<String>, CurseForgeApiKeySource) {
+    let launcher_key = std::env::var("AXOLOTL_CURSEFORGE_API_KEY")
         .ok()
-        .or_else(|| option_env!("CURSEFORGE_API_KEY").map(str::to_string))
-        .map(|key| key.trim().to_string())
-        .filter(|key| !key.is_empty())
+        .or_else(|| option_env!("CURSEFORGE_API_KEY").map(str::to_string));
+
+    resolve_api_key(curseforge_api_key_override_if_ready(), launcher_key)
+}
+
+fn resolve_api_key(
+    override_key: Option<String>,
+    launcher_key: Option<String>,
+) -> (Option<String>, CurseForgeApiKeySource) {
+    if let Some(key) = curseforge_settings::normalize(override_key) {
+        return (Some(key), CurseForgeApiKeySource::Override);
+    }
+
+    match curseforge_settings::normalize(launcher_key) {
+        Some(key) => (Some(key), CurseForgeApiKeySource::Launcher),
+        None => (None, CurseForgeApiKeySource::Missing),
+    }
 }
 
 fn api_base_url() -> String {
@@ -10019,18 +10116,19 @@ fn api_base_url() -> String {
 }
 
 fn request_client(
+    state: &State,
     _url: &str,
     use_system_proxy: bool,
-) -> &'static reqwest::Client {
+) -> reqwest::Client {
     #[cfg(debug_assertions)]
     if _url.starts_with("http://127.0.0.1:") {
-        return &LOCAL_CLIENT;
+        return LOCAL_CLIENT.clone();
     }
 
     if use_system_proxy {
-        &PROXY_CLIENT
+        state.download_clients().system
     } else {
-        &CLIENT
+        CLIENT.clone()
     }
 }
 
@@ -10109,6 +10207,7 @@ async fn request_json<T: DeserializeOwned>(
     mirror_policy: MirrorPolicy,
 ) -> crate::Result<T> {
     let key = api_key();
+    let key_generation = api_key_generation();
     let state = State::get().await?;
     let source_mode = if method != Method::GET
         || mirror_policy == MirrorPolicy::OfficialOnly
@@ -10131,10 +10230,11 @@ async fn request_json<T: DeserializeOwned>(
             "Attempting CurseForge API request"
         );
         let permit = state.api_semaphore.0.acquire().await?;
-        let mut request = request_client(&route.url, route.use_system_proxy)
-            .request(method.clone(), &route.url)
-            .header("accept", "application/json")
-            .query(&query);
+        let mut request =
+            request_client(&state, &route.url, route.use_system_proxy)
+                .request(method.clone(), &route.url)
+                .header("accept", "application/json")
+                .query(&query);
         if route.use_api_key {
             let Some(key) = key.as_ref() else {
                 drop(permit);
@@ -10194,7 +10294,7 @@ async fn request_json<T: DeserializeOwned>(
         if status.is_success() {
             match serde_json::from_slice(&bytes) {
                 Ok(value) => {
-                    UNAUTHORIZED.store(false, Ordering::Relaxed);
+                    record_key_response(key_generation, false);
                     return Ok(value);
                 }
                 Err(error)
@@ -10215,7 +10315,7 @@ async fn request_json<T: DeserializeOwned>(
         }
 
         if status == StatusCode::UNAUTHORIZED {
-            UNAUTHORIZED.store(true, Ordering::Relaxed);
+            record_key_response(key_generation, true);
         }
 
         let message = response_error_message(status, &bytes);
@@ -13698,5 +13798,57 @@ mod tests {
         assert!(validate_world_archive_name("WORLD.ZIP").is_ok());
         assert!(validate_world_archive_name("world.rar").is_err());
         assert!(validate_world_archive_name("../world.zip").is_err());
+    }
+
+    #[test]
+    fn a_key_set_in_the_launcher_wins_over_the_launcher_key() {
+        assert_eq!(
+            resolve_api_key(Some("override".into()), Some("launcher".into())),
+            (
+                Some("override".to_string()),
+                CurseForgeApiKeySource::Override
+            ),
+        );
+    }
+
+    #[test]
+    fn a_blank_override_falls_back_to_the_launcher_key() {
+        assert_eq!(
+            resolve_api_key(Some("   ".into()), Some("launcher".into())),
+            (
+                Some("launcher".to_string()),
+                CurseForgeApiKeySource::Launcher
+            ),
+        );
+        assert_eq!(
+            resolve_api_key(None, Some("launcher".into())),
+            (
+                Some("launcher".to_string()),
+                CurseForgeApiKeySource::Launcher
+            ),
+        );
+    }
+
+    #[test]
+    fn keys_are_trimmed_before_they_are_used() {
+        assert_eq!(
+            resolve_api_key(Some(" override\n".into()), None),
+            (
+                Some("override".to_string()),
+                CurseForgeApiKeySource::Override
+            ),
+        );
+    }
+
+    #[test]
+    fn a_build_without_any_key_reports_no_key() {
+        assert_eq!(
+            resolve_api_key(None, None),
+            (None, CurseForgeApiKeySource::Missing),
+        );
+        assert_eq!(
+            resolve_api_key(Some(" ".into()), Some("\t".into())),
+            (None, CurseForgeApiKeySource::Missing),
+        );
     }
 }

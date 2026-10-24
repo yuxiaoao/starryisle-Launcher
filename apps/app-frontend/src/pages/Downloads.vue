@@ -77,6 +77,8 @@
         </Button>
         <div
             v-else-if="visibleJobs.length || (tab === 'active' && legacyDownloads.length)"
+            role="tabpanel"
+            :aria-labelledby="'nav-tab-' + tab"
             class="flex flex-col gap-3"
         >
             <Card
@@ -405,8 +407,8 @@
                         class="max-h-80 overflow-y-auto"
                     >
                         <template #cell-name="{ row }">
-                            <div class="min-w-0 py-0.5">
-                                <div class="flex min-w-0 items-center gap-2">
+                            <div class="flex min-w-0 items-center gap-2 py-0.5">
+                                <div class="flex min-w-0 flex-1 items-center gap-2">
                                     <span
                                         class="min-w-0 flex-1 truncate font-medium text-[var(--color-text-primary)]"
                                         >{{ row.name }}</span
@@ -424,23 +426,21 @@
                                         @click.stop="showFileDetails(job, row)"
                                         ><InfoIcon
                                     /></Button>
-                                    <div
+                                    <span
                                         v-if="row.source"
                                         class="max-w-24 shrink-0 truncate text-xs text-[var(--color-text-tertiary)]"
                                     >
                                         {{ downloadSourceLabel(row.source) }}
-                                    </div>
+                                    </span>
                                 </div>
-                                <div v-if="row.manual_url" class="flex">
-                                    <Button
-                                        type="quiet"
-                                        size="2xs"
-                                        @click.stop="openManualDownload(row)"
-                                        ><ExternalIcon />{{
-                                            formatMessage(messages.manualDownload)
-                                        }}
-                                    </Button>
-                                </div>
+                                <Button
+                                    v-if="row.manual_url"
+                                    type="quiet"
+                                    size="2xs"
+                                    class="shrink-0"
+                                    @click.stop="openManualDownload(row)"
+                                    ><ExternalIcon />{{ formatMessage(messages.manualDownload) }}
+                                </Button>
                             </div>
                         </template>
                         <template #cell-status="{ row }">
@@ -466,14 +466,12 @@
             </Card>
         </div>
 
-        <Card v-else class="flex flex-1">
+        <Card v-else role="tabpanel" :aria-labelledby="'nav-tab-' + tab" class="flex flex-1">
             <EmptyState
                 class="my-auto"
-                :type="query ? 'no-search-result' : 'no-tasks'"
-                :heading="formatMessage(query ? messages.noResultsTitle : messages.emptyTitle)"
-                :description="
-                    formatMessage(query ? messages.noResultsDescription : messages.emptyDescription)
-                "
+                :type="emptyState.type"
+                :heading="formatMessage(emptyState.title)"
+                :description="formatMessage(emptyState.description)"
             />
         </Card>
     </div>
@@ -578,6 +576,7 @@ import { listPendingCurseForgeManualDownloads } from '@/helpers/curseforge'
 import type { CurseForgeManualDownloadItem } from '@/helpers/curseforge-manual'
 import { resolveDownloadUrl } from '@/helpers/download-url'
 import { retiredDownloadMessage } from '@/helpers/download-url-messages'
+import { selectDownloadEmptyState } from '@/helpers/downloads-empty-state'
 import {
     download_job_support_details,
     type InstallJobSnapshot,
@@ -769,6 +768,15 @@ const messages = defineMessages({
     emptyDescription: {
         id: 'app.downloads.empty-description',
         defaultMessage: 'New downloads and installation progress will appear here.',
+    },
+    historyEmptyTitle: {
+        id: 'app.downloads.history-empty-title',
+        defaultMessage: 'No download history',
+    },
+    historyEmptyDescription: {
+        id: 'app.downloads.history-empty-description',
+        defaultMessage:
+            'Records of completed, failed, interrupted, and canceled downloads will appear here.',
     },
     noResultsTitle: {
         id: 'app.downloads.no-results-title',
@@ -983,6 +991,36 @@ const visibleJobs = computed(() => {
             job.job_id.includes(normalized)
         )
     })
+})
+const emptyState = computed(() => {
+    const kind = selectDownloadEmptyState({
+        query: query.value,
+        tab: tab.value,
+        providerFiltered: provider.value !== 'all',
+        historyStatusFiltered: historyStatus.value !== 'all',
+        sourceJobCount: sourceJobs.value.length,
+    })
+    // The wording differs from the illustration: a narrowed list is a search
+    // result, while a genuinely empty tab keeps the "no tasks" illustration.
+    if (kind === 'no-search-result') {
+        return {
+            type: 'no-search-result' as const,
+            title: messages.noResultsTitle,
+            description: messages.noResultsDescription,
+        }
+    }
+    if (kind === 'no-download-history') {
+        return {
+            type: 'no-tasks' as const,
+            title: messages.historyEmptyTitle,
+            description: messages.historyEmptyDescription,
+        }
+    }
+    return {
+        type: 'no-tasks' as const,
+        title: messages.emptyTitle,
+        description: messages.emptyDescription,
+    }
 })
 function jobTitle(job: InstallJobSnapshot) {
     return (

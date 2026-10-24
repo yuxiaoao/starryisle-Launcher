@@ -6,6 +6,11 @@ use super::model::{
     InstanceUpgradeResult, MissingModpackContentState,
 };
 use super::store;
+use crate::util::download::constants::CONTENT_CHECKPOINT_FILE_COUNT;
+use crate::util::download::constants::CONTENT_CHECKPOINT_INTERVAL;
+use crate::util::download::constants::LIVE_PROGRESS_EMIT_INTERVAL;
+use crate::util::download::constants::LIVE_PROGRESS_MAX_WAIT;
+use crate::util::download::constants::LIVE_PROGRESS_MIN_BYTES;
 use chrono::Utc;
 use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, LazyLock, Weak};
@@ -15,11 +20,6 @@ use tokio_util::sync::CancellationToken;
 use uuid::Uuid;
 
 // Keep per-file progress responsive without emitting every network chunk.
-const LIVE_PROGRESS_EMIT_INTERVAL: Duration = Duration::from_millis(100);
-const LIVE_PROGRESS_MAX_WAIT: Duration = Duration::from_secs(1);
-const LIVE_PROGRESS_MIN_BYTES: u64 = 64 * 1024;
-const CONTENT_CHECKPOINT_FILE_COUNT: usize = 25;
-const CONTENT_CHECKPOINT_INTERVAL: Duration = Duration::from_secs(2);
 
 static REPORTER_STATES: LazyLock<
     dashmap::DashMap<Uuid, Weak<Mutex<InstallProgressReporterState>>>,
@@ -717,13 +717,34 @@ impl InstallProgressReporter {
         active.status = DownloadItemStatus::Downloading;
 
         let threshold = LIVE_PROGRESS_MIN_BYTES.max(bytes_total / 200);
-        if since_last_emit < LIVE_PROGRESS_EMIT_INTERVAL
+        let should_emit = !(since_last_emit < LIVE_PROGRESS_EMIT_INTERVAL
             || (bytes.saturating_sub(active.last_reported_bytes) < threshold
-                && since_last_emit < LIVE_PROGRESS_MAX_WAIT)
+                && since_last_emit < LIVE_PROGRESS_MAX_WAIT));
+        if should_emit {
+            active.last_reported_bytes = bytes;
+        }
+        // Native H2 reports through install tracking rather than the caller's
+        // legacy progress callback. Keep archive snapshots current as well.
+        if !self.parallel_output
+            && self.phase_updates_enabled
+            && state.job.progress.phase == InstallPhaseId::DownloadingPackFile
         {
+            let previous = state
+                .job
+                .progress
+                .progress
+                .as_ref()
+                .filter(|progress| progress.total == bytes_total)
+                .map_or(0, |progress| progress.current);
+            state.job.progress.progress = Some(InstallProgress {
+                current: bytes.max(previous).min(bytes_total),
+                total: bytes_total,
+                secondary: None,
+            });
+        }
+        if !should_emit {
             return Ok(());
         }
-        active.last_reported_bytes = bytes;
         state.last_live_emit_at.insert(path.clone(), Instant::now());
         let (speed_bytes_per_second, eta_seconds) =
             live_download_metrics(&state.job);
@@ -1299,7 +1320,7 @@ mod tests {
         first.fail_pipeline(
             &crate::ErrorKind::OtherError("worker failed".into()).into(),
         );
-        let retry = parent.clone().with_pipeline_cancellation();
+        let retry = parent.with_pipeline_cancellation();
         assert!(!retry.cancellation_token().is_cancelled());
         assert!(retry.pipeline_failure().is_none());
         token.cancel();
@@ -1655,6 +1676,75 @@ mod tests {
         );
         app_state.install_job_cancellations.remove(&job_id);
         InstallProgressReporter::reset_job(job_id);
+    }
+
+    #[cfg(not(feature = "tauri"))]
+    #[tokio::test]
+    async fn archive_tracking_updates_phase_bytes_even_when_live_events_are_throttled()
+     {
+        for (phase, parallel, phase_updates, expected) in [
+            (InstallPhaseId::DownloadingPackFile, false, true, 25),
+            (InstallPhaseId::DownloadingPackFile, true, true, 0),
+            (InstallPhaseId::DownloadingPackFile, false, false, 0),
+            (InstallPhaseId::DownloadingContent, false, true, 0),
+            (InstallPhaseId::ReadingPackManifest, false, true, 0),
+        ] {
+            let mut reporter = pipeline_reporter();
+            reporter.parallel_output = parallel;
+            reporter.phase_updates_enabled = phase_updates;
+            {
+                let mut state = reporter.state.lock().await;
+                state.initialized_from_store = true;
+                state.job.progress.phase = phase;
+                state.job.progress.progress = Some(InstallProgress {
+                    current: 0,
+                    total: 100,
+                    secondary: None,
+                });
+                state
+                    .last_live_emit_at
+                    .insert("pack".into(), Instant::now());
+                state.job.active_downloads.insert(
+                    "pack".into(),
+                    ActiveDownloadState {
+                        name: "pack.mrpack".into(),
+                        url: String::new(),
+                        source: "official".into(),
+                        bytes_downloaded: 0,
+                        bytes_total: Some(100),
+                        attempt: 1,
+                        max_attempts: 3,
+                        status: DownloadItemStatus::Downloading,
+                        last_reported_bytes: 0,
+                        last_progress_at: Utc::now(),
+                        speed_bytes_per_second: None,
+                        speed_sample_started_at: Utc::now(),
+                        speed_sample_started_bytes: 0,
+                    },
+                );
+            }
+            reporter
+                .record_download_progress("pack", 25, 100)
+                .await
+                .unwrap();
+            let state = reporter.state.lock().await;
+            assert_eq!(
+                state.job.progress.progress.as_ref().unwrap().current,
+                expected
+            );
+            assert_eq!(state.job.active_downloads["pack"].bytes_downloaded, 25);
+            assert_eq!(
+                state.job.active_downloads["pack"].last_reported_bytes,
+                0
+            );
+            if expected > 0 {
+                assert_eq!(
+                    state.job.download_summary().bytes_downloaded,
+                    expected
+                );
+                assert_eq!(state.job.download_summary().bytes_total, Some(100));
+            }
+        }
     }
 
     #[cfg(not(feature = "tauri"))]

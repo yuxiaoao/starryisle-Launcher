@@ -11,6 +11,9 @@ use crate::state::{
     LoaderComponentKind, LoaderComponentRole, ModrinthProjectId,
     ModrinthVersionId, SideType,
 };
+use crate::util::download::constants::{
+    INSTALL_FILE_REPORTED_ATTEMPTS, MODPACK_REQUESTED_H2_RANGES,
+};
 use crate::util::fetch::{
     ContentValidation, DownloadMeta, DownloadReason, DownloadRequest,
     FetchProgressFn, Integrity, ResourceClass, download_to_path, fetch,
@@ -404,7 +407,7 @@ pub(crate) async fn generate_pack_from_version_id_with_reporter(
             vec![InstallJobEventKind::ContentFileQueued {
                 path: item_path,
                 bytes_total: Some(pack_file.size as u64),
-                max_attempts: 5,
+                max_attempts: INSTALL_FILE_REPORTED_ATTEMPTS,
             }],
         )
         .await?;
@@ -418,7 +421,7 @@ pub(crate) async fn generate_pack_from_version_id_with_reporter(
                 content: ContentValidation::Jar,
                 ..Integrity::default()
             })
-            .with_h2_range_concurrency(16)
+            .with_h2_range_concurrency(MODPACK_REQUESTED_H2_RANGES)
             .with_download_meta(download_meta)
             .with_install_tracking(
                 reporter.clone(),
@@ -533,7 +536,7 @@ fn modpack_cache_path(
     filename: &str,
 ) -> crate::Result<PathBuf> {
     let mut path = root.to_path_buf();
-    for segment in [project_id, version_id, filename] {
+    for segment in [project_id, version_id] {
         if segment.contains('/') {
             return Err(crate::ErrorKind::InputError(
                 "Invalid modpack cache path component".to_string(),
@@ -542,51 +545,8 @@ fn modpack_cache_path(
         }
         path = crate::util::io::safe_relative_join(&path, segment)?;
     }
-    Ok(path)
-}
-
-#[cfg(test)]
-mod cache_path_tests {
-    use super::modpack_cache_path;
-    use std::path::Path;
-
-    #[test]
-    fn cache_components_cannot_escape_their_directories() {
-        let root = Path::new("modpacks");
-        assert_eq!(
-            modpack_cache_path(root, "project", "version", "pack.mrpack")
-                .unwrap(),
-            root.join("project/version/pack.mrpack")
-        );
-        for malicious in [
-            "../outside",
-            "nested/name",
-            r"..\outside",
-            "C:/outside",
-            "C:outside",
-            r"\\server\share",
-            ".",
-            "",
-            "NUL",
-            "pack.mrpack:stream",
-            ".. ",
-        ] {
-            for position in 0..3 {
-                let mut components = ["project", "version", "pack.mrpack"];
-                components[position] = malicious;
-                assert!(
-                    modpack_cache_path(
-                        root,
-                        components[0],
-                        components[1],
-                        components[2]
-                    )
-                    .is_err(),
-                    "{position}: {malicious:?}"
-                );
-            }
-        }
-    }
+    let filename = crate::util::io::sanitize_download_file_name(filename)?;
+    crate::util::io::safe_relative_join(&path, &filename)
 }
 
 #[tracing::instrument]
@@ -847,4 +807,77 @@ async fn resolve_pack_loader_version(
         ))
         .into()
     })
+}
+
+#[cfg(test)]
+mod cache_path_tests {
+    use super::modpack_cache_path;
+    use std::path::Path;
+
+    #[test]
+    fn cache_components_cannot_escape_their_directories() {
+        let root = Path::new("modpacks");
+        assert_eq!(
+            modpack_cache_path(root, "project", "version", "pack.mrpack")
+                .unwrap(),
+            root.join("project/version/pack.mrpack")
+        );
+        for malicious in [
+            "../outside",
+            "nested/name",
+            r"..\outside",
+            "C:/outside",
+            r"\\server\share",
+            ".",
+            "",
+            "NUL",
+        ] {
+            for position in 0..3 {
+                let mut components = ["project", "version", "pack.mrpack"];
+                components[position] = malicious;
+                assert!(
+                    modpack_cache_path(
+                        root,
+                        components[0],
+                        components[1],
+                        components[2]
+                    )
+                    .is_err(),
+                    "{position}: {malicious:?}"
+                );
+            }
+        }
+        for invalid_id in ["C:outside", "pack.mrpack:stream", ".. "] {
+            assert!(
+                modpack_cache_path(root, invalid_id, "version", "pack.mrpack")
+                    .is_err()
+            );
+            assert!(
+                modpack_cache_path(root, "project", invalid_id, "pack.mrpack")
+                    .is_err()
+            );
+        }
+    }
+
+    #[test]
+    fn remote_modpack_filename_replaces_invalid_characters() {
+        let root = Path::new("modpacks");
+        let path = modpack_cache_path(
+            root,
+            "oMMOxJjh",
+            "RRYxMDqj",
+            "Yet Another Bingo: Ultimate-214.0.mrpack",
+        )
+        .unwrap();
+        assert_eq!(
+            path,
+            root.join(
+                "oMMOxJjh/RRYxMDqj/Yet Another Bingo_ Ultimate-214.0.mrpack"
+            )
+        );
+        let directory = tempfile::tempdir().unwrap();
+        let target = directory.path().join(path.file_name().unwrap());
+        std::fs::write(&target, b"pack").unwrap();
+        assert_eq!(std::fs::read(target).unwrap(), b"pack");
+    }
 }

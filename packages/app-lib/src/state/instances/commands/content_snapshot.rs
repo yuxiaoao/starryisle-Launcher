@@ -47,7 +47,7 @@ pub(crate) async fn get_local_content_snapshot(
     instance_id: &str,
     state: &State,
 ) -> crate::Result<InstanceContentSnapshot> {
-    get_content_snapshot_inner(instance_id, false, false, false, state).await
+    get_content_snapshot_inner(instance_id, false, true, false, state).await
 }
 
 async fn get_content_snapshot_inner(
@@ -85,13 +85,24 @@ async fn get_content_snapshot_inner(
             && instance.is_direct_linked()
             && cached_files.is_empty())
     {
-        crate::resources::installed::refresh_snapshot(
-            state,
-            instance_id,
-            &tokio_util::sync::CancellationToken::new(),
-        )
-        .await
-        .map_err(|error| crate::ErrorKind::OtherError(error.to_string()))?;
+        let cancel = tokio_util::sync::CancellationToken::new();
+        let refreshed = if refresh_remote {
+            crate::resources::installed::refresh_snapshot(
+                state,
+                instance_id,
+                &cancel,
+            )
+            .await
+        } else {
+            crate::resources::installed::refresh_install_snapshot(
+                state,
+                instance_id,
+                &cancel,
+            )
+            .await
+        };
+        refreshed
+            .map_err(|error| crate::ErrorKind::OtherError(error.to_string()))?;
         content_rows::get_instance_files(&instance.id, &state.pool).await?
     } else {
         cached_files
@@ -713,7 +724,8 @@ pub(crate) async fn reconcile_curseforge_members(
         })
         .collect::<crate::Result<Vec<_>>>()?;
     let member_rows = sqlx::query(
-        "SELECT id, member_key, override_kind, materialization_state
+        "SELECT id, member_key, override_kind, materialization_state,
+            CASE WHEN provider IS NULL THEN expected_relative_path END AS override_path
 		 FROM instance_pack_members WHERE content_set_id = ?",
     )
     .bind(content_set_id)
@@ -733,6 +745,7 @@ pub(crate) async fn reconcile_curseforge_members(
                     PackMemberMaterializationState::from_str(
                         &row.try_get::<String, _>("materialization_state")?,
                     )?,
+                    row.try_get::<Option<String>, _>("override_path")?,
                 ),
             ))
         })
@@ -816,7 +829,7 @@ pub(crate) async fn reconcile_curseforge_members(
         let existing = existing_members.remove(&member_key);
         let inherited_override = existing
             .as_ref()
-            .map_or(PackMemberOverrideKind::None, |(_, kind, _)| *kind);
+            .map_or(PackMemberOverrideKind::None, |(_, kind, _, _)| *kind);
         let override_kind =
             if inherited_override != PackMemberOverrideKind::None {
                 inherited_override
@@ -846,7 +859,7 @@ pub(crate) async fn reconcile_curseforge_members(
         };
         let now = Utc::now();
         let member_id = existing
-            .map(|(id, _, _)| id)
+            .map(|(id, _, _, _)| id)
             .unwrap_or_else(|| format!("pack-member:{}", uuid::Uuid::new_v4()));
         content_rows::upsert_pack_member_in_transaction(
             &crate::state::instances::PackMember {
@@ -885,7 +898,16 @@ pub(crate) async fn reconcile_curseforge_members(
         .await?;
     }
 
-    for (_, (member_id, _, _)) in existing_members {
+    for expected_override in &expected.overrides {
+        let expected_path =
+            normalized_content_path(&expected_override.expected_relative_path);
+        existing_members.retain(|_, (_, _, _, path)| {
+            path.as_deref().is_none_or(|path| {
+                normalized_content_path(path) != expected_path
+            })
+        });
+    }
+    for (_, (member_id, _, _, _)) in existing_members {
         sqlx::query("DELETE FROM instance_pack_members WHERE id = ?")
             .bind(member_id)
             .execute(&mut *tx)
@@ -898,6 +920,30 @@ pub(crate) async fn reconcile_curseforge_members(
         &mut tx,
     )
     .await?;
+    content_rows::repair_pack_members_in_transaction(content_set_id, &mut tx)
+        .await?;
+    let override_paths: HashSet<_> = expected
+        .overrides
+        .iter()
+        .map(|item| normalized_content_path(&item.expected_relative_path))
+        .collect();
+    let unreconciled: Vec<(String, String)> = sqlx::query_as(
+        "SELECT id, expected_relative_path FROM instance_pack_members
+         WHERE content_set_id = ? AND provider IS NULL AND reconciled = 0",
+    )
+    .bind(content_set_id)
+    .fetch_all(&mut *tx)
+    .await?;
+    for (member_id, path) in unreconciled {
+        if override_paths.contains(&normalized_content_path(&path)) {
+            sqlx::query(
+                "UPDATE instance_pack_members SET reconciled = 1 WHERE id = ?",
+            )
+            .bind(member_id)
+            .execute(&mut *tx)
+            .await?;
+        }
+    }
     content_rows::bump_content_set_revision_in_transaction(
         content_set_id,
         &mut tx,

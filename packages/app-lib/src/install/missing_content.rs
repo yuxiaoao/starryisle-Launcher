@@ -6,6 +6,8 @@ use super::model::{
 };
 use super::{runner, store};
 use crate::State;
+use crate::util::download::constants::DOWNLOAD_SCAN_CACHE_TTL;
+use crate::util::download::constants::DOWNLOAD_STABILITY_WINDOW;
 use crate::util::fetch::{
     ContentValidation, DownloadRequest, Integrity, ResourceClass,
     download_to_path, verify_file,
@@ -18,11 +20,10 @@ use std::collections::{HashMap, HashSet};
 use std::future::Future;
 use std::path::{Path, PathBuf};
 use std::sync::LazyLock;
-use std::time::{Duration, Instant, SystemTime};
+#[cfg(test)]
+use std::time::Duration;
+use std::time::{Instant, SystemTime};
 use uuid::Uuid;
-
-const DOWNLOAD_STABILITY_WINDOW: Duration = Duration::from_secs(2);
-const DOWNLOAD_SCAN_CACHE_TTL: Duration = Duration::from_secs(30 * 60);
 
 static DOWNLOAD_SCAN_CACHE: LazyLock<Mutex<DownloadsScanCache>> =
     LazyLock::new(|| Mutex::new(DownloadsScanCache::default()));

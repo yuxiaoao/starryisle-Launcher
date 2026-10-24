@@ -1,5 +1,8 @@
 //! Theseus settings file
 
+use crate::util::download::constants::{
+    AUTO_DOWNLOAD_CONCURRENCY_INITIAL, DOWNLOAD_CONCURRENCY_HARD_MAX,
+};
 use serde::{Deserialize, Serialize};
 use sqlx::{Pool, Sqlite};
 use std::collections::HashMap;
@@ -601,7 +604,8 @@ impl Settings {
     ) -> crate::Result<()> {
         let max_concurrent_writes = self.max_concurrent_writes as i32;
         let max_concurrent_downloads =
-            self.max_concurrent_downloads.clamp(1, 256) as i32;
+            self.max_concurrent_downloads
+                .clamp(1, DOWNLOAD_CONCURRENCY_HARD_MAX) as i32;
         let theme = self.theme.as_str();
         let accent_color = self.accent_color.as_str();
         let default_page = self.default_page.as_str();
@@ -898,9 +902,10 @@ impl Settings {
 
     pub fn effective_max_concurrent_downloads(&self) -> usize {
         if self.auto_concurrent_downloads {
-            64
+            AUTO_DOWNLOAD_CONCURRENCY_INITIAL
         } else {
-            self.max_concurrent_downloads.clamp(1, 256)
+            self.max_concurrent_downloads
+                .clamp(1, DOWNLOAD_CONCURRENCY_HARD_MAX)
         }
     }
 

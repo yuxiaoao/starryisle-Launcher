@@ -70,6 +70,9 @@ pub fn init<R: tauri::Runtime>() -> tauri::plugin::TauriPlugin<R> {
             resource_favorite_add,
             resource_favorite_remove,
             resource_prepare_operation,
+            resource_analysis_open,
+            resource_analysis_update,
+            resource_analysis_close,
             resource_prepare_entry_operation,
             resource_list_installed,
             resource_check_updates,
@@ -268,12 +271,30 @@ pub async fn resource_export_cancel(
 }
 
 #[tauri::command]
-pub async fn resource_check_updates(
+pub async fn resource_check_updates<R: tauri::Runtime>(
+    webview: tauri::Webview<R>,
     instance_id: String,
     request_id: RequestId,
+    entry_ids: Option<Vec<InstalledEntryId>>,
+    on_progress: Option<tauri::ipc::JavaScriptChannelId>,
 ) -> Result<theseus::resources::updates::ResourceUpdateCheck> {
     let (_guard, cancel) = request(&request_id)?;
-    Ok(theseus::resources::updates::check(instance_id, &cancel).await?)
+    let on_progress = on_progress.map(|id| {
+        id.channel_on::<_, theseus::resources::updates::ResourceUpdateProgress>(
+            webview,
+        )
+    });
+    Ok(theseus::resources::updates::check(
+        instance_id,
+        entry_ids.as_deref(),
+        move |progress| {
+            if let Some(channel) = &on_progress {
+                let _ = channel.send(progress);
+            }
+        },
+        &cancel,
+    )
+    .await?)
 }
 
 #[tauri::command]
@@ -323,6 +344,8 @@ pub async fn resource_prepare_operation<R: tauri::Runtime>(
     request_id: RequestId,
     on_progress: Option<tauri::ipc::JavaScriptChannelId>,
     resolve_dependencies: Option<bool>,
+    analysis_session_id: Option<SessionId>,
+    selection_revision: Option<u32>,
 ) -> Result<ResourceOperationPlan> {
     let (_guard, cancel) = request(&request_id)?;
     let on_progress = on_progress
@@ -351,6 +374,28 @@ pub async fn resource_prepare_operation<R: tauri::Runtime>(
             let _ = channel.send(value);
         }
     };
+    if let Some(id) = analysis_session_id {
+        if intent != ResourceOperationIntent::Install
+            || import_files.is_some()
+            || resolve_dependencies == Some(false)
+        {
+            return Err(ResourceError::InvalidRequest(
+                "invalid cart analysis promotion".into(),
+            )
+            .into());
+        }
+        return Ok(theseus::resources::plans::analysis::update(
+            &id,
+            selection_revision.unwrap_or_default(),
+            selections,
+            install_dependencies.unwrap_or(true),
+            &cancel,
+            Some(&progress),
+            true,
+            Some(&instance_id),
+        )
+        .await?);
+    }
     let plan = theseus::resources::plans::prepare_with_progress(
         instance_id,
         intent,
@@ -371,6 +416,47 @@ pub async fn resource_prepare_operation<R: tauri::Runtime>(
             plan
         },
     )
+}
+
+#[tauri::command]
+pub async fn resource_analysis_open(instance_id: String) -> Result<SessionId> {
+    Ok(theseus::resources::plans::analysis::open(instance_id).await?)
+}
+
+#[tauri::command]
+pub async fn resource_analysis_close(session_id: SessionId) -> Result<()> {
+    Ok(theseus::resources::plans::analysis::close(&session_id).await?)
+}
+
+#[tauri::command]
+pub async fn resource_analysis_update<R: tauri::Runtime>(
+    webview: tauri::Webview<R>,
+    session_id: SessionId,
+    selection_revision: u32,
+    selections: Vec<ResourceSelection>,
+    install_dependencies: bool,
+    request_id: RequestId,
+    on_progress: Option<tauri::ipc::JavaScriptChannelId>,
+) -> Result<ResourceOperationPlan> {
+    let (_guard, cancel) = request(&request_id)?;
+    let channel = on_progress
+        .map(|id| id.channel_on::<_, ResourceOperationProgress>(webview));
+    let progress = move |value| {
+        if let Some(channel) = &channel {
+            let _ = channel.send(value);
+        }
+    };
+    Ok(theseus::resources::plans::analysis::update(
+        &session_id,
+        selection_revision,
+        selections,
+        install_dependencies,
+        &cancel,
+        Some(&progress),
+        false,
+        None,
+    )
+    .await?)
 }
 
 #[tauri::command]

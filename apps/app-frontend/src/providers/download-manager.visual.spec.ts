@@ -60,6 +60,68 @@ beforeEach(() => {
     backend.bars.mockResolvedValue({})
 })
 
+it('pack archive request progress advances the main bar without overwriting later phases', async () => {
+    vi.useFakeTimers()
+    const initial: InstallJobSnapshot = {
+        ...job('running', '2026-10-21T01:00:00Z'),
+        kind: 'create_modpack_instance',
+        phase: 'downloading_pack_file',
+        progress: { current: 0, total: 100 },
+        summary: {
+            files_completed: 0,
+            bytes_downloaded: 0,
+            bytes_total: 100,
+            fallback_count: 0,
+        },
+    }
+    backend.list.mockResolvedValue({ jobs: [initial] })
+    const manager = createDownloadManager(vi.fn())
+    try {
+        await manager.start()
+        const request = backend.requests.mock.calls[0][0]
+        request({
+            type: 'started',
+            job_id: 'one',
+            id: 'pack.mrpack',
+            name: 'pack.mrpack',
+            url: 'https://cdn.modrinth.com/data/pack.mrpack',
+            source: 'official',
+            bytes_total: 100,
+            attempt: 1,
+            max_attempts: 3,
+        })
+        request({
+            type: 'progress',
+            job_id: 'one',
+            id: 'pack.mrpack',
+            bytes: 25,
+            status: 'downloading',
+            speed_bytes_per_second: 10,
+            eta_seconds: 8,
+        })
+        await vi.advanceTimersByTimeAsync(16)
+        expect(manager.jobs.value[0].progress).toEqual({ current: 25, total: 100 })
+        expect(manager.jobs.value[0].items[0].bytes_downloaded).toBe(25)
+
+        backend.jobs.mock.calls[0][0]({ ...initial, modified: '2026-10-21T01:00:01Z' })
+        expect(manager.jobs.value[0].progress?.current).toBe(25)
+
+        backend.jobs.mock.calls[0][0]({
+            ...manager.jobs.value[0],
+            phase: 'reading_pack_manifest',
+            progress: null,
+            modified: '2026-10-21T01:00:02Z',
+        })
+        request({ type: 'finished', job_id: 'one', id: 'pack.mrpack', bytes: 100 })
+        await vi.advanceTimersByTimeAsync(16)
+        expect(manager.jobs.value[0].phase).toBe('reading_pack_manifest')
+        expect(manager.jobs.value[0].progress).toBeNull()
+    } finally {
+        manager.dispose()
+        vi.useRealTimers()
+    }
+})
+
 it('subscribes concurrently, snapshots only after every subscription, then replays newer events', async () => {
     const requestListener = deferred<() => void>()
     const jobListener = deferred<() => void>()

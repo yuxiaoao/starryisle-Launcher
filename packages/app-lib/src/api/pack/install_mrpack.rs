@@ -21,6 +21,15 @@ use crate::state::{
     CachedEntry, ContentProviderRef, ModrinthHashMatch, ModrinthProjectId,
     ModrinthVersionId, Settings, SideType,
 };
+use crate::util::download::constants::AGGREGATE_FAILURE_PATH_CHAR_LIMIT;
+use crate::util::download::constants::AGGREGATE_FAILURE_PATH_LIMIT;
+use crate::util::download::constants::AUTO_RETRY_PASSES;
+use crate::util::download::constants::CONTENT_DATABASE_BATCH_SIZE;
+use crate::util::download::constants::CONTENT_DATABASE_FLUSH_INTERVAL;
+use crate::util::download::constants::FINALIZE_WAIT_TIMEOUT;
+use crate::util::download::constants::ITEM_FAILURE_REASON_CHAR_LIMIT;
+use crate::util::download::constants::NATIVE_CONTENT_FINALIZE_CONCURRENCY;
+use crate::util::download::constants::OVERRIDE_EXTRACTION_CONCURRENCY;
 use crate::util::fetch::{
     ContentValidation, DownloadMeta, DownloadReason, DownloadRequest,
     Integrity, ResourceClass, download_to_path,
@@ -40,6 +49,7 @@ use std::sync::{
     Arc,
     atomic::{AtomicU64, Ordering},
 };
+#[cfg(test)]
 use std::time::Duration;
 
 use super::install_from::{CreatePack, CreatePackFile, PackFormat};
@@ -53,20 +63,6 @@ use tokio::sync::{Mutex, Semaphore, mpsc};
 type ExtractProgressFn<'a> = dyn FnMut(u64) -> Pin<Box<dyn Future<Output = crate::Result<()>> + Send + 'a>>
     + Send
     + 'a;
-
-const AGGREGATE_FAILURE_PATH_LIMIT: usize = 3;
-const AGGREGATE_FAILURE_PATH_CHAR_LIMIT: usize = 160;
-const ITEM_FAILURE_REASON_CHAR_LIMIT: usize = 1_024;
-/// Batch-level automatic retry passes for failed modpack files, in addition
-/// to the per-file retries inside `download_to_path`. Failed files are retried
-/// over a single connection (no range segmentation) and only after every pass
-/// is exhausted does the install ask the user about missing content.
-const AUTO_RETRY_PASSES: usize = 2;
-const NATIVE_CONTENT_FINALIZE_CONCURRENCY: usize = 4;
-const CONTENT_DATABASE_BATCH_SIZE: usize = 25;
-const CONTENT_DATABASE_FLUSH_INTERVAL: Duration = Duration::from_millis(500);
-const FINALIZE_WAIT_TIMEOUT: Duration = Duration::from_secs(45);
-const OVERRIDE_EXTRACTION_CONCURRENCY: usize = 4;
 
 struct MrpackVerificationTask {
     project: PackFile,
@@ -856,7 +852,8 @@ where
     let mut size = 0;
     let mut buffer = vec![0; 262144];
     let mut pending_progress = 0_u64;
-    const PROGRESS_GRANULARITY: u64 = 1024 * 1024;
+
+    use crate::util::download::constants::PROGRESS_GRANULARITY;
 
     loop {
         let bytes_read =

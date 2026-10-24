@@ -1,13 +1,16 @@
 //! Compatibility for URLs saved before Modrinth retired its alternate CDN.
 
+pub(crate) use crate::util::download::constants::MODRINTH_CDN_HOST as HOST;
+use crate::util::download::constants::MODRINTH_RETIRED_CDN_HOST as RETIRED_HOST;
+use crate::util::download::constants::{
+    HTTPS_SCHEME,
+    MODRINTH_CDN_REPLACING_A_VALIDATED_HOSTNAME_PRESERVES_URL_VALIDITY,
+};
 use std::borrow::Cow;
 use url::Url;
 
-pub(crate) const HOST: &str = "cdn.modrinth.com";
-const RETIRED_HOST: &str = "cdn-alt.modrinth.com";
-
 pub(crate) fn is_current_url(url: &Url) -> bool {
-    url.scheme() == "https"
+    url.scheme() == HTTPS_SCHEME
         && url.host_str() == Some(HOST)
         && url.port_or_known_default() == Some(443)
         && url.username().is_empty()
@@ -20,7 +23,7 @@ pub(crate) fn normalize(input: &str) -> Cow<'_, str> {
     let Ok(url) = Url::parse(input) else {
         return Cow::Borrowed(input);
     };
-    if url.scheme() != "https"
+    if url.scheme() != HTTPS_SCHEME
         || url.host_str() != Some(RETIRED_HOST)
         || url.port_or_known_default() != Some(443)
         || !url.username().is_empty()
@@ -46,8 +49,9 @@ pub(crate) fn normalize_parsed(url: Url) -> Url {
     if matches!(normalized, Cow::Borrowed(_)) {
         return url;
     }
-    Url::parse(normalized.as_ref())
-        .expect("replacing a validated hostname preserves URL validity")
+    Url::parse(normalized.as_ref()).expect(
+        MODRINTH_CDN_REPLACING_A_VALIDATED_HOSTNAME_PRESERVES_URL_VALIDITY,
+    )
 }
 
 #[cfg(test)]

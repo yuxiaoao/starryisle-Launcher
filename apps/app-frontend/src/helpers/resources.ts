@@ -275,7 +275,7 @@ export function resourceSetPreferredSource(source: SourceId) {
 }
 
 export type ResourceCachePolicy =
-    'useFresh' | 'forceRefresh' | 'onlyCached' | 'staleWhileRevalidate'
+    'useFresh' | 'revalidate' | 'forceRefresh' | 'onlyCached' | 'staleWhileRevalidate'
 
 export type ResourceOperationIntent = 'install' | 'update' | 'switchVersion'
 export type ResourceSelection = {
@@ -323,14 +323,39 @@ export type ResourceDependencyNode = {
 export function resourceListInstalled(instanceId: string, signal?: AbortSignal) {
     return resourceRequest<InstalledResource[]>('resource_list_installed', { instanceId }, signal)
 }
-export function resourceCheckUpdates(instanceId: string, signal?: AbortSignal) {
+export interface ResourceUpdateProgress {
+    entryId: string
+    release: SourceReleaseRef | null
+    failed: boolean
+    unresolved: boolean
+}
+export interface ResourceUpdateCheckOptions {
+    entryIds?: string[]
+    onProgress?: (progress: ResourceUpdateProgress) => void
+}
+export function resourceCheckUpdates(
+    instanceId: string,
+    signal?: AbortSignal,
+    options?: ResourceUpdateCheckOptions,
+) {
+    let onProgress: Channel<ResourceUpdateProgress> | null = null
+    if (options?.onProgress) {
+        onProgress = new Channel<ResourceUpdateProgress>()
+        onProgress.onmessage = (progress) => {
+            if (!signal?.aborted) options.onProgress?.(progress)
+        }
+    }
     return resourceRequest<{
         entries: string[]
         releases: Record<string, SourceReleaseRef>
         unresolved: string[]
         failures: string[]
         failedEntries: string[]
-    }>('resource_check_updates', { instanceId }, signal)
+    }>(
+        'resource_check_updates',
+        { instanceId, entryIds: options?.entryIds ?? null, onProgress },
+        signal,
+    )
 }
 export function resourcePrepareEntryOperation(
     instanceId: string,
@@ -427,6 +452,7 @@ export function resourcePrepareOperation(
     locators?: Record<string, string>,
     onProgress?: (progress: ResourceOperationProgress) => void,
     resolveDependencies = true,
+    analysis?: { sessionId: string; selectionRevision: number },
 ) {
     return resourceRequest<ResourceOperationPlan>(
         'resource_prepare_operation',
@@ -439,6 +465,34 @@ export function resourcePrepareOperation(
             locators: locators ?? null,
             onProgress: operationProgressChannel(onProgress, signal),
             resolveDependencies,
+            analysisSessionId: analysis?.sessionId ?? null,
+            selectionRevision: analysis?.selectionRevision ?? null,
+        },
+        signal,
+    )
+}
+export function resourceAnalysisOpen(instanceId: string) {
+    return invoke<string>('plugin:axolotl-resources|resource_analysis_open', { instanceId })
+}
+export function resourceAnalysisClose(sessionId: string) {
+    return invoke<void>('plugin:axolotl-resources|resource_analysis_close', { sessionId })
+}
+export function resourceAnalysisUpdate(
+    sessionId: string,
+    selectionRevision: number,
+    selections: ResourceSelection[],
+    installDependencies: boolean,
+    signal: AbortSignal,
+    onProgress: (progress: ResourceOperationProgress) => void,
+) {
+    return resourceRequest<ResourceOperationPlan>(
+        'resource_analysis_update',
+        {
+            sessionId,
+            selectionRevision,
+            selections,
+            installDependencies,
+            onProgress: operationProgressChannel(onProgress, signal),
         },
         signal,
     )
@@ -523,6 +577,7 @@ export function resourceExecuteHistoryCleanup(cleanupPlanId: string, revision: n
     )
 }
 export function resourceCachePolicy(behavior?: string): ResourceCachePolicy {
+    if (behavior === 'revalidate') return 'revalidate'
     return behavior === 'bypass'
         ? 'forceRefresh'
         : behavior === 'cache_only'

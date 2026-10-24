@@ -1417,6 +1417,7 @@ mod tests {
                 .collect();
             assert_eq!(pinned.len(), 1, "favorite worlds for {instance_id}");
             assert_eq!(pinned[0].world.world_id(), "home-world");
+            assert_eq!(pinned[0].world.name, "Home world");
         }
 
         assert!(recent.windows(2).all(|pair| {

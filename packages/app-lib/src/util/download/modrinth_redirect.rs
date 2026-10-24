@@ -1,5 +1,8 @@
 //! Modrinth CDN redirect normalization for native download requests.
 
+use crate::util::download::constants::{
+    MAX_REDIRECT_LOCATION_BYTES, MODRINTH_REDIRECT_HTTPS,
+};
 use url::Url;
 
 use super::modrinth_cdn;
@@ -24,11 +27,11 @@ pub(crate) fn repair_official_redirect(
 
 pub(crate) fn is_official_redirect(location: Option<&str>) -> bool {
     let Some(location) = location.filter(|location| {
-        location.len() <= 8 * 1024
+        location.len() <= MAX_REDIRECT_LOCATION_BYTES
             && location.is_ascii()
-            && location
-                .get(..8)
-                .is_some_and(|scheme| scheme.eq_ignore_ascii_case("https://"))
+            && location.get(..8).is_some_and(|scheme| {
+                scheme.eq_ignore_ascii_case(MODRINTH_REDIRECT_HTTPS)
+            })
     }) else {
         return false;
     };

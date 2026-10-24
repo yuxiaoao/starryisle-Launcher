@@ -79,6 +79,18 @@ pub enum ErrorKind {
     #[error("Network download error: {0}")]
     NetworkError(String),
 
+    #[error("download endpoint changed; resume the validated partial file")]
+    DownloadEndpointChanged,
+
+    #[error("download transfer remained below its expected throughput")]
+    DownloadTransferSlow,
+
+    #[error("download {context} stream receive timed out")]
+    DownloadStreamStalled { context: String },
+
+    #[error("HTTP/2 transport error: {0}")]
+    DownloadH2Error(#[from] h2::Error),
+
     #[error("HTTP {status} for {method} {url}")]
     HttpError {
         status: u16,

@@ -1,10 +1,14 @@
 //! Restore official origins for saved URLs from retired download services.
 
+use crate::util::download::constants::TIANPAO_RETIRED_HOST as TIANPAO_HOST;
+use crate::util::download::constants::TIANPAO_UNRECOVERABLE_MESSAGE as UNRECOVERABLE_MESSAGE;
+use crate::util::download::constants::{
+    CURSEFORGE_EDGE_HOST, HTTPS_SCHEME, MODRINTH_DATA_PREFIX,
+    RETIRED_SOURCES_FILES, RETIRED_SOURCES_MEDIA, RETIRED_SOURCES_MEDIA_2,
+    RETIRED_SOURCES_MEDIA_FORGECDN_NET,
+};
 use std::borrow::Cow;
 use url::Url;
-
-const TIANPAO_HOST: &str = "mod.tianpao.top";
-const UNRECOVERABLE_MESSAGE: &str = "This Tianpao download source has been retired and its official URL cannot be recovered. Re-resolve the file or choose a verified local file.";
 
 pub(crate) fn is_retired(url: &Url) -> bool {
     url.host_str().is_some_and(|host| {
@@ -25,7 +29,7 @@ pub(crate) fn normalize(input: &str) -> crate::Result<Cow<'_, str>> {
             UNRECOVERABLE_MESSAGE.to_string(),
         ))
     };
-    if url.scheme() != "https"
+    if url.scheme() != HTTPS_SCHEME
         || url.port_or_known_default() != Some(443)
         || !url.username().is_empty()
         || url.password().is_some()
@@ -44,14 +48,21 @@ pub(crate) fn normalize(input: &str) -> crate::Result<Cow<'_, str>> {
     }
     let suffix = &rest[end..];
     let path = suffix.split(['?', '#']).next().unwrap_or_default();
-    let (host, suffix) = if path.starts_with("/data/")
-        && url.path().starts_with("/data/")
+    let (host, suffix) = if path.starts_with(MODRINTH_DATA_PREFIX)
+        && url.path().starts_with(MODRINTH_DATA_PREFIX)
     {
         (super::modrinth_cdn::HOST, suffix)
-    } else if path.starts_with("/files/") && url.path().starts_with("/files/") {
-        ("edge.forgecdn.net", suffix)
-    } else if path.starts_with("/media/") && url.path().starts_with("/media/") {
-        ("media.forgecdn.net", &suffix["/media".len()..])
+    } else if path.starts_with(RETIRED_SOURCES_FILES)
+        && url.path().starts_with(RETIRED_SOURCES_FILES)
+    {
+        (CURSEFORGE_EDGE_HOST, suffix)
+    } else if path.starts_with(RETIRED_SOURCES_MEDIA)
+        && url.path().starts_with(RETIRED_SOURCES_MEDIA)
+    {
+        (
+            RETIRED_SOURCES_MEDIA_FORGECDN_NET,
+            &suffix[RETIRED_SOURCES_MEDIA_2.len()..],
+        )
     } else {
         return Err(error());
     };

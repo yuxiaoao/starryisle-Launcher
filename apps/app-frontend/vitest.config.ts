@@ -78,6 +78,8 @@ export default defineConfig({
     optimizeDeps: {
         // UI mock factories load this dependency after Vite's initial scan.
         include: [
+            'deepslate/nbt',
+            'deepslate/util',
             'deepagents/browser',
             'langchain',
             '@modrinth/ui > qrcode.vue',

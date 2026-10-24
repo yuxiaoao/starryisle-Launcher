@@ -282,6 +282,15 @@ export function createDownloadManager(handleError: (error: unknown) => void): Do
             total == null ? downloaded : Math.min(downloaded, total),
         )
         job.summary = { ...job.summary, bytes_downloaded: current, bytes_total: total }
+        if (job.phase === 'downloading_pack_file') {
+            const packTotal = job.progress?.total || itemTotal
+            if (packTotal > 0) {
+                job.progress = {
+                    current: Math.min(Math.max(job.progress?.current ?? 0, downloaded), packTotal),
+                    total: packTotal,
+                }
+            }
+        }
         if (job.phase === 'downloading_content' && job.progress?.secondary) {
             job.progress = {
                 ...job.progress,

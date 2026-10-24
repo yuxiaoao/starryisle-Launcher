@@ -446,7 +446,11 @@ pub(crate) async fn install_resolved_content_plan_with_reporter(
                 Ok::<_, crate::Error>((index, downloaded))
             }
         })
-        .buffer_unordered(state.download_concurrency().clamp(1, 4))
+        .buffer_unordered(
+            state
+                .download_concurrency()
+                .clamp(1, crate::util::download::constants::MAX_PACK_FILE_DOWNLOAD_CONCURRENCY),
+        )
         .try_collect::<Vec<_>>()
         .await?;
     downloads.sort_by_key(|(index, _)| *index);
@@ -796,6 +800,11 @@ pub(crate) fn preserved_update_relative_path(
     old_provider_file_name: Option<&str>,
     new_provider_file_name: &str,
 ) -> crate::Result<String> {
+    let new_provider_file_name =
+        io::sanitize_download_file_name(new_provider_file_name)?;
+    let old_provider_file_name = old_provider_file_name
+        .map(io::sanitize_download_file_name)
+        .transpose()?;
     let current_name = Path::new(current_path)
         .file_name()
         .and_then(|name| name.to_str())
@@ -808,7 +817,7 @@ pub(crate) fn preserved_update_relative_path(
     let current_base = current_name
         .strip_suffix(".disabled")
         .unwrap_or(current_name);
-    let replacement = match old_provider_file_name {
+    let replacement = match old_provider_file_name.as_deref() {
         Some(old_name) if current_base == old_name => {
             new_provider_file_name.to_string()
         }
@@ -816,7 +825,7 @@ pub(crate) fn preserved_update_relative_path(
             if !old_name.is_empty()
                 && current_base.match_indices(old_name).count() == 1 =>
         {
-            current_base.replacen(old_name, new_provider_file_name, 1)
+            current_base.replacen(old_name, &new_provider_file_name, 1)
         }
         _ => current_base.to_string(),
     };
@@ -1526,20 +1535,8 @@ pub(crate) async fn prepare_version_download(
         loader: content_set.loader.as_str().to_string(),
         dependent_on: dependent_on_version_id,
     };
-    let file_name_path = Path::new(&file.filename);
-    if file_name_path.as_os_str().is_empty()
-        || file_name_path.is_absolute()
-        || file_name_path.components().count() != 1
-        || !matches!(
-            file_name_path.components().next(),
-            Some(std::path::Component::Normal(_))
-        )
-    {
-        return Err(crate::ErrorKind::InputError(
-            "Modrinth returned an invalid project file name".to_string(),
-        )
-        .into());
-    }
+    let file_name = io::sanitize_download_file_name(&file.filename)?;
+    let file_name_path = Path::new(&file_name);
     let path = state
         .directories
         .caches_dir()
@@ -1568,7 +1565,7 @@ pub(crate) async fn prepare_version_download(
         path,
         download_meta,
         integrity,
-        file_name: file.filename.clone(),
+        file_name,
         sha1: file.hashes.get("sha1").cloned(),
         loaders: version.loaders.clone(),
         project_id: version.project_id.clone(),
@@ -3540,6 +3537,16 @@ fn resolve_toggle_paths(
     } else {
         format!("{trimmed}.disabled")
     };
+    // An enabled and a disabled copy of the same name can coexist on disk, for
+    // example an imported file next to a disabled sibling. Renaming onto that
+    // sibling would replace it, so refuse before anything is moved.
+    if new_path != current_path && join_content_path(base, &new_path).exists() {
+        return Err(crate::ErrorKind::InputError(format!(
+            "Cannot {} '{project_path}' because '{new_path}' already exists",
+            if enabled { "enable" } else { "disable" }
+        ))
+        .into());
+    }
     Ok((current_path, enabled, new_path))
 }
 
@@ -4382,6 +4389,70 @@ mod tests {
                 == materialization_path_key("mods/foo.jar"),
             cfg!(any(windows, target_os = "macos"))
         );
+    }
+
+    #[test]
+    fn toggle_refuses_to_replace_an_existing_sibling_file() {
+        let directory = tempfile::tempdir().unwrap();
+        let mods = directory.path().join("mods");
+        std::fs::create_dir_all(&mods).unwrap();
+        std::fs::write(mods.join("sibling.jar"), b"enabled").unwrap();
+        std::fs::write(mods.join("sibling.jar.disabled"), b"disabled").unwrap();
+
+        let error = resolve_toggle_paths(
+            directory.path(),
+            "mods/sibling.jar",
+            Some(false),
+        )
+        .unwrap_err();
+        assert!(error.to_string().contains("already exists"));
+
+        let error = resolve_toggle_paths(
+            directory.path(),
+            "mods/sibling.jar.disabled",
+            Some(true),
+        )
+        .unwrap_err();
+        assert!(error.to_string().contains("already exists"));
+
+        assert_eq!(
+            std::fs::read(mods.join("sibling.jar")).unwrap(),
+            b"enabled"
+        );
+        assert_eq!(
+            std::fs::read(mods.join("sibling.jar.disabled")).unwrap(),
+            b"disabled"
+        );
+    }
+
+    #[test]
+    fn toggle_renames_when_the_destination_is_free() {
+        let directory = tempfile::tempdir().unwrap();
+        let mods = directory.path().join("mods");
+        std::fs::create_dir_all(&mods).unwrap();
+        std::fs::write(mods.join("single.jar"), b"enabled").unwrap();
+        std::fs::write(mods.join("already.jar.disabled"), b"disabled").unwrap();
+
+        let (current, enabled, next) = resolve_toggle_paths(
+            directory.path(),
+            "mods/single.jar",
+            Some(false),
+        )
+        .unwrap();
+        assert_eq!(current, "mods/single.jar");
+        assert!(!enabled);
+        assert_eq!(next, "mods/single.jar.disabled");
+
+        // Disabling a file that is already disabled keeps its current path.
+        let (current, enabled, next) = resolve_toggle_paths(
+            directory.path(),
+            "mods/already.jar.disabled",
+            Some(false),
+        )
+        .unwrap();
+        assert_eq!(current, "mods/already.jar.disabled");
+        assert!(!enabled);
+        assert_eq!(next, "mods/already.jar.disabled");
     }
 
     #[tokio::test]

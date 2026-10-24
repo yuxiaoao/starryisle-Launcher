@@ -29,6 +29,8 @@ use super::{
 #[serde(rename_all = "camelCase")]
 pub enum CachePolicy {
     UseFresh,
+    /// Fetch current data, allowing presentation callers to retain offline cache.
+    Revalidate,
     StaleWhileRevalidate,
     OnlyCached,
     /// Ignore positive, negative, and expired cache entries. A source error
@@ -114,6 +116,8 @@ impl Subscription {
 }
 
 pub struct ResourceService {
+    pub(crate) analysis_sessions:
+        DashMap<SessionId, Arc<super::plans::analysis::AnalysisSession>>,
     pub(crate) artifact_metadata_reader:
         Arc<dyn super::plans::artifact_metadata::ArtifactMetadataReader>,
     pub(crate) artifact_metadata: DashMap<
@@ -193,6 +197,7 @@ impl ResourceService {
             }
         }
         Ok(Arc::new(Self {
+            analysis_sessions: DashMap::new(),
             artifact_metadata_reader: Arc::new(
                 super::plans::artifact_metadata::RuntimeArtifactMetadataReader,
             ),
@@ -361,7 +366,10 @@ impl ResourceService {
                     continue;
                 }
             };
-            if policy != CachePolicy::ForceRefresh {
+            if !matches!(
+                policy,
+                CachePolicy::ForceRefresh | CachePolicy::Revalidate
+            ) {
                 let (value, expired) =
                     if policy == CachePolicy::StaleWhileRevalidate {
                         self.cache
@@ -526,6 +534,9 @@ impl ResourceService {
             }
             for (flight, response) in active.iter().zip(responses) {
                 let result = response.and_then(|value| {
+                    if provider.namespace() != flight.key.cache.namespace {
+                        return Err(ResourceError::Canceled);
+                    }
                     validate_value(
                         &flight.key.cache.source,
                         &flight.query,
@@ -800,9 +811,9 @@ pub(crate) fn valid_artifact(artifact: &ResourceArtifact) -> bool {
     if artifact.file_name.as_ref().is_some_and(|name| {
         name.is_empty()
             || matches!(name.as_str(), "." | "..")
-            || name.chars().any(|character| {
-                character.is_control() || matches!(character, '/' | '\\')
-            })
+            || name
+                .chars()
+                .any(|character| matches!(character, '/' | '\\'))
     }) {
         return false;
     }

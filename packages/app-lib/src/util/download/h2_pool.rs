@@ -7,6 +7,29 @@
 //! connection paths remain available for later re-enablement, but are
 //! temporarily disabled while their failure behavior is stabilized.
 
+use crate::util::download::constants::H2_ADDITIONAL_CONNECTIONS_ENABLED as ADDITIONAL_H2_CONNECTIONS_ENABLED;
+use crate::util::download::constants::H2_CONNECTION_ATTEMPTS;
+use crate::util::download::constants::{
+    DOWNLOAD_SCHEDULING_GRACE, H2_ADMISSION_LOG_THRESHOLD,
+    H2_CONNECTION_WINDOW, H2_INITIAL_STREAM_WINDOW, H2_POOL_ADMISSION,
+    H2_POOL_ENDPOINT_CHANGED_BEFORE_H2_STREAM_ASSIGNMENT,
+    H2_POOL_ENDPOINT_CHANGED_WHILE_WAITING_FOR_THE_H2_CONNECTION_SLOT,
+    H2_POOL_ENDPOINT_DID_NOT_NEGOTIATE_H2,
+    H2_POOL_ENDPOINT_SELECTION_CHANGED_DURING_H2_EXPANSION,
+    H2_POOL_ENDPOINT_SELECTION_CHANGED_DURING_THE_H2_HANDSHAKE,
+    H2_POOL_H2_CONNECTION_DEADLINE_EXHAUSTED, H2_POOL_HEADERS,
+    H2_POOL_HTTP_2_POLICY_REQUIRES_AN_EXISTING_SHARED_CONNECTION,
+    H2_POOL_HTTP_2_POOL_HAS_NO_LIVE_CONNECTION,
+    H2_POOL_HTTP_2_ROUTE_HAS_NO_AUTHORITY,
+    H2_POOL_PINNED_TCP_CONNECTION_TIMED_OUT,
+    H2_POOL_SHARED_HTTP_2_CONNECTION_IS_NOT_COVERED_BY_THE, HTTPS_PORT,
+    MODRINTH_CDN_AUTHORITY,
+};
+#[cfg(test)]
+use crate::util::download::constants::{
+    H2_CONNECTION_PROBE_TIMEOUT, H2_DNS_REFRESH_TIMEOUT,
+    H2_POOL_TEST_INVALID_443,
+};
 use bytes::Bytes;
 use futures::stream::{FuturesUnordered, StreamExt};
 use h2::client::SendRequest;
@@ -22,20 +45,22 @@ use tokio::sync::Mutex as AsyncMutex;
 use tokio::sync::Notify;
 use tokio_rustls::TlsConnector;
 
+use super::endpoint_selection::{EndpointLease, Protocol};
 use crate::util::fetch::DownloadRoute;
 
-const CONNECT_TIMEOUT: Duration = Duration::from_secs(10);
-const TLS_HANDSHAKE_TIMEOUT: Duration = Duration::from_secs(10);
-const HAPPY_EYEBALLS_IPV4_DELAY: Duration = Duration::from_millis(150);
-const HAPPY_EYEBALLS_IPV6_DELAY: Duration = Duration::from_millis(80);
-const STREAM_READY_TIMEOUT: Duration = Duration::from_secs(30);
-const IDLE_EVICTION_TIMEOUT: Duration = Duration::from_secs(5 * 60);
-const CONNECTION_WAIT_TIMEOUT: Duration = Duration::from_secs(15);
+use super::constants::{
+    H2_CONNECT_TIMEOUT as CONNECT_TIMEOUT,
+    H2_CONNECTION_WAIT_TIMEOUT as CONNECTION_WAIT_TIMEOUT,
+    H2_HAPPY_EYEBALLS_IPV4_DELAY as HAPPY_EYEBALLS_IPV4_DELAY,
+    H2_HAPPY_EYEBALLS_IPV6_DELAY as HAPPY_EYEBALLS_IPV6_DELAY,
+    H2_IDLE_EVICTION_TIMEOUT as IDLE_EVICTION_TIMEOUT,
+    H2_STREAM_READY_TIMEOUT as STREAM_READY_TIMEOUT,
+    H2_TLS_HANDSHAKE_TIMEOUT as TLS_HANDSHAKE_TIMEOUT,
+};
 // Temporarily keep one multiplexed H2 connection per authority while the
 // additional-connection path is being stabilized. Re-enable the adaptive
 // pool and asset sibling connection together after their failure behavior is
 // verified.
-const ADDITIONAL_H2_CONNECTIONS_ENABLED: bool = true;
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub(crate) enum H2ConnectFailureKind {
@@ -67,6 +92,9 @@ impl H2ConnectError {
 /// A live shared HTTP/2 connection to one authority.
 pub struct SharedH2Connection {
     authority: String,
+    budget_scope: String,
+    pub(crate) endpoint_lease: Option<EndpointLease>,
+    pub(crate) connection_id: u64,
     pub(crate) remote_addr: Option<std::net::SocketAddr>,
     sender: Mutex<SendRequest<Bytes>>,
     // One permit represents the shared TCP/TLS connection, not every H2
@@ -89,6 +117,8 @@ pub struct SharedH2Connection {
 }
 
 pub(crate) struct H2StreamActivity {
+    _endpoint_feedback:
+        Option<super::endpoint_selection::metrics::EndpointTransferGuard>,
     active_streams: Arc<AtomicUsize>,
     last_activity: Arc<Mutex<std::time::Instant>>,
     drained: Arc<Notify>,
@@ -114,6 +144,13 @@ impl SharedH2Connection {
         physical_budget: Option<super::native_budget::NativeBudgetPermit>,
     ) -> Self {
         Self {
+            budget_scope: authority.clone(),
+            endpoint_lease: None,
+            connection_id: {
+                static NEXT_ID: std::sync::atomic::AtomicU64 =
+                    std::sync::atomic::AtomicU64::new(1);
+                NEXT_ID.fetch_add(1, Ordering::Relaxed)
+            },
             authority,
             remote_addr: None,
             sender: Mutex::new(sender),
@@ -133,7 +170,12 @@ impl SharedH2Connection {
 
     #[cfg(test)]
     pub(crate) fn for_test(sender: SendRequest<Bytes>) -> Self {
-        Self::new("test.invalid:443".to_string(), sender, None)
+        Self::new(H2_POOL_TEST_INVALID_443.to_string(), sender, None)
+    }
+
+    #[cfg(test)]
+    pub(crate) fn mark_success_for_test(&self) {
+        self.successful_responses.fetch_add(1, Ordering::Relaxed);
     }
 
     #[cfg(test)]
@@ -145,11 +187,8 @@ impl SharedH2Connection {
         let budget = super::native_budget::acquire(route).await.unwrap();
         let connection =
             Arc::new(Self::new(authority.clone(), sender, Some(budget)));
-        let slot = connection_slot(&super::proxy_context::authority_key(
-            &authority,
-            route.proxy,
-        ))
-        .await;
+        let (key, _) = connection_identity(route).unwrap();
+        let slot = connection_slot(&key).await;
         *slot.lock().await = Some(connection.clone());
         connection
     }
@@ -174,6 +213,20 @@ impl SharedH2Connection {
 
     pub(crate) fn record_bytes(&self, bytes: usize) {
         self.bytes_transferred.fetch_add(bytes, Ordering::Relaxed);
+        if let Some(lease) = &self.endpoint_lease
+            && let Some(clients) = super::proxy_context::clients()
+        {
+            clients.endpoints.observe_payload(
+                lease,
+                bytes as u64,
+                std::time::Instant::now(),
+                super::local_resources::network_pressure().blocks_expansion()
+                    || super::endpoint_selection::tuning::TRIALS
+                        .snapshot(std::time::Instant::now())
+                        .1
+                        .is_some(),
+            );
+        }
     }
 
     pub(crate) fn bytes_transferred_for_scheduler(&self) -> usize {
@@ -205,6 +258,9 @@ impl SharedH2Connection {
         self.active_streams.fetch_add(1, Ordering::AcqRel);
         self.release_stream_reservation();
         H2StreamActivity {
+            _endpoint_feedback: self.endpoint_lease.as_ref().and_then(|lease|
+                super::proxy_context::clients().map(|clients|
+                    super::endpoint_selection::metrics::EndpointTransferGuard::new(&clients.endpoints, lease.clone()))),
             active_streams: Arc::clone(&self.active_streams),
             last_activity: Arc::clone(&self.last_activity),
             drained: Arc::clone(&self.drained),
@@ -278,9 +334,12 @@ impl SharedH2Connection {
     pub async fn open(
         &self,
         request: http::Request<()>,
-    ) -> Result<http::Response<h2::RecvStream>, h2::Error> {
+    ) -> crate::Result<http::Response<h2::RecvStream>> {
         let result = self.open_inner(request).await;
-        if result.is_err() {
+        if result.as_ref().err().is_some_and(|error| {
+            matches!(error.raw.as_ref(),
+            crate::ErrorKind::DownloadH2Error(error) if !error.is_reset())
+        }) {
             self.record_stream_failure();
         }
         result
@@ -289,7 +348,7 @@ impl SharedH2Connection {
     async fn open_inner(
         &self,
         request: http::Request<()>,
-    ) -> Result<http::Response<h2::RecvStream>, h2::Error> {
+    ) -> crate::Result<http::Response<h2::RecvStream>> {
         let ready_started = std::time::Instant::now();
         let sender = self
             .sender
@@ -304,11 +363,12 @@ impl SharedH2Connection {
         let mut sender =
             tokio::time::timeout(STREAM_READY_TIMEOUT, sender.ready())
                 .await
-                .map_err(|_| {
-                    h2::Error::from(h2::Reason::ENHANCE_YOUR_CALM)
-                })??;
+                .map_err(|_| crate::ErrorKind::DownloadStreamStalled {
+                    context: H2_POOL_ADMISSION.into(),
+                })?
+                .map_err(crate::ErrorKind::DownloadH2Error)?;
         let ready_wait = ready_started.elapsed();
-        if ready_wait >= Duration::from_millis(25) {
+        if ready_wait >= H2_ADMISSION_LOG_THRESHOLD {
             tracing::debug!(
                 authority = %self.authority,
                 ready_wait_ms = ready_wait.as_millis(),
@@ -319,13 +379,21 @@ impl SharedH2Connection {
             let _admission =
                 self.sender.lock().unwrap_or_else(|p| p.into_inner());
             if self.is_retiring() || self.is_dead() {
-                return Err(h2::Reason::REFUSED_STREAM.into());
+                return Err(crate::ErrorKind::DownloadH2Error(
+                    h2::Reason::REFUSED_STREAM.into(),
+                )
+                .into());
             }
-            sender.send_request(request, true)?
+            sender
+                .send_request(request, true)
+                .map_err(crate::ErrorKind::DownloadH2Error)?
         };
         let response = tokio::time::timeout(STREAM_READY_TIMEOUT, response)
             .await
-            .map_err(|_| h2::Error::from(h2::Reason::ENHANCE_YOUR_CALM))??;
+            .map_err(|_| crate::ErrorKind::DownloadStreamStalled {
+                context: H2_POOL_HEADERS.into(),
+            })?
+            .map_err(crate::ErrorKind::DownloadH2Error)?;
         if response.status().is_success() {
             self.successful_responses.fetch_add(1, Ordering::AcqRel);
         }
@@ -341,30 +409,80 @@ impl Drop for SharedH2Connection {
 
 type ConnectionSlot = Arc<AsyncMutex<Option<Arc<SharedH2Connection>>>>;
 
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+struct ConnectionPoolKey {
+    budget_scope: String,
+    selection: Option<super::endpoint_selection::PoolKey>,
+}
+
+fn connection_identity(
+    route: &DownloadRoute,
+) -> Result<(ConnectionPoolKey, Option<EndpointLease>), H2ConnectError> {
+    let authority =
+        crate::util::fetch::url_authority(&route.url).ok_or_else(|| {
+            H2ConnectError::new(
+                H2ConnectFailureKind::Protocol,
+                H2_POOL_HTTP_2_ROUTE_HAS_NO_AUTHORITY.into(),
+            )
+        })?;
+    let lease = super::proxy_context::clients().and_then(|clients| {
+        if !super::endpoint_selection::EndpointSelector::eligible_network(
+            &clients,
+            route.proxy,
+        ) {
+            return None;
+        }
+        clients
+            .endpoints
+            .lease(&url::Url::parse(&route.url).ok()?, Protocol::H2)
+    });
+    Ok((
+        ConnectionPoolKey {
+            budget_scope: super::proxy_context::authority_key(
+                &authority,
+                route.proxy,
+            ),
+            selection: lease.as_ref().map(|lease| lease.pool.clone()),
+        },
+        lease,
+    ))
+}
+
+fn connection_matches(
+    route: &DownloadRoute,
+    lease: Option<&EndpointLease>,
+) -> bool {
+    connection_identity(route).is_ok_and(|(_, current)| {
+        current.as_ref().map(|l| &l.pool) == lease.map(|l| &l.pool)
+    })
+}
+
 /// Registry of live shared connections, keyed by authority.
 static CONNECTIONS: std::sync::LazyLock<
-    AsyncMutex<HashMap<String, ConnectionSlot>>,
+    AsyncMutex<HashMap<ConnectionPoolKey, ConnectionSlot>>,
 > = std::sync::LazyLock::new(|| AsyncMutex::new(HashMap::new()));
 
 type ParallelConnectionPool =
     Arc<AsyncMutex<super::authority_scheduler::AuthorityScheduler>>;
 
 static PARALLEL_CONNECTIONS: std::sync::LazyLock<
-    AsyncMutex<HashMap<String, ParallelConnectionPool>>,
+    AsyncMutex<HashMap<ConnectionPoolKey, ParallelConnectionPool>>,
 > = std::sync::LazyLock::new(|| AsyncMutex::new(HashMap::new()));
 
-async fn connection_slot(authority: &str) -> ConnectionSlot {
+async fn connection_slot(key: &ConnectionPoolKey) -> ConnectionSlot {
     let mut connections = CONNECTIONS.lock().await;
     connections
-        .entry(authority.to_string())
+        .entry(key.clone())
         .or_insert_with(|| Arc::new(AsyncMutex::new(None)))
         .clone()
 }
 
-async fn parallel_connection_pool(authority: &str) -> ParallelConnectionPool {
+async fn parallel_connection_pool(
+    key: &ConnectionPoolKey,
+) -> ParallelConnectionPool {
     let mut connections = PARALLEL_CONNECTIONS.lock().await;
     connections
-        .entry(authority.to_string())
+        .entry(key.clone())
         .or_insert_with(|| {
             Arc::new(AsyncMutex::new(
                 super::authority_scheduler::AuthorityScheduler::default(),
@@ -374,6 +492,10 @@ async fn parallel_connection_pool(authority: &str) -> ParallelConnectionPool {
 }
 
 fn tls_config() -> Arc<ClientConfig> {
+    #[cfg(test)]
+    if let Ok(config) = TEST_TLS_CONFIG.try_with(Arc::clone) {
+        return config;
+    }
     static INSTALL_PROVIDER: Once = Once::new();
     INSTALL_PROVIDER.call_once(|| {
         let _ = rustls::crypto::ring::default_provider().install_default();
@@ -396,15 +518,25 @@ fn tls_config() -> Arc<ClientConfig> {
     config
 }
 
+#[cfg(test)]
+tokio::task_local! { static TEST_TLS_CONFIG: Arc<ClientConfig>; }
+
+#[cfg(test)]
+pub(crate) async fn with_test_tls_config<F: std::future::Future>(
+    config: Arc<ClientConfig>,
+    future: F,
+) -> F::Output {
+    TEST_TLS_CONFIG.scope(config, future).await
+}
+
 fn platform_root_certs() -> rustls::RootCertStore {
     let mut store = rustls::RootCertStore::empty();
     let certs = rustls_native_certs::load_native_certs();
     for cert in certs.certs {
         let _ = store.add(cert);
     }
-    if certs.errors.is_empty() {
-        return store;
-    }
+    // Match reqwest's native + WebPKI trust sources even when the platform
+    // store loads successfully but lacks a public root (common on Windows).
     store.extend(webpki_roots::TLS_SERVER_ROOTS.iter().cloned());
     store
 }
@@ -413,34 +545,39 @@ async fn connect_addresses(
     host: &str,
     port: u16,
     addresses: &[IpAddr],
-    resolver: &crate::util::download_dns::DownloadDnsResolver,
+    parallel: bool,
 ) -> std::io::Result<TcpStream> {
-    let attempts = addresses.iter().copied().take(2).enumerate().map(
-        |(index, address)| async move {
-            if index > 0 {
-                let delay = if address.is_ipv4() {
-                    HAPPY_EYEBALLS_IPV4_DELAY
-                } else {
-                    HAPPY_EYEBALLS_IPV6_DELAY
-                };
-                tokio::time::sleep(delay).await;
-            }
-            TcpStream::connect((address, port)).await
-        },
-    );
     tokio::time::timeout(CONNECT_TIMEOUT, async {
-        let mut pending = attempts.collect::<FuturesUnordered<_>>();
+        let mut remaining = addresses.iter().copied();
+        let attempt = |address: IpAddr, delay: Duration| async move {
+            tokio::time::sleep(delay).await;
+            TcpStream::connect((address, port)).await
+        };
+        let mut pending = FuturesUnordered::new();
+        if let Some(first) = remaining.next() {
+            pending.push(attempt(first, Duration::ZERO));
+        }
+        if parallel && let Some(second) = remaining.next() {
+            let delay = if second.is_ipv4() {
+                HAPPY_EYEBALLS_IPV4_DELAY
+            } else {
+                HAPPY_EYEBALLS_IPV6_DELAY
+            };
+            pending.push(attempt(second, delay));
+        }
         let mut last_error = None;
         while let Some(result) = pending.next().await {
             match result {
                 Ok(stream) => {
                     stream.set_nodelay(true).ok();
-                    if let Ok(address) = stream.peer_addr() {
-                        resolver.record_host_success(host, address.ip());
-                    }
                     return Ok(stream);
                 }
-                Err(error) => last_error = Some(error),
+                Err(error) => {
+                    last_error = Some(error);
+                    if let Some(next) = remaining.next() {
+                        pending.push(attempt(next, Duration::ZERO));
+                    }
+                }
             }
         }
         Err(last_error.unwrap_or_else(|| {
@@ -463,43 +600,148 @@ async fn connect_addresses(
 mod address_tests {
     use super::*;
 
-    #[test]
-    fn happy_eyeballs_uses_the_two_ordered_candidates() {
-        let ordered: [IpAddr; 4] = [
-            "2001:db8::1".parse().unwrap(),
-            "2001:db8::2".parse().unwrap(),
-            "192.0.2.1".parse().unwrap(),
-            "192.0.2.2".parse().unwrap(),
+    #[tokio::test]
+    async fn progresses_to_third_address_after_two_connection_failures() {
+        let listener = tokio::net::TcpListener::bind(("127.0.0.1", 0))
+            .await
+            .unwrap();
+        let port = listener.local_addr().unwrap().port();
+        let addresses = [
+            "127.0.0.2".parse().unwrap(),
+            "127.0.0.3".parse().unwrap(),
+            "127.0.0.1".parse().unwrap(),
         ];
-        assert_eq!(ordered[0].to_string(), "2001:db8::1");
-        assert_eq!(ordered.iter().copied().take(2).count(), 2);
+        let stream = tokio::time::timeout(
+            H2_CONNECTION_PROBE_TIMEOUT,
+            connect_addresses(
+                "three-addresses.invalid",
+                port,
+                &addresses,
+                true,
+            ),
+        )
+        .await
+        .unwrap()
+        .unwrap();
+        assert_eq!(stream.peer_addr().unwrap(), listener.local_addr().unwrap());
+    }
+
+    #[tokio::test]
+    async fn empty_address_list_returns_not_found() {
+        let error = connect_addresses("empty.invalid", 443, &[], true)
+            .await
+            .unwrap_err();
+        assert_eq!(error.kind(), std::io::ErrorKind::NotFound);
+    }
+
+    #[tokio::test]
+    async fn saturated_address_fallback_keeps_recovery_slot_and_temporary_race_admission_releases()
+     {
+        use crate::util::fetch::{
+            DownloadClients, DownloadRouteSource, ProxyPolicy,
+        };
+        use crate::util::proxy::{ProxyConfig, ProxyMode};
+        let listener = tokio::net::TcpListener::bind(("127.0.0.1", 0))
+            .await
+            .unwrap();
+        let port = listener.local_addr().unwrap().port();
+        let mut clients = DownloadClients::build(
+            &ProxyConfig {
+                mode: ProxyMode::None,
+                ..Default::default()
+            },
+            false,
+            false,
+        )
+        .unwrap();
+        clients.scope = format!("dns-race-budget-{port}");
+        clients.endpoints =
+            super::super::endpoint_selection::EndpointSelector::with_mode(
+                clients.scope.clone(),
+                super::super::endpoint_selection::SelectionMode::Auto,
+            );
+        clients.system_dns.set_test_addresses(
+            "cdn.modrinth.com",
+            ["127.0.0.2", "127.0.0.3", "127.0.0.1"]
+                .into_iter()
+                .map(|ip| std::net::SocketAddr::new(ip.parse().unwrap(), 0))
+                .collect(),
+        );
+        let route = DownloadRoute {
+            url: "https://cdn.modrinth.com/data/test/file.jar".into(),
+            source: DownloadRouteSource::Official,
+            is_mirror: false,
+            allow_sensitive_headers: true,
+            supports_range: true,
+            proxy: ProxyPolicy::System,
+        };
+        super::super::proxy_context::with_snapshot(clients, async {
+            // One of these normal permits is the caller's first socket.
+            let mut permits: Vec<_> = (0..31)
+                .map(|_| {
+                    super::super::native_budget::try_acquire(&route).unwrap()
+                })
+                .collect();
+            assert_eq!(super::super::native_budget::available(&route), 1);
+            assert!(address_race_budget(&route, true, 3).is_none());
+            let stream = tokio::time::timeout(
+                H2_DNS_REFRESH_TIMEOUT,
+                connect_tcp("cdn.modrinth.com", port, &route, true),
+            )
+            .await
+            .unwrap()
+            .unwrap();
+            assert_eq!(
+                stream.peer_addr().unwrap(),
+                listener.local_addr().unwrap()
+            );
+            assert_eq!(super::super::native_budget::available(&route), 1);
+            drop(stream);
+            permits.pop();
+            let race = address_race_budget(&route, true, 3).unwrap();
+            assert_eq!(super::super::native_budget::available(&route), 1);
+            drop(race);
+            assert_eq!(super::super::native_budget::available(&route), 2);
+            assert!(address_race_budget(&route, true, 1).is_none());
+            drop(permits);
+            assert_eq!(super::super::native_budget::available(&route), 32);
+        })
+        .await;
     }
 }
 
 async fn connect_tcp(
     host: &str,
     port: u16,
-    proxy: crate::util::fetch::ProxyPolicy,
+    route: &DownloadRoute,
+    reserve_native_budget: bool,
 ) -> std::io::Result<TcpStream> {
     // Prefer the ordered address list from the shared download resolver
     // (IPv4/IPv6 preference and per-IP reliability), falling back to the
     // system resolver when no list is cached yet.
-    let resolver = super::proxy_context::resolver(proxy);
-    if resolver.resolved_addresses(host).is_empty() {
-        resolver.resolve_host(host).await?;
+    let resolver = super::proxy_context::resolver(route.proxy);
+    let mut addresses = resolver.resolved_addresses(host);
+    if addresses.is_empty() {
+        // TTL-zero answers are usable for this attempt without entering the
+        // cache. Do not discard them by rereading the cache after resolution.
+        addresses = resolver.resolve_host(host).await?;
     }
-    let addresses = resolver.resolved_addresses(host);
     let mut last_error = None;
+    // The caller holds one physical permit. Racing a second TCP socket
+    // requires another normal admission; it cannot consume the recovery slot.
+    // The loser is closed before this temporary permit is released.
+    let _race_budget =
+        address_race_budget(route, reserve_native_budget, addresses.len());
+    let parallel = _race_budget.is_some();
     if !addresses.is_empty() {
-        match connect_addresses(host, port, &addresses, &resolver).await {
+        match connect_addresses(host, port, &addresses, parallel).await {
             Ok(stream) => return Ok(stream),
             Err(error) => last_error = Some(error),
         }
         if resolver.record_connection_failure(host) {
-            resolver.resolve_host(host).await?;
-            let refreshed = resolver.resolved_addresses(host);
+            let refreshed = resolver.resolve_host(host).await?;
             if !refreshed.is_empty() && refreshed != addresses {
-                match connect_addresses(host, port, &refreshed, &resolver).await
+                match connect_addresses(host, port, &refreshed, parallel).await
                 {
                     Ok(stream) => return Ok(stream),
                     Err(error) => last_error = Some(error),
@@ -540,10 +782,21 @@ async fn connect_tcp(
     }))
 }
 
+fn address_race_budget(
+    route: &DownloadRoute,
+    reserve_native_budget: bool,
+    address_count: usize,
+) -> Option<super::native_budget::NativeBudgetPermit> {
+    (reserve_native_budget && address_count > 1)
+        .then(|| super::native_budget::try_acquire(route).ok())
+        .flatten()
+}
+
 /// Connects a new shared HTTP/2 connection to `authority` (host[:port]).
 async fn establish(
     route: &DownloadRoute,
     reserve_native_budget: bool,
+    lease: Option<EndpointLease>,
 ) -> Result<Arc<SharedH2Connection>, H2ConnectError> {
     if let Some(reason) = super::native::h2_ineligible_reason(route) {
         return Err(H2ConnectError::new(
@@ -555,7 +808,7 @@ async fn establish(
         crate::util::fetch::url_authority(&route.url).ok_or_else(|| {
             H2ConnectError::new(
                 H2ConnectFailureKind::Protocol,
-                "HTTP/2 route has no authority".to_string(),
+                H2_POOL_HTTP_2_ROUTE_HAS_NO_AUTHORITY.to_string(),
             )
         })?;
     let physical_budget = if reserve_native_budget {
@@ -570,10 +823,25 @@ async fn establish(
     };
     let (host, port) = authority
         .rsplit_once(':')
-        .map(|(host, port)| (host, port.parse::<u16>().unwrap_or(443)))
-        .unwrap_or((&authority, 443));
+        .map(|(host, port)| (host, port.parse::<u16>().unwrap_or(HTTPS_PORT)))
+        .unwrap_or((&authority, HTTPS_PORT));
 
-    let tcp = connect_tcp(host, port, route.proxy).await.map_err(|error| {
+    let tcp_result = if let Some(lease) = &lease {
+        tokio::time::timeout(
+            CONNECT_TIMEOUT,
+            TcpStream::connect(lease.pool.endpoint),
+        )
+        .await
+        .unwrap_or_else(|_| {
+            Err(std::io::Error::new(
+                std::io::ErrorKind::TimedOut,
+                H2_POOL_PINNED_TCP_CONNECTION_TIMED_OUT,
+            ))
+        })
+    } else {
+        connect_tcp(host, port, route, reserve_native_budget).await
+    };
+    let tcp = tcp_result.map_err(|error| {
 		H2ConnectError::new(
 			H2ConnectFailureKind::Tcp,
 			format!(
@@ -608,11 +876,17 @@ async fn establish(
             format!("TLS handshake with {authority} failed: {error}"),
         )
     })?;
+    if tls.get_ref().1.alpn_protocol() != Some(b"h2") {
+        return Err(H2ConnectError::new(
+            H2ConnectFailureKind::Protocol,
+            H2_POOL_ENDPOINT_DID_NOT_NEGOTIATE_H2.into(),
+        ));
+    }
 
     let mut builder = h2::client::Builder::new();
     builder
-        .initial_window_size(1024 * 1024)
-        .initial_connection_window_size(64 * 1024 * 1024);
+        .initial_window_size(H2_INITIAL_STREAM_WINDOW)
+        .initial_connection_window_size(H2_CONNECTION_WINDOW);
     let (sender, mut connection) =
         builder.handshake(Box::pin(tls)).await.map_err(|error| {
             H2ConnectError::new(
@@ -621,6 +895,11 @@ async fn establish(
             )
         })?;
 
+    if let Some(address) = remote_addr {
+        super::proxy_context::resolver(route.proxy)
+            .record_host_success(host, address.ip());
+    }
+
     // Tune flow-control windows for high-stream multiplexing (e.g. hundreds
     // of concurrent asset downloads over one connection). With the default
     // 64 KiB connection window, concurrent streams would stall waiting for
@@ -628,10 +907,13 @@ async fn establish(
     // the peer send a whole small file without round trips.
     // Keep the adaptive connection target aligned with the initial connection
     // window configured before the handshake.
-    connection.set_target_window_size(64 * 1024 * 1024);
+    connection.set_target_window_size(H2_CONNECTION_WINDOW);
 
     let mut shared =
         SharedH2Connection::new(authority.clone(), sender, physical_budget);
+    shared.budget_scope =
+        super::proxy_context::authority_key(&authority, route.proxy);
+    shared.endpoint_lease = lease;
     shared.remote_addr = remote_addr;
     let shared = Arc::new(shared);
 
@@ -692,7 +974,7 @@ async fn wait_for_idle(
                 return;
             };
             if connection.active_streams() > 0 {
-                timeout.min(Duration::from_secs(1))
+                timeout.min(DOWNLOAD_SCHEDULING_GRACE)
             } else {
                 timeout.saturating_sub(
                     connection
@@ -715,7 +997,7 @@ pub(crate) async fn evict_idle_connections(scope: Option<&str>) {
         .lock()
         .await
         .iter()
-        .filter(|(key, _)| scope.is_none_or(|scope| key.as_str() == scope))
+        .filter(|(key, _)| scope.is_none_or(|scope| key.budget_scope == scope))
         .map(|(_, slot)| slot.clone())
         .collect::<Vec<_>>();
     for slot in slots {
@@ -730,7 +1012,7 @@ pub(crate) async fn evict_idle_connections(scope: Option<&str>) {
         .lock()
         .await
         .iter()
-        .filter(|(key, _)| scope.is_none_or(|scope| key.as_str() == scope))
+        .filter(|(key, _)| scope.is_none_or(|scope| key.budget_scope == scope))
         .map(|(_, pool)| pool.clone())
         .collect::<Vec<_>>();
     for pool in pools {
@@ -745,9 +1027,121 @@ pub(crate) async fn evict_idle_connections(scope: Option<&str>) {
     }
 }
 
+/// Advance measured trials even while long-lived streams produce no new
+/// connection checkout. Otherwise an unproductive sibling could remain
+/// admitted until an unrelated future request happens to sample the pool.
+pub(crate) async fn observe_adaptive_connections() {
+    let pools: Vec<_> = PARALLEL_CONNECTIONS
+        .lock()
+        .await
+        .values()
+        .cloned()
+        .collect();
+    let now = std::time::Instant::now();
+    let pressure =
+        super::local_resources::network_pressure().blocks_expansion();
+    for pool in pools {
+        if let Ok(mut state) = pool.try_lock() {
+            state.observe_background(now, pressure);
+        }
+    }
+}
+
+async fn retire_obsolete_connections(current: &ConnectionPoolKey) {
+    let slots = CONNECTIONS
+        .lock()
+        .await
+        .iter()
+        .filter(|(key, _)| {
+            key.budget_scope == current.budget_scope && *key != current
+        })
+        .map(|(_, slot)| slot.clone())
+        .collect::<Vec<_>>();
+    for slot in slots {
+        // An old handshake may hold the slot; its captured lease is checked
+        // before publication and cannot enter the current generation's pool.
+        if let Ok(mut cached) = slot.try_lock()
+            && let Some(connection) = cached.take()
+        {
+            connection.retire();
+        }
+    }
+    let pools = PARALLEL_CONNECTIONS
+        .lock()
+        .await
+        .iter()
+        .filter(|(key, _)| {
+            key.budget_scope == current.budget_scope && *key != current
+        })
+        .map(|(_, pool)| pool.clone())
+        .collect::<Vec<_>>();
+    for pool in pools {
+        if let Ok(mut state) = pool.try_lock() {
+            for connection in state.connections_for_eviction() {
+                connection.retire();
+            }
+            state.prune();
+        }
+    }
+    CONNECTIONS.lock().await.retain(|key, slot| {
+        key == current
+            || key.budget_scope != current.budget_scope
+            || Arc::strong_count(slot) > 1
+    });
+    PARALLEL_CONNECTIONS.lock().await.retain(|key, pool| {
+        key == current
+            || key.budget_scope != current.budget_scope
+            || Arc::strong_count(pool) > 1
+    });
+}
+
 /// Returns the live shared connection for `authority`, establishing one on
 /// first use or after a previous connection died.
 async fn shared_connection_single(
+    route: &DownloadRoute,
+    reserve_native_budget: bool,
+    allow_cold_connection: bool,
+) -> Result<Arc<SharedH2Connection>, H2ConnectError> {
+    let deadline = tokio::time::Instant::now() + CONNECTION_WAIT_TIMEOUT;
+    for attempt in 0..H2_CONNECTION_ATTEMPTS {
+        let (_, lease) = connection_identity(route)?;
+        let result = tokio::time::timeout_at(
+            deadline,
+            shared_connection_single_attempt(
+                route,
+                reserve_native_budget,
+                allow_cold_connection,
+            ),
+        )
+        .await
+        .map_err(|_| {
+            H2ConnectError::new(
+                H2ConnectFailureKind::Tcp,
+                H2_POOL_H2_CONNECTION_DEADLINE_EXHAUSTED.into(),
+            )
+        })?;
+        match result {
+            Ok(connection) => return Ok(connection),
+            Err(error) => {
+                if let Some(lease) = &lease
+                    && let Some(clients) = super::proxy_context::clients()
+                {
+                    clients.endpoints.record_failure(
+                        lease,
+                        error.kind == H2ConnectFailureKind::Tls,
+                    );
+                    if attempt == 0 && !clients.endpoints.is_current(lease) {
+                        continue;
+                    }
+                }
+                return Err(error);
+            }
+        }
+    }
+    unreachable!("bounded H2 attempts always return")
+}
+
+async fn shared_connection_single_attempt(
     route: &DownloadRoute,
     reserve_native_budget: bool,
     allow_cold_connection: bool,
@@ -762,14 +1156,12 @@ async fn shared_connection_single(
         crate::util::fetch::url_authority(&route.url).ok_or_else(|| {
             H2ConnectError::new(
                 H2ConnectFailureKind::Protocol,
-                "HTTP/2 route has no authority".to_string(),
+                H2_POOL_HTTP_2_ROUTE_HAS_NO_AUTHORITY.to_string(),
             )
         })?;
-    let slot = connection_slot(&super::proxy_context::authority_key(
-        &authority,
-        route.proxy,
-    ))
-    .await;
+    let (key, lease) = connection_identity(route)?;
+    retire_obsolete_connections(&key).await;
+    let slot = connection_slot(&key).await;
     let deadline = tokio::time::Instant::now() + CONNECTION_WAIT_TIMEOUT;
     let mut cached = tokio::time::timeout_at(deadline, slot.lock())
         .await
@@ -781,6 +1173,16 @@ async fn shared_connection_single(
                 ),
             )
         })?;
+    if !connection_matches(route, lease.as_ref()) {
+        if let Some(connection) = cached.as_ref() {
+            connection.retire();
+        }
+        return Err(H2ConnectError::new(
+            H2ConnectFailureKind::Tcp,
+            H2_POOL_ENDPOINT_CHANGED_WHILE_WAITING_FOR_THE_H2_CONNECTION_SLOT
+                .into(),
+        ));
+    }
     if let Some(connection) = cached.as_ref().filter(|connection| {
         !connection.is_dead()
             && !connection.is_retiring()
@@ -792,8 +1194,7 @@ async fn shared_connection_single(
         }
         return Err(H2ConnectError::new(
             H2ConnectFailureKind::Protocol,
-            "shared HTTP/2 connection is not covered by the native connection budget"
-                .to_string(),
+            H2_POOL_SHARED_HTTP_2_CONNECTION_IS_NOT_COVERED_BY_THE.to_string(),
         ));
     }
     if cached.as_ref().is_some_and(|connection| {
@@ -811,13 +1212,14 @@ async fn shared_connection_single(
     if !allow_cold_connection {
         return Err(H2ConnectError::new(
             H2ConnectFailureKind::Protocol,
-            "HTTP/2 policy requires an existing shared connection".to_string(),
+            H2_POOL_HTTP_2_POLICY_REQUIRES_AN_EXISTING_SHARED_CONNECTION
+                .to_string(),
         ));
     }
     tracing::debug!(authority, "Establishing cold shared HTTP/2 connection");
     let connection = tokio::time::timeout_at(
         deadline,
-        establish(route, reserve_native_budget),
+        establish(route, reserve_native_budget, lease),
     )
     .await
     .map_err(|_| {
@@ -826,6 +1228,13 @@ async fn shared_connection_single(
             format!("timed out establishing HTTP/2 connection to {authority}"),
         )
     })??;
+    if !connection_matches(route, connection.endpoint_lease.as_ref()) {
+        connection.retire();
+        return Err(H2ConnectError::new(
+            H2ConnectFailureKind::Tcp,
+            H2_POOL_ENDPOINT_SELECTION_CHANGED_DURING_THE_H2_HANDSHAKE.into(),
+        ));
+    }
     *cached = Some(Arc::clone(&connection));
     Ok(connection)
 }
@@ -848,29 +1257,44 @@ pub(crate) async fn shared_connection(
         .await;
     }
 
-    let authority =
-        crate::util::fetch::url_authority(&route.url).ok_or_else(|| {
-            H2ConnectError::new(
-                H2ConnectFailureKind::Protocol,
-                "HTTP/2 route has no authority".to_string(),
-            )
-        })?;
-    let key = super::proxy_context::authority_key(&authority, route.proxy);
-    let pool = parallel_connection_pool(&key).await;
     let primary = shared_connection_single(
         route,
         reserve_native_budget,
         allow_cold_connection,
     )
     .await?;
+    let (key, lease) = connection_identity(route)?;
+    if !connection_matches(route, primary.endpoint_lease.as_ref()) {
+        primary.retire();
+        return Err(H2ConnectError::new(
+            H2ConnectFailureKind::Tcp,
+            H2_POOL_ENDPOINT_CHANGED_BEFORE_H2_STREAM_ASSIGNMENT.into(),
+        ));
+    }
+    let pool = parallel_connection_pool(&key).await;
     let route = route.clone();
     let clients = super::proxy_context::clients();
     select_parallel_connection(
         &pool,
         primary,
-        allow_cold_connection,
+        allow_cold_connection
+            && !super::native_breaker::is_open(&route)
+            && !super::local_resources::network_pressure().blocks_expansion(),
         move || async move {
-            let establish = establish(&route, reserve_native_budget);
+            let establish = async {
+                let sibling =
+                    establish(&route, reserve_native_budget, lease).await?;
+                if !connection_matches(&route, sibling.endpoint_lease.as_ref())
+                {
+                    sibling.retire();
+                    return Err(H2ConnectError::new(
+                        H2ConnectFailureKind::Tcp,
+                        H2_POOL_ENDPOINT_SELECTION_CHANGED_DURING_H2_EXPANSION
+                            .into(),
+                    ));
+                }
+                Ok(sibling)
+            };
             match clients {
                 Some(clients) => {
                     super::proxy_context::with_snapshot(clients, establish)
@@ -897,13 +1321,24 @@ where
         + 'static,
 {
     let mut state = pool.lock().await;
+    if primary.authority == MODRINTH_CDN_AUTHORITY
+        && super::proxy_context::clients().is_some_and(|clients| {
+            clients.endpoints.mode()
+                == super::endpoint_selection::SelectionMode::Auto
+        })
+    {
+        state.enable_adaptive(std::time::Instant::now());
+    }
     state.prune();
     state.add_connection(Arc::clone(&primary));
+    if !allow_expansion {
+        state.suspend_adaptive(std::time::Instant::now());
+    }
     state.observe(std::time::Instant::now());
     let selected = state.select_connection().ok_or_else(|| {
         H2ConnectError::new(
             H2ConnectFailureKind::Protocol,
-            "HTTP/2 pool has no live connection".into(),
+            H2_POOL_HTTP_2_POOL_HAS_NO_LIVE_CONNECTION.into(),
         )
     })?;
     let connecting =
@@ -1000,17 +1435,11 @@ pub(crate) async fn shared_batch_connection(
 }
 
 pub(crate) async fn has_live_connection(route: &DownloadRoute) -> bool {
-    let connections = CONNECTIONS.lock().await;
-    let Some(authority) = crate::util::fetch::url_authority(&route.url) else {
+    let Ok((key, _)) = connection_identity(route) else {
         return false;
     };
-    let Some(slot) = connections
-        .get(&super::proxy_context::authority_key(
-            &authority,
-            route.proxy,
-        ))
-        .cloned()
-    else {
+    let connections = CONNECTIONS.lock().await;
+    let Some(slot) = connections.get(&key).cloned() else {
         return false;
     };
     drop(connections);
@@ -1018,4 +1447,12 @@ pub(crate) async fn has_live_connection(route: &DownloadRoute) -> bool {
     slot.lock().await.as_ref().is_some_and(|connection| {
         !connection.is_dead() && !connection.is_retiring()
     })
+}
+
+#[cfg(test)]
+pub(crate) async fn hold_slot_for_test(
+    route: &DownloadRoute,
+) -> tokio::sync::OwnedMutexGuard<Option<Arc<SharedH2Connection>>> {
+    let (key, _) = connection_identity(route).unwrap();
+    connection_slot(&key).await.lock_owned().await
 }

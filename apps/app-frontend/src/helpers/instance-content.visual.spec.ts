@@ -1,6 +1,6 @@
 import { beforeEach, expect, it, vi } from 'vitest'
 
-import { get_content_snapshot, type InstanceContentSnapshot } from './instance'
+import { get_content_snapshot, type InstanceContentSnapshot, refresh_content } from './instance'
 import {
     type InstanceContentData,
     loadInstanceContentData,
@@ -40,6 +40,24 @@ it('does not start enrichment when the first local response belongs to an obsole
     vi.mocked(get_content_snapshot).mockResolvedValueOnce(snapshot())
     await loadInstanceContentInStages('instance', undefined, () => false)
     expect(get_content_snapshot).toHaveBeenCalledOnce()
+})
+
+it('publishes local content before an explicit refresh waits for the network', async () => {
+    vi.mocked(get_content_snapshot).mockResolvedValue(snapshot())
+    let complete!: (value: InstanceContentSnapshot) => void
+    vi.mocked(refresh_content).mockImplementation(
+        () =>
+            new Promise((resolve) => {
+                complete = resolve
+            }),
+    )
+    const showLocal = vi.fn((_data: InstanceContentData) => true)
+    const pending = loadInstanceContentInStages('instance', 'bypass', showLocal)
+    await vi.waitFor(() => expect(showLocal).toHaveBeenCalledOnce())
+    expect(get_content_snapshot).toHaveBeenCalledWith('instance', true)
+    expect(refresh_content).toHaveBeenCalledWith('instance')
+    complete(snapshot())
+    await pending
 })
 
 it('connector installation source comes from exact durable artifact evidence instead of legacy local ownership', async () => {
@@ -156,6 +174,30 @@ it('enriches updates separately and preserves the displayed snapshot', async () 
     expect(original.items[0].capabilities.canUpdate).toBe(true)
 })
 
+it('forwards visible-entry scope and progress without waiting for all update checks', async () => {
+    vi.mocked(get_content_snapshot).mockResolvedValue(snapshot())
+    let complete!: (result: Awaited<ReturnType<typeof resourceCheckUpdates>>) => void
+    vi.mocked(resourceCheckUpdates).mockImplementation((_path, _signal, options) => {
+        options?.onProgress?.({ entryId: 'entry', release: null, failed: false, unresolved: false })
+        return new Promise((resolve) => {
+            complete = resolve
+        })
+    })
+    const data = (await loadInstanceContentData('instance'))!
+    const onProgress = vi.fn()
+    const pending = refreshInstanceContentUpdates(data, undefined, {
+        entryIds: ['entry'],
+        onProgress,
+    })
+    expect(onProgress).toHaveBeenCalledOnce()
+    expect(resourceCheckUpdates).toHaveBeenCalledWith('instance', undefined, {
+        entryIds: ['entry'],
+        onProgress,
+    })
+    complete({ entries: [], releases: {}, unresolved: [], failures: [], failedEntries: [] })
+    await pending
+})
+
 it('keeps local content available when update discovery fails', async () => {
     vi.mocked(get_content_snapshot).mockResolvedValue(snapshot())
     vi.mocked(resourceCheckUpdates).mockRejectedValue(new Error('offline'))
@@ -164,6 +206,40 @@ it('keeps local content available when update discovery fails', async () => {
     expect(enriched.contentItems).toHaveLength(1)
     expect(enriched.snapshot.warnings[0].code).toBe('resource_update_unavailable')
     expect(data.snapshot.warnings).toHaveLength(0)
+})
+
+it('limits update discovery to the visible batch and preserves offscreen results', async () => {
+    vi.mocked(get_content_snapshot).mockResolvedValue(snapshot())
+    const data = (await loadInstanceContentData('instance'))!
+    const offscreen = {
+        ...data.contentItems[0],
+        instanceEntryId: 'offscreen',
+        file_path: 'mods/offscreen.jar',
+        resourceUpdate: {
+            project: { source: 'modrinth', projectId: 'offscreen-project' },
+            releaseId: 'cached-update',
+        },
+    }
+    data.contentItems.push(offscreen)
+    vi.mocked(resourceCheckUpdates).mockResolvedValue({
+        entries: [],
+        releases: {},
+        unresolved: [],
+        failures: [],
+        failedEntries: [],
+    })
+    const updated = await refreshInstanceContentUpdates(data, undefined, { entryIds: ['entry'] })
+    expect(resourceCheckUpdates).toHaveBeenCalledWith('instance', undefined, {
+        entryIds: ['entry'],
+    })
+    expect(updated.contentItems[1].resourceUpdate).toEqual(offscreen.resourceUpdate)
+})
+
+it('does not turn an empty visible batch into a full instance check', async () => {
+    vi.mocked(get_content_snapshot).mockResolvedValue(snapshot())
+    const data = (await loadInstanceContentData('instance'))!
+    await refreshInstanceContentUpdates(data, undefined, { entryIds: [] })
+    expect(resourceCheckUpdates).not.toHaveBeenCalled()
 })
 
 it('discards update responses after the instance request is canceled', async () => {
@@ -187,5 +263,7 @@ it('discards update responses after the instance request is canceled', async () 
         failedEntries: [],
     })
     expect(await pending).toBe(data)
-    expect(resourceCheckUpdates).toHaveBeenCalledWith('instance', controller.signal)
+    expect(resourceCheckUpdates).toHaveBeenCalledWith('instance', controller.signal, {
+        entryIds: ['entry'],
+    })
 })
