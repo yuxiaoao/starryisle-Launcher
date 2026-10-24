@@ -285,7 +285,11 @@ pub async fn check_app_update<R: Runtime>(
     webview: Webview<R>,
     channel: String,
 ) -> Result<Option<UpdateMetadata>> {
-    check_with_updater(&webview, &channel).await
+    // StarryIsle builds ship through their own GitHub releases, so the upstream
+    // Axolotl update service must never be queried: it reports Axolotl Launcher
+    // as a newer version and would replace this fork's installation.
+    let _ = (&webview, &channel);
+    Ok(None)
 }
 
 // Reimplementation of Update::download mostly, minus the actual download part
