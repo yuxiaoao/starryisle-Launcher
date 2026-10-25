@@ -19,9 +19,18 @@ if (!fs.existsSync(bundleDir)) {
 }
 
 const entries = fs.readdirSync(bundleDir)
-const archives = entries.filter((entry) => entry.endsWith('.nsis.zip'))
+// NSIS updater artifacts are the setup executable itself; other bundles emit a
+// `.nsis.zip` archive instead. Accept either and skip the human-facing installer
+// signature that Tauri also writes next to the executable.
+const nsisZip = entries.filter((entry) => entry.endsWith('.nsis.zip'))
+const signedExecutables = entries.filter(
+    (entry) => entry.endsWith('-setup.exe') && entries.includes(`${entry}.sig`),
+)
+const archives = nsisZip.length > 0 ? nsisZip : signedExecutables
 if (archives.length !== 1) {
-    throw new Error(`Expected exactly one .nsis.zip, found ${archives.length}`)
+    throw new Error(
+        `Expected exactly one signed NSIS artifact, found ${archives.length}`,
+    )
 }
 
 const archive = archives[0]
@@ -31,7 +40,10 @@ if (!fs.existsSync(signaturePath)) {
 }
 
 const signature = fs.readFileSync(signaturePath, 'utf8').trim()
-const downloadUrl = `https://github.com/${repository}/releases/download/v${version}/${encodeURIComponent(archive)}`
+// GitHub rewrites spaces in uploaded asset names to dots, so the manifest has to
+// reference the sanitized name for the download URL to resolve.
+const assetName = archive.replaceAll(' ', '.')
+const downloadUrl = `https://github.com/${repository}/releases/download/v${version}/${encodeURIComponent(assetName)}`
 
 const manifest = {
     version,
