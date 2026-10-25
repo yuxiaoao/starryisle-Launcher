@@ -2560,6 +2560,9 @@
   "app.home.insights.streak": {
     "message": "已连续游玩 {days} 天"
   },
+  "app.home.insights.total": {
+    "message": "总游玩 {duration}"
+  },
   "app.home.insights.this-week": {
     "message": "本周游玩 {duration}"
   },

@@ -2632,6 +2632,9 @@
   "app.home.insights.streak": {
     "message": "{days, plural, one {# day played in a row} other {# days played in a row}}"
   },
+  "app.home.insights.total": {
+    "message": "Total: {duration}"
+  },
   "app.home.insights.this-week": {
     "message": "This week: {duration}"
   },

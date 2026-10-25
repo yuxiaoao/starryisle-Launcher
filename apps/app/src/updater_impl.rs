@@ -15,9 +15,13 @@ use theseus::{
 use tokio::time::Instant;
 use url::Url;
 
-const UPDATE_SERVER_LATEST_URL: &str = "https://update.axlmc.org/latest";
-const UPDATE_SERVER_API: &str = "https://update.axlmc.org/api/versions";
-const UPDATE_SERVER_BASE: &str = "https://update.axlmc.org/";
+// StarryIsle publishes its own updater manifest next to each GitHub release, so
+// updates never point at the upstream Axolotl services.
+const UPDATE_SERVER_LATEST_URL: &str =
+    "https://github.com/yuxiaoao/starryisle-Launcher/releases/latest/download/latest.json";
+const UPDATE_SERVER_API: &str =
+    "https://github.com/yuxiaoao/starryisle-Launcher/releases/latest/download/latest.json";
+const UPDATE_SERVER_BASE: &str = "https://github.com/yuxiaoao/starryisle-Launcher/releases/";
 
 // The updater plugin builds `Update` with no request timeout, so a stalled
 // connection would hang the download forever. Bound the whole download.
@@ -285,11 +289,9 @@ pub async fn check_app_update<R: Runtime>(
     webview: Webview<R>,
     channel: String,
 ) -> Result<Option<UpdateMetadata>> {
-    // StarryIsle builds ship through their own GitHub releases, so the upstream
-    // Axolotl update service must never be queried: it reports Axolotl Launcher
-    // as a newer version and would replace this fork's installation.
-    let _ = (&webview, &channel);
-    Ok(None)
+    // Only the StarryIsle manifest is queried; the upstream Axolotl service is
+    // never contacted, so this fork can never be replaced by that product.
+    check_with_updater(&webview, &channel).await
 }
 
 // Reimplementation of Update::download mostly, minus the actual download part
