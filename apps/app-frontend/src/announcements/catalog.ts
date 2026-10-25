@@ -35,6 +35,29 @@ export const ANNOUNCEMENT_CHANGE_TYPES: readonly AnnouncementChangeType[] = [
  */
 export const launcherAnnouncements: readonly LauncherAnnouncement[] = [
     {
+        id: 'launcher-1.0.1',
+        version: '1.0.1',
+        publishedAt: '2026-10-25',
+        title: {
+            'en-US': 'StarryIsle Launcher 1.0.1',
+            'zh-CN': 'StarryIsle Launcher 1.0.1',
+        },
+        changes: {
+            added: [
+                {
+                    'en-US':
+                        'Automatic updates from this project\u2019s own GitHub releases, signed with a StarryIsle key.',
+                    'zh-CN':
+                        '新增自动更新：从本项目的 GitHub Releases 检查并安装新版本，使用 StarryIsle 专属密钥签名。',
+                },
+                {
+                    'en-US': 'Total play time is shown above the weekly figure in Play insights.',
+                    'zh-CN': '游玩洞察新增「总游玩」时长，位于「本周游玩」上方。',
+                },
+            ],
+        },
+    },
+    {
         id: 'launcher-1.0.0',
         version: '1.0.0',
         publishedAt: '2026-10-24',

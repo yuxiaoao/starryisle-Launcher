@@ -1,6 +1,6 @@
 {
   "bundle": {
-    "createUpdaterArtifacts": false
+    "createUpdaterArtifacts": true
   },
   "build": {
     "features": ["updater"]
@@ -12,8 +12,10 @@
   },
   "plugins": {
     "updater": {
-      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDNGNEE1MkMxOTI0MDA4NzYKUldSMkNFQ1N3VkpLUC9kcEtlZFRWak5FRXJsWUw3YllxWGh6bkg3ZEh3K1ZQa1VNZHl6Y0IvQysK",
-      "endpoints": []
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEVENkYxNTM5OENDN0NCQTMKUldTank4ZU1PUlZ2N1pSVUdmRzJpRGFjcVphclkyUDVhSFZvaUlWOXF0c01WcDI4M0EyMUFTYXAK",
+      "endpoints": [
+        "https://github.com/yuxiaoao/starryisle-Launcher/releases/latest/download/latest.json"
+      ]
     }
   }
 }

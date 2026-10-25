@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ChartIcon, ClockIcon, GameIcon, TrendingUpIcon } from '@modrinth/assets'
+import { ChartIcon, ClockIcon, GameIcon, TimerIcon, TrendingUpIcon } from '@modrinth/assets'
 import { Button, commonMessages, defineMessages, useVIntl } from '@modrinth/ui'
 import { useQuery } from '@tanstack/vue-query'
 import { computed, onUnmounted } from 'vue'
@@ -13,6 +13,7 @@ const { formatMessage } = useVIntl()
 
 const messages = defineMessages({
     insights: { id: 'app.home.insights.title', defaultMessage: 'Play insights' },
+    total: { id: 'app.home.insights.total', defaultMessage: 'Total: {duration}' },
     thisWeek: { id: 'app.home.insights.this-week', defaultMessage: 'This week: {duration}' },
     thisWeekMore: {
         id: 'app.home.insights.this-week-more',
@@ -42,13 +43,16 @@ const messages = defineMessages({
 })
 
 const HISTORY_DAYS = 90
+/**
+ * The insights card needs the all-time total next to the weekly figures, so the
+ * query starts well before the launcher could ever have been used. One row is
+ * returned per played day, which stays small even after years of use.
+ */
+const TRACKING_START = '2000-01-01'
 
 const playtimeQuery = useQuery({
-    queryKey: ['home', 'daily-playtime', HISTORY_DAYS],
-    queryFn: () => {
-        const today = new Date()
-        return get_daily_playtime(toDateKey(shiftedDate(today, -HISTORY_DAYS)), toDateKey(today))
-    },
+    queryKey: ['home', 'daily-playtime', TRACKING_START],
+    queryFn: () => get_daily_playtime(TRACKING_START, toDateKey(new Date())),
     staleTime: 60_000,
 })
 const dailyPlaytime = computed<DailyPlaytime[]>(() => playtimeQuery.data.value ?? [])
@@ -93,6 +97,10 @@ const streakDays = computed(() => {
     }
     return days
 })
+
+const totalSeconds = computed(() =>
+    dailyPlaytime.value.reduce((sum, entry) => sum + entry.played_seconds, 0),
+)
 
 const weekTopInstance = computed(() => {
     const totals = new Map<string, number>()
@@ -187,6 +195,15 @@ onUnmounted(() => {
             {{ formatMessage(messages.empty) }}
         </p>
         <ul v-else class="m-0 flex list-none flex-col gap-2 p-0">
+            <li class="flex min-w-0 items-center gap-2 text-sm text-[var(--color-text-default)]">
+                <TimerIcon
+                    class="size-4 shrink-0 text-[var(--color-text-tertiary)]"
+                    aria-hidden="true"
+                />
+                <span class="min-w-0">{{
+                    formatMessage(messages.total, { duration: formatDuration(totalSeconds) })
+                }}</span>
+            </li>
             <li class="flex min-w-0 items-center gap-2 text-sm text-[var(--color-text-default)]">
                 <ClockIcon
                     class="size-4 shrink-0 text-[var(--color-text-tertiary)]"
