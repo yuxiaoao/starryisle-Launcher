@@ -69,18 +69,18 @@ const days = computed<TimelineDay[]>(() => {
                 <li
                     v-for="screenshot in day.entries"
                     :key="screenshot.id"
-                    class="relative flex cursor-pointer items-center gap-3 rounded-xl border border-solid border-surface-4 bg-surface-2 p-2 transition-colors hover:border-brand"
+                    class="relative flex cursor-pointer items-center gap-4 rounded-xl bg-surface-2 p-3 transition-colors hover:bg-surface-3"
                     @click="emit('activate', screenshot, $event)"
                 >
                     <span
-                        class="absolute -left-[17px] size-2 rounded-full border-2 border-solid border-bg bg-brand"
+                        class="absolute -left-[19px] size-2 rounded-full bg-brand ring-2 ring-bg"
                         aria-hidden="true"
                     />
                     <img
                         :src="screenshot.url"
                         :alt="screenshot.file_name"
                         loading="lazy"
-                        class="aspect-video w-40 shrink-0 rounded-lg object-cover"
+                        class="aspect-video w-72 shrink-0 rounded-lg object-cover"
                     />
                     <div class="flex min-w-0 flex-col gap-0.5">
                         <span class="text-sm font-medium text-[var(--color-text-primary)]">

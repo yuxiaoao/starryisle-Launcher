@@ -318,13 +318,37 @@ pub(super) async fn reconcile_source_screenshots(
     Ok(screenshots)
 }
 
-/// Minecraft names screenshots `YYYY-MM-DD_HH.MM.SS.png` in local time.
+/// Minecraft names screenshots `YYYY-MM-DD_HH.MM.SS` in local time, optionally
+/// wrapped in extra text (`huge_2026-02-02_11.56.25_3.png`), so the timestamp is
+/// located anywhere inside the file name.
 fn screenshot_time_from_name(file_name: &str) -> Option<DateTime<Utc>> {
-    let stem = file_name.rsplit_once('.').map(|(stem, _)| stem).unwrap_or(file_name);
-    let (date_part, time_part) = stem.split_once('_')?;
-    let date = NaiveDate::parse_from_str(date_part, "%Y-%m-%d").ok()?;
-    let time = NaiveTime::parse_from_str(time_part, "%H.%M.%S").ok()?;
-    let naive = date.and_time(time);
-    let local = Local.from_local_datetime(&naive).single()?;
-    Some(DateTime::<Utc>::from(local))
+    let bytes = file_name.as_bytes();
+    let is_date_separator = |byte: u8| byte == b'-';
+    let mut index = 0;
+    while index + 19 <= bytes.len() {
+        let window = &bytes[index..index + 19];
+        let date_ok = window[0..4].iter().all(u8::is_ascii_digit)
+            && is_date_separator(window[4])
+            && window[5..7].iter().all(u8::is_ascii_digit)
+            && is_date_separator(window[7])
+            && window[8..10].iter().all(u8::is_ascii_digit)
+            && window[10] == b'_'
+            && window[11..13].iter().all(u8::is_ascii_digit)
+            && window[13] == b'.'
+            && window[14..16].iter().all(u8::is_ascii_digit)
+            && window[16] == b'.'
+            && window[17..19].iter().all(u8::is_ascii_digit);
+
+        if date_ok {
+            let candidate = &file_name[index..index + 19];
+            let date = NaiveDate::parse_from_str(&candidate[0..10], "%Y-%m-%d").ok()?;
+            let time = NaiveTime::parse_from_str(&candidate[11..19], "%H.%M.%S").ok()?;
+            let naive = date.and_time(time);
+            if let Some(local) = Local.from_local_datetime(&naive).single() {
+                return Some(DateTime::<Utc>::from(local));
+            }
+        }
+        index += 1;
+    }
+    None
 }
