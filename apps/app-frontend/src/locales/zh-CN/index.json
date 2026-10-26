@@ -10521,15 +10521,6 @@
   "app.screenshots.group.custom": {
     "message": "自定义分组"
   },
-  "app.screenshots.group.session": {
-    "message": "按会话"
-  },
-  "app.screenshots.group.session-range": {
-    "message": "{date} {start} – {end}"
-  },
-  "app.screenshots.group.session-range-instance": {
-    "message": "{range} · {instance}"
-  },
   "app.screenshots.group.date": {
     "message": "按日期"
   },

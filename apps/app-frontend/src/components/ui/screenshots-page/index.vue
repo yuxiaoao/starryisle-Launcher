@@ -91,7 +91,7 @@ import { type ActiveScreenshotDrag, useScreenshotDragGather } from './use-screen
 import { useScreenshotMarquee } from './use-screenshot-marquee'
 
 type ScreenshotSort = 'newest' | 'oldest' | 'name'
-type ScreenshotGroupBy = 'custom' | 'instance' | 'date' | 'session' | 'none'
+type ScreenshotGroupBy = 'custom' | 'instance' | 'date' | 'none'
 
 type LegacyCustomScreenshotGrouping = {
     groups: ScreenshotGroup[]
@@ -233,8 +233,6 @@ const { width: screenshotListWidth } = useElementSize(screenshotListContainer)
 const { width: windowWidth } = useWindowSize()
 const formatDateTime = useFormatDateTime({ dateStyle: 'long', timeStyle: 'short' })
 const formatMonth = useFormatDateTime({ month: 'long', year: 'numeric' })
-const formatSessionDate = useFormatDateTime({ dateStyle: 'long' })
-const formatSessionTime = useFormatDateTime({ timeStyle: 'short' })
 const messages = defineMessages({
     selectGroup: {
         id: 'app.screenshots.selection.select-group',
@@ -274,15 +272,6 @@ const messages = defineMessages({
     custom: { id: 'app.screenshots.group.custom', defaultMessage: 'Custom group' },
     instance: { id: 'app.screenshots.group.instance', defaultMessage: 'Instance' },
     date: { id: 'app.screenshots.group.date', defaultMessage: 'Date' },
-    session: { id: 'app.screenshots.group.session', defaultMessage: 'Play session' },
-    sessionRange: {
-        id: 'app.screenshots.group.session-range',
-        defaultMessage: '{date} {start} – {end}',
-    },
-    sessionRangeWithInstance: {
-        id: 'app.screenshots.group.session-range-instance',
-        defaultMessage: '{range} · {instance}',
-    },
     none: { id: 'app.screenshots.group.none', defaultMessage: 'No grouping' },
     today: { id: 'app.screenshots.group.today', defaultMessage: 'Today' },
     yesterday: { id: 'app.screenshots.group.yesterday', defaultMessage: 'Yesterday' },
@@ -469,7 +458,6 @@ const groupOptions = computed<ComboboxOption<string>[]>(() => [
     { value: 'custom', label: formatMessage(messages.custom) },
     ...(isGlobal.value ? [{ value: 'instance', label: formatMessage(messages.instance) }] : []),
     { value: 'date', label: formatMessage(messages.date) },
-    { value: 'session', label: formatMessage(messages.session) },
     { value: 'none', label: formatMessage(messages.none) },
 ])
 
@@ -574,63 +562,6 @@ const groupedScreenshots = computed((): ScreenshotGroupData[] => {
                       group.customGroupId === groupIdPendingNameEdit.value,
               )
             : groups
-    }
-
-    if (groupBy.value === 'session') {
-        // The launcher only stores daily playtime totals, so a session is
-        // reconstructed from screenshot timestamps: a gap longer than the
-        // threshold starts a new session for that instance.
-        const SESSION_GAP_MS = 45 * 60 * 1000
-        const byInstance = new Map<string, InstanceScreenshot[]>()
-        for (const screenshot of filteredScreenshots.value) {
-            const list = byInstance.get(screenshot.instance_id) ?? []
-            list.push(screenshot)
-            byInstance.set(screenshot.instance_id, list)
-        }
-
-        const sessions: ScreenshotGroupData[] = []
-        for (const [instanceId, shots] of byInstance) {
-            const ordered = [...shots].sort(
-                (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
-            )
-            let cursor = 0
-            while (cursor < ordered.length) {
-                let end = cursor
-                while (
-                    end + 1 < ordered.length &&
-                    new Date(ordered[end + 1].created_at).getTime() -
-                        new Date(ordered[end].created_at).getTime() <=
-                        SESSION_GAP_MS
-                ) {
-                    end += 1
-                }
-                const first = ordered[cursor]
-                const last = ordered[end]
-                const range = formatMessage(messages.sessionRange, {
-                    date: formatSessionDate(new Date(first.created_at)),
-                    start: formatSessionTime(new Date(first.created_at)),
-                    end: formatSessionTime(new Date(last.created_at)),
-                })
-                sessions.push({
-                    id: `session:${instanceId}:${first.created_at}`,
-                    title: isGlobal.value
-                        ? formatMessage(messages.sessionRangeWithInstance, {
-                              range,
-                              instance: first.instance_name,
-                          })
-                        : range,
-                    screenshots: ordered.slice(cursor, end + 1),
-                    dropInstanceId: instanceId,
-                })
-                cursor = end + 1
-            }
-        }
-
-        return sessions.sort((a, b) => {
-            const aTime = new Date(a.screenshots[a.screenshots.length - 1].created_at).getTime()
-            const bTime = new Date(b.screenshots[b.screenshots.length - 1].created_at).getTime()
-            return sort.value === 'oldest' ? aTime - bTime : bTime - aTime
-        })
     }
 
     const groups = new Map<string, ScreenshotGroupData>()
