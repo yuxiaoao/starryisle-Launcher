@@ -10,10 +10,15 @@ import TimelineRow from './timeline-row.vue'
 const props = defineProps<{
     screenshots: InstanceScreenshot[]
     showInstance: boolean
+    noteFor?: (screenshot: InstanceScreenshot) => string | undefined
+    editingKey?: string | null
 }>()
 
 const emit = defineEmits<{
     (e: 'activate', screenshot: InstanceScreenshot, event: MouseEvent): void
+    (e: 'contextmenu', screenshot: InstanceScreenshot, event: MouseEvent): void
+    (e: 'save-note', screenshot: InstanceScreenshot, note: string): void
+    (e: 'cancel-note'): void
 }>()
 
 const { formatMessage } = useVIntl()
@@ -223,7 +228,12 @@ const visibleItems = computed(() => {
                         <TimelineRow
                             :screenshot="item.screenshot"
                             :show-instance="showInstance"
+                            :note="noteFor?.(item.screenshot)"
+                            :editing="editingKey === item.key"
                             @activate="(shot, event) => emit('activate', shot, event)"
+                            @contextmenu="(shot, event) => emit('contextmenu', shot, event)"
+                            @save-note="(shot, value) => emit('save-note', shot, value)"
+                            @cancel-note="emit('cancel-note')"
                         />
                     </div>
                 </div>

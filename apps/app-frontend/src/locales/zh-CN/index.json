@@ -10560,6 +10560,18 @@
   "app.screenshots.filter.all-instances": {
     "message": "全部实例"
   },
+  "app.screenshots.menu.edit-note": {
+    "message": "编辑备注"
+  },
+  "app.screenshots.menu.copy-path": {
+    "message": "复制文件路径"
+  },
+  "app.screenshots.menu.delete": {
+    "message": "删除"
+  },
+  "app.screenshots.note.placeholder": {
+    "message": "添加备注…"
+  },
   "app.screenshots.view": {
     "message": "显示方式"
   },

@@ -12141,6 +12141,18 @@
   "app.screenshots.filter.all-instances": {
     "message": "All instances"
   },
+  "app.screenshots.menu.edit-note": {
+    "message": "Edit note"
+  },
+  "app.screenshots.menu.copy-path": {
+    "message": "Copy file path"
+  },
+  "app.screenshots.menu.delete": {
+    "message": "Delete"
+  },
+  "app.screenshots.note.placeholder": {
+    "message": "Add a note…"
+  },
   "app.screenshots.view": {
     "message": "View"
   },

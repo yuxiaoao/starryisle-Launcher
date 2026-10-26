@@ -103,6 +103,7 @@ pub(crate) async fn reconcile_screenshots_with_state(
     };
 
     list_source_screenshots(state, source).await?;
+    super::notes::prune_orphan_notes(&state.pool).await?;
     Ok(())
 }
 
@@ -152,9 +153,11 @@ fn scan_screenshots_dir(
         // Copying a game directory resets the filesystem creation time, which
         // would otherwise collapse every screenshot onto the copy timestamp.
         // Minecraft embeds the capture time in the file name, so prefer it.
+        // Copying files resets the creation time, so the last write time is a
+        // better fallback than the creation time.
         let created_at = screenshot_time_from_name(&file_name)
-            .or_else(|| metadata.created().ok().map(DateTime::<Utc>::from))
             .or_else(|| metadata.modified().ok().map(DateTime::<Utc>::from))
+            .or_else(|| metadata.created().ok().map(DateTime::<Utc>::from))
             .ok_or_else(|| {
                 IOError::with_path(
                     std::io::Error::new(

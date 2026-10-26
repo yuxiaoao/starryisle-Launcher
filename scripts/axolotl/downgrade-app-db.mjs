@@ -52,6 +52,8 @@ const CHANNELS = ['release', 'beta']
 // Only recent migrations are listed. Dropping to a threshold before them is
 // refused rather than guessed at; --allow-unmapped accepts the risk explicitly.
 const REVERTIBLE_SCHEMA = {
+    // Screenshot notes live in their own table keyed by instance + file name
+    20261027000000: { tables: ['screenshot_notes'] },
     20261022120000: { columns: [{ table: 'settings', column: 'curseforge_api_key' }] },
     // CodeFlow endpoint domain move; data only
     20261021120000: {},
