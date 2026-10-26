@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { defineMessages, useFormatDateTime, useVIntl } from '@modrinth/ui'
 import dayjs from 'dayjs'
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 import type { InstanceScreenshot } from '@/helpers/screenshots'
 
@@ -126,10 +126,13 @@ function measure() {
 
 onMounted(() => {
     measure()
+    requestAnimationFrame(measure)
+    setTimeout(measure, 400)
     window.addEventListener('resize', measure)
-    if (scroller.value && typeof ResizeObserver !== 'undefined') {
+    if (typeof ResizeObserver !== 'undefined') {
         resizeObserver = new ResizeObserver(measure)
-        resizeObserver.observe(scroller.value)
+        if (root.value?.parentElement) resizeObserver.observe(root.value.parentElement)
+        if (root.value) resizeObserver.observe(root.value)
     }
 })
 
@@ -164,6 +167,13 @@ function handleKeydown(event: KeyboardEvent) {
     }
 }
 
+watch(
+    () => props.screenshots.length,
+    () => {
+        void nextTick(() => measure())
+    },
+)
+
 const visibleItems = computed(() => {
     const start = Math.max(0, scrollTop.value - OVERSCAN)
     const end = scrollTop.value + viewportHeight.value + OVERSCAN
@@ -181,7 +191,7 @@ const visibleItems = computed(() => {
             ref="scroller"
             tabindex="0"
             :style="{ height: `${availableHeight}px` }"
-            class="min-h-0 flex-1 overflow-y-auto pr-2 outline-none [overscroll-behavior:contain] [scrollbar-color:var(--color-surface-5)_transparent] [scrollbar-width:thin]"
+            class="min-h-0 flex-none overflow-y-auto pr-2 outline-none [overscroll-behavior:contain] [scrollbar-color:var(--color-surface-5)_transparent] [scrollbar-width:thin]"
             @scroll.passive="scrollTop = ($event.target as HTMLElement).scrollTop"
             @keydown="handleKeydown"
         >
