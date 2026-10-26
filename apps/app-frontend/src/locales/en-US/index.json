@@ -12126,6 +12126,15 @@
   "app.screenshots.group.new": {
     "message": "New group"
   },
+  "app.screenshots.group.timeline": {
+    "message": "Timeline"
+  },
+  "app.screenshots.timeline.day": {
+    "message": "{date} · {count} shots"
+  },
+  "app.screenshots.timeline.empty": {
+    "message": "Nothing to show yet"
+  },
   "app.screenshots.group.none": {
     "message": "No grouping"
   },

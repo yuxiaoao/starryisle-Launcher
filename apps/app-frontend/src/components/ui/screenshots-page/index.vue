@@ -80,6 +80,7 @@ import {
 import ScreenshotDragGather from './drag-gather.vue'
 import ScreenshotDragPreview from './drag-preview.vue'
 import ScreenshotGroupSection from './group.vue'
+import ScreenshotTimeline from './timeline.vue'
 import { screenshotRenderWindows } from './screenshot-render-window'
 import {
     createScreenshotSelection,
@@ -91,7 +92,7 @@ import { type ActiveScreenshotDrag, useScreenshotDragGather } from './use-screen
 import { useScreenshotMarquee } from './use-screenshot-marquee'
 
 type ScreenshotSort = 'newest' | 'oldest' | 'name'
-type ScreenshotGroupBy = 'custom' | 'instance' | 'date' | 'none'
+type ScreenshotGroupBy = 'custom' | 'instance' | 'date' | 'timeline' | 'none'
 
 type LegacyCustomScreenshotGrouping = {
     groups: ScreenshotGroup[]
@@ -273,6 +274,7 @@ const messages = defineMessages({
     instance: { id: 'app.screenshots.group.instance', defaultMessage: 'Instance' },
     date: { id: 'app.screenshots.group.date', defaultMessage: 'Date' },
     none: { id: 'app.screenshots.group.none', defaultMessage: 'No grouping' },
+    timeline: { id: 'app.screenshots.group.timeline', defaultMessage: 'Timeline' },
     today: { id: 'app.screenshots.group.today', defaultMessage: 'Today' },
     yesterday: { id: 'app.screenshots.group.yesterday', defaultMessage: 'Yesterday' },
     thisWeek: { id: 'app.screenshots.group.this-week', defaultMessage: 'This week' },
@@ -459,6 +461,7 @@ const groupOptions = computed<ComboboxOption<string>[]>(() => [
     ...(isGlobal.value ? [{ value: 'instance', label: formatMessage(messages.instance) }] : []),
     { value: 'date', label: formatMessage(messages.date) },
     { value: 'none', label: formatMessage(messages.none) },
+    { value: 'timeline', label: formatMessage(messages.timeline) },
 ])
 
 const filteredScreenshots = computed(() => {
@@ -485,6 +488,16 @@ const groupedScreenshots = computed((): ScreenshotGroupData[] => {
             {
                 id: 'all',
                 title: formatMessage(messages.allScreenshots),
+                screenshots: filteredScreenshots.value,
+            },
+        ]
+    }
+
+    if (groupBy.value === 'timeline') {
+        return [
+            {
+                id: 'timeline',
+                title: formatMessage(messages.timeline),
                 screenshots: filteredScreenshots.value,
             },
         ]
@@ -1649,6 +1662,13 @@ onBeforeUnmount(() => {
                 type="no-images"
                 :heading="formatMessage(messages.noResultsHeading)"
                 :description="formatMessage(messages.noResultsDescription)"
+            />
+
+            <ScreenshotTimeline
+                v-else-if="groupBy === 'timeline'"
+                :screenshots="filteredScreenshots"
+                :show-instance="isGlobal"
+                @activate="activateScreenshot"
             />
 
             <DragDropProvider
