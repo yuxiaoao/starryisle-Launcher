@@ -57,7 +57,7 @@ const days = computed<TimelineDay[]>(() => {
         </p>
         <section v-for="day in days" :key="day.id" class="flex flex-col gap-2">
             <h2
-                class="m-0 flex items-center gap-2 border-0 border-b border-solid border-b-surface-5 bg-bg py-2 text-base font-semibold text-[var(--color-text-default)]"
+                class="m-0 flex items-center gap-2 rounded-xl bg-surface-2 px-4 py-2.5 text-base font-semibold text-[var(--color-text-default)]"
             >
                 {{ day.label }}
             </h2>
@@ -69,7 +69,7 @@ const days = computed<TimelineDay[]>(() => {
                 <li
                     v-for="screenshot in day.entries"
                     :key="screenshot.id"
-                    class="relative flex cursor-pointer items-center gap-5 rounded-xl p-3"
+                    class="relative flex cursor-pointer items-center gap-5 rounded-xl bg-surface-2 p-3 transition-colors hover:bg-surface-3"
                     @click="emit('activate', screenshot, $event)"
                 >
                     <span
