@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { defineMessages, useFormatDateTime, useVIntl } from '@modrinth/ui'
 import dayjs from 'dayjs'
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 import type { InstanceScreenshot } from '@/helpers/screenshots'
 
@@ -130,6 +130,32 @@ onBeforeUnmount(() => {
     resizeObserver?.disconnect()
 })
 
+watch(
+    () => props.screenshots,
+    () => {
+        scroller.value?.scrollTo({ top: 0 })
+        scrollTop.value = 0
+    },
+)
+
+function handleKeydown(event: KeyboardEvent) {
+    if (!scroller.value) return
+    const page = viewportHeight.value * 0.9
+    if (event.key === 'PageDown') {
+        event.preventDefault()
+        scroller.value.scrollBy({ top: page })
+    } else if (event.key === 'PageUp') {
+        event.preventDefault()
+        scroller.value.scrollBy({ top: -page })
+    } else if (event.key === 'Home') {
+        event.preventDefault()
+        scroller.value.scrollTo({ top: 0 })
+    } else if (event.key === 'End') {
+        event.preventDefault()
+        scroller.value.scrollTo({ top: totalHeight.value })
+    }
+}
+
 const visibleItems = computed(() => {
     const start = Math.max(0, scrollTop.value - OVERSCAN)
     const end = scrollTop.value + viewportHeight.value + OVERSCAN
@@ -145,8 +171,10 @@ const visibleItems = computed(() => {
         <div
             v-else
             ref="scroller"
-            class="min-h-0 flex-1 overflow-y-auto pr-1"
+            tabindex="0"
+            class="min-h-0 flex-1 overflow-y-auto pr-1 outline-none [overscroll-behavior:contain] [scrollbar-color:var(--color-surface-5)_transparent] [scrollbar-width:thin]"
             @scroll.passive="scrollTop = ($event.target as HTMLElement).scrollTop"
+            @keydown="handleKeydown"
         >
             <div class="relative w-full" :style="{ height: `${totalHeight}px` }">
                 <div
