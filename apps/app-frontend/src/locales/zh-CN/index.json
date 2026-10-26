@@ -10560,6 +10560,12 @@
   "app.screenshots.filter.all-instances": {
     "message": "全部实例"
   },
+  "app.screenshots.menu.add-to-group": {
+    "message": "加入分组"
+  },
+  "app.screenshots.menu.remove-from-group": {
+    "message": "移出分组"
+  },
   "app.screenshots.menu.edit-note": {
     "message": "编辑备注"
   },

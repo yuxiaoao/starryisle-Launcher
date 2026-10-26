@@ -19,6 +19,7 @@ const emit = defineEmits<{
     (e: 'contextmenu', screenshot: InstanceScreenshot, event: MouseEvent): void
     (e: 'save-note', screenshot: InstanceScreenshot, note: string): void
     (e: 'cancel-note'): void
+    (e: 'toggle-select', screenshot: InstanceScreenshot): void
 }>()
 
 const { formatMessage } = useVIntl()
@@ -230,10 +231,12 @@ const visibleItems = computed(() => {
                             :show-instance="showInstance"
                             :note="noteFor?.(item.screenshot)"
                             :editing="editingKey === item.key"
+                            :selected="isSelected?.(item.screenshot) ?? false"
                             @activate="(shot, event) => emit('activate', shot, event)"
                             @contextmenu="(shot, event) => emit('contextmenu', shot, event)"
                             @save-note="(shot, value) => emit('save-note', shot, value)"
                             @cancel-note="emit('cancel-note')"
+                            @toggle-select="(shot) => emit('toggle-select', shot)"
                         />
                     </div>
                 </div>

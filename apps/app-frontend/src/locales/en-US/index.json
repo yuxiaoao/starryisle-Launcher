@@ -12141,6 +12141,12 @@
   "app.screenshots.filter.all-instances": {
     "message": "All instances"
   },
+  "app.screenshots.menu.add-to-group": {
+    "message": "Add to group"
+  },
+  "app.screenshots.menu.remove-from-group": {
+    "message": "Remove from group"
+  },
   "app.screenshots.menu.edit-note": {
     "message": "Edit note"
   },
