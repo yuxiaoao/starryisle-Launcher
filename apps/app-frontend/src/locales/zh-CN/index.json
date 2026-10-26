@@ -10545,6 +10545,15 @@
   "app.screenshots.group.new": {
     "message": "新建分组"
   },
+  "app.screenshots.group.timeline": {
+    "message": "时间线"
+  },
+  "app.screenshots.timeline.day": {
+    "message": "{date} · {count} 张"
+  },
+  "app.screenshots.timeline.empty": {
+    "message": "暂无截图"
+  },
   "app.screenshots.group.none": {
     "message": "不分组"
   },
