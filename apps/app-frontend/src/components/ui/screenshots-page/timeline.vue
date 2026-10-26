@@ -57,30 +57,30 @@ const days = computed<TimelineDay[]>(() => {
         </p>
         <section v-for="day in days" :key="day.id" class="flex flex-col gap-2">
             <h2
-                class="sticky top-0 z-[2] m-0 bg-[var(--color-raised-bg)] py-2 text-base font-semibold text-[var(--color-text-primary)]"
+                class="m-0 flex items-center gap-2 border-0 border-b border-solid border-b-surface-5 bg-bg py-2 text-base font-semibold text-[var(--color-text-default)]"
             >
                 {{ day.label }}
             </h2>
             <ol class="relative m-0 flex list-none flex-col gap-2 p-0 pl-5">
                 <span
-                    class="pointer-events-none absolute inset-y-1 left-[5px] w-px bg-[var(--color-divider)]"
+                    class="pointer-events-none absolute inset-y-1 left-[5px] w-px bg-surface-5"
                     aria-hidden="true"
                 />
                 <li
                     v-for="screenshot in day.entries"
                     :key="screenshot.id"
-                    class="relative flex cursor-pointer items-center gap-3 rounded-xl border border-[var(--color-divider)] bg-[var(--color-raised-bg)] p-2 transition-colors hover:border-brand"
+                    class="relative flex cursor-pointer items-center gap-4 rounded-xl bg-surface-2 p-3 transition-colors hover:bg-surface-3"
                     @click="emit('activate', screenshot, $event)"
                 >
                     <span
-                        class="absolute -left-[17px] size-2 rounded-full border-2 border-[var(--color-raised-bg)] bg-brand"
+                        class="absolute -left-[19px] size-2 rounded-full bg-brand ring-2 ring-bg"
                         aria-hidden="true"
                     />
                     <img
                         :src="screenshot.url"
                         :alt="screenshot.file_name"
                         loading="lazy"
-                        class="aspect-video w-40 shrink-0 rounded-lg object-cover"
+                        class="aspect-video w-72 shrink-0 rounded-lg object-cover"
                     />
                     <div class="flex min-w-0 flex-col gap-0.5">
                         <span class="text-sm font-medium text-[var(--color-text-primary)]">
