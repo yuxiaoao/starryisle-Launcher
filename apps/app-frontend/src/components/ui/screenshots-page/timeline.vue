@@ -69,7 +69,7 @@ const days = computed<TimelineDay[]>(() => {
                 <li
                     v-for="screenshot in day.entries"
                     :key="screenshot.id"
-                    class="relative flex cursor-pointer items-center gap-4 rounded-xl bg-surface-2 p-3 transition-colors hover:bg-surface-3"
+                    class="relative flex cursor-pointer items-center gap-5 rounded-xl p-3"
                     @click="emit('activate', screenshot, $event)"
                 >
                     <span
@@ -80,19 +80,19 @@ const days = computed<TimelineDay[]>(() => {
                         :src="screenshot.url"
                         :alt="screenshot.file_name"
                         loading="lazy"
-                        class="aspect-video w-72 shrink-0 rounded-lg object-cover"
+                        class="aspect-video w-96 shrink-0 rounded-lg object-cover"
                     />
                     <div class="flex min-w-0 flex-col gap-0.5">
-                        <span class="text-sm font-medium text-[var(--color-text-primary)]">
+                        <span class="text-xl font-semibold text-[var(--color-text-primary)]">
                             {{ formatTime(dayjs(screenshot.created_at).toDate()) }}
                         </span>
                         <span
                             v-if="showInstance"
-                            class="truncate text-xs text-[var(--color-text-secondary)]"
+                            class="truncate text-base text-[var(--color-text-secondary)]"
                         >
                             {{ screenshot.instance_name }}
                         </span>
-                        <span class="truncate text-xs text-[var(--color-text-tertiary)]">
+                        <span class="truncate text-sm text-[var(--color-text-tertiary)]">
                             {{ screenshot.file_name }}
                         </span>
                     </div>
