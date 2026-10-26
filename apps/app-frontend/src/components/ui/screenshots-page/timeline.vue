@@ -21,13 +21,20 @@ const messages = defineMessages({
     empty: { id: 'app.screenshots.timeline.empty', defaultMessage: 'Nothing to show yet' },
 })
 
-const formatDay = useFormatDateTime({ dateStyle: 'full' })
+const formatFullDate = useFormatDateTime({ dateStyle: 'full' })
 const formatTime = useFormatDateTime({ timeStyle: 'short' })
+
+/** Days with more screenshots than this get hour separators inside them. */
+const HOUR_SEPARATOR_THRESHOLD = 5
+
+type TimelineEntry =
+    | { kind: 'hour'; key: string; label: string }
+    | { kind: 'shot'; key: string; screenshot: InstanceScreenshot }
 
 type TimelineDay = {
     id: string
     label: string
-    entries: InstanceScreenshot[]
+    entries: TimelineEntry[]
 }
 
 const days = computed<TimelineDay[]>(() => {
@@ -39,15 +46,36 @@ const days = computed<TimelineDay[]>(() => {
         grouped.set(key, bucket)
     }
 
-    return [...grouped.entries()].map(([id, entries]) => ({
-        id,
-        label: formatMessage(messages.dayLabel, {
-            date: formatDay(dayjs(entries[0].created_at).toDate()),
-            count: entries.length,
-        }),
-        entries,
-    }))
+    return [...grouped.entries()].map(([id, shots]) => {
+        const entries: TimelineEntry[] = []
+        const useHours = shots.length > HOUR_SEPARATOR_THRESHOLD
+        let currentHour = ''
+
+        for (const screenshot of shots) {
+            const moment = dayjs(screenshot.created_at)
+            const hour = moment.format('HH')
+            if (useHours && hour !== currentHour) {
+                currentHour = hour
+                entries.push({
+                    kind: 'hour',
+                    key: `${id}-${hour}`,
+                    label: moment.startOf('hour').format('HH:00'),
+                })
+            }
+            entries.push({ kind: 'shot', key: screenshot.id, screenshot })
+        }
+
+        return {
+            id,
+            label: formatMessage(messages.dayLabel, {
+                date: formatFullDate(dayjs(shots[0].created_at).toDate()),
+                count: shots.length,
+            }),
+            entries,
+        }
+    })
 })
+
 </script>
 
 <template>
@@ -66,37 +94,44 @@ const days = computed<TimelineDay[]>(() => {
                     class="pointer-events-none absolute inset-y-1 left-[5px] w-px bg-surface-5"
                     aria-hidden="true"
                 />
-                <li
-                    v-for="screenshot in day.entries"
-                    :key="screenshot.id"
-                    class="relative flex cursor-pointer items-center gap-5 rounded-xl bg-surface-2 p-3 transition-colors hover:bg-surface-3"
-                    @click="emit('activate', screenshot, $event)"
-                >
-                    <span
-                        class="absolute -left-[19px] size-2 rounded-full bg-brand ring-2 ring-bg"
-                        aria-hidden="true"
-                    />
-                    <img
-                        :src="screenshot.url"
-                        :alt="screenshot.file_name"
-                        loading="lazy"
-                        class="aspect-video w-96 shrink-0 rounded-lg object-cover"
-                    />
-                    <div class="flex min-w-0 flex-col gap-0.5">
-                        <span class="text-xl font-semibold text-[var(--color-text-primary)]">
-                            {{ formatTime(dayjs(screenshot.created_at).toDate()) }}
-                        </span>
+                <template v-for="entry in day.entries" :key="entry.key">
+                    <li
+                        v-if="entry.kind === 'hour'"
+                        class="ml-1 mt-1 text-sm font-medium text-[var(--color-text-tertiary)]"
+                    >
+                        {{ entry.label }}
+                    </li>
+                    <li
+                        v-else
+                        class="relative flex cursor-pointer items-center gap-5 rounded-xl bg-surface-2 p-3 transition-colors hover:bg-surface-3 [contain-intrinsic-size:0_240px] [content-visibility:auto]"
+                        @click="emit('activate', entry.screenshot, $event)"
+                    >
                         <span
-                            v-if="showInstance"
-                            class="truncate text-base text-[var(--color-text-secondary)]"
-                        >
-                            {{ screenshot.instance_name }}
-                        </span>
-                        <span class="truncate text-sm text-[var(--color-text-tertiary)]">
-                            {{ screenshot.file_name }}
-                        </span>
-                    </div>
-                </li>
+                            class="absolute -left-[19px] size-2 rounded-full bg-brand ring-2 ring-bg"
+                            aria-hidden="true"
+                        />
+                        <img
+                            :src="entry.screenshot.url"
+                            :alt="entry.screenshot.file_name"
+                            loading="lazy"
+                            class="aspect-video w-96 shrink-0 rounded-lg object-cover"
+                        />
+                        <div class="flex min-w-0 flex-col gap-0.5">
+                            <span class="text-xl font-semibold text-[var(--color-text-primary)]">
+                                {{ formatTime(dayjs(entry.screenshot.created_at).toDate()) }}
+                            </span>
+                            <span
+                                v-if="showInstance"
+                                class="truncate text-base text-[var(--color-text-secondary)]"
+                            >
+                                {{ entry.screenshot.instance_name }}
+                            </span>
+                            <span class="truncate text-sm text-[var(--color-text-tertiary)]">
+                                {{ entry.screenshot.file_name }}
+                            </span>
+                        </div>
+                    </li>
+                </template>
             </ol>
         </section>
     </div>

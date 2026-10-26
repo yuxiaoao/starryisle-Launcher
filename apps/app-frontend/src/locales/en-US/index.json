@@ -12126,6 +12126,27 @@
   "app.screenshots.group.new": {
     "message": "New group"
   },
+  "app.screenshots.filter.range": {
+    "message": "Filter by time"
+  },
+  "app.screenshots.filter.range-all": {
+    "message": "All time"
+  },
+  "app.screenshots.filter.range-today": {
+    "message": "Today"
+  },
+  "app.screenshots.filter.range-week": {
+    "message": "Last 7 days"
+  },
+  "app.screenshots.filter.range-month": {
+    "message": "Last 30 days"
+  },
+  "app.screenshots.filter.instance": {
+    "message": "Filter by instance"
+  },
+  "app.screenshots.filter.all-instances": {
+    "message": "All instances"
+  },
   "app.screenshots.group.timeline": {
     "message": "Timeline"
   },

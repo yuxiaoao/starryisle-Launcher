@@ -156,6 +156,8 @@ const storageSuffix = props.instanceId ? 'instance' : 'global'
 const search = ref('')
 const sort = useStorage<ScreenshotSort>(`screenshots-sort-${storageSuffix}`, 'newest')
 const groupBy = useStorage<ScreenshotGroupBy>(`screenshots-group-v2-${storageSuffix}`, 'date')
+const timelineInstanceId = useStorage<string>(`screenshots-timeline-instance-${storageSuffix}`, 'all')
+const timelineRange = useStorage<string>(`screenshots-timeline-range-${storageSuffix}`, 'all')
 const sortModel = computed<string>({
     get: () => sort.value,
     set: (value) => {
@@ -275,6 +277,11 @@ const messages = defineMessages({
     date: { id: 'app.screenshots.group.date', defaultMessage: 'Date' },
     none: { id: 'app.screenshots.group.none', defaultMessage: 'No grouping' },
     timeline: { id: 'app.screenshots.group.timeline', defaultMessage: 'Timeline' },
+    allInstances: { id: 'app.screenshots.filter.all-instances', defaultMessage: 'All instances' },
+    rangeAll: { id: 'app.screenshots.filter.range-all', defaultMessage: 'All time' },
+    rangeToday: { id: 'app.screenshots.filter.range-today', defaultMessage: 'Today' },
+    rangeWeek: { id: 'app.screenshots.filter.range-week', defaultMessage: 'Last 7 days' },
+    rangeMonth: { id: 'app.screenshots.filter.range-month', defaultMessage: 'Last 30 days' },
     today: { id: 'app.screenshots.group.today', defaultMessage: 'Today' },
     yesterday: { id: 'app.screenshots.group.yesterday', defaultMessage: 'Yesterday' },
     thisWeek: { id: 'app.screenshots.group.this-week', defaultMessage: 'This week' },
@@ -464,7 +471,43 @@ const groupOptions = computed<ComboboxOption<string>[]>(() => [
     { value: 'timeline', label: formatMessage(messages.timeline) },
 ])
 
+const instanceFilterOptions = computed<ComboboxOption<string>[]>(() => {
+    const seen = new Map<string, string>()
+    for (const screenshot of screenshots.value) {
+        if (!seen.has(screenshot.instance_id)) {
+            seen.set(screenshot.instance_id, screenshot.instance_name)
+        }
+    }
+    return [
+        { value: 'all', label: formatMessage(messages.allInstances) },
+        ...[...seen.entries()].map(([id, name]) => ({ value: id, label: name })),
+    ]
+})
+
+const RANGE_DAYS: Record<string, number> = { today: 1, week: 7, month: 30 }
+
+const rangeOptions = computed<ComboboxOption<string>[]>(() => [
+    { value: 'all', label: formatMessage(messages.rangeAll) },
+    { value: 'today', label: formatMessage(messages.rangeToday) },
+    { value: 'week', label: formatMessage(messages.rangeWeek) },
+    { value: 'month', label: formatMessage(messages.rangeMonth) },
+])
+
+const timelineScreenshots = computed(() => {
+    const days = RANGE_DAYS[timelineRange.value]
+    const cutoff = days
+        ? Date.now() - days * 24 * 60 * 60 * 1000
+        : Number.NEGATIVE_INFINITY
+    return filteredScreenshots.value.filter(
+        (screenshot) =>
+            (timelineInstanceId.value === 'all' ||
+                screenshot.instance_id === timelineInstanceId.value) &&
+            new Date(screenshot.created_at).getTime() >= cutoff,
+    )
+})
+
 const filteredScreenshots = computed(() => {
+
     const query = search.value.trim().toLocaleLowerCase()
     const filtered = screenshots.value.filter((screenshot) => {
         if (screenshot.id === revealedScreenshotId.value) return true
@@ -1617,8 +1660,14 @@ onBeforeUnmount(() => {
                 v-model:search="search"
                 v-model:sort="sortModel"
                 v-model:group="groupByModel"
+                v-model:instance="timelineInstanceId"
+                v-model:range="timelineRange"
                 :sort-options="sortOptions"
                 :group-options="groupOptions"
+                :instance-options="instanceFilterOptions"
+                :show-instance-filter="groupBy === 'timeline'"
+                :range-options="rangeOptions"
+                :show-range-filter="groupBy === 'timeline'"
                 @new-group="createCustomGroup"
             />
         </template>
@@ -1666,7 +1715,7 @@ onBeforeUnmount(() => {
 
             <ScreenshotTimeline
                 v-else-if="groupBy === 'timeline'"
-                :screenshots="filteredScreenshots"
+                :screenshots="timelineScreenshots"
                 :show-instance="isGlobal"
                 @activate="activateScreenshot"
             />

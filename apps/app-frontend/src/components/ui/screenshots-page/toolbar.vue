@@ -12,10 +12,16 @@ import {
 const search = defineModel<string>('search', { required: true })
 const sort = defineModel<string>('sort', { required: true })
 const group = defineModel<string>('group', { required: true })
+const instance = defineModel<string>('instance', { required: false, default: 'all' })
+const range = defineModel<string>('range', { required: false, default: 'all' })
 
 defineProps<{
     sortOptions: ComboboxOption<string>[]
     groupOptions: ComboboxOption<string>[]
+    showInstanceFilter?: boolean
+    instanceOptions?: ComboboxOption<string>[]
+    showRangeFilter?: boolean
+    rangeOptions?: ComboboxOption<string>[]
 }>()
 
 const emit = defineEmits<{
@@ -28,6 +34,8 @@ const messages = defineMessages({
     newGroup: { id: 'app.screenshots.group.new', defaultMessage: 'New group' },
     sortBy: { id: 'app.screenshots.sort-by', defaultMessage: 'Sort by' },
     groupBy: { id: 'app.screenshots.group-by', defaultMessage: 'Group by' },
+    instanceFilter: { id: 'app.screenshots.filter.instance', defaultMessage: 'Filter by instance' },
+    rangeFilter: { id: 'app.screenshots.filter.range', defaultMessage: 'Filter by time' },
 })
 </script>
 
@@ -76,6 +84,42 @@ const messages = defineMessages({
                     <GridIcon
                         class="size-5 text-[var(--color-text-default)]"
                         :aria-label="formatMessage(messages.groupBy)"
+                    />
+                </template>
+                <template #selected="{ label }">
+                    <span>{{ label }}</span>
+                </template>
+            </Combobox>
+            <Combobox
+                v-if="showInstanceFilter"
+                v-model="instance"
+                width="content"
+                :options="instanceOptions ?? []"
+                :show-icon-in-selected="false"
+                dropdown-min-width="220px"
+            >
+                <template #prefix>
+                    <GridIcon
+                        class="size-5 text-[var(--color-text-default)]"
+                        :aria-label="formatMessage(messages.instanceFilter)"
+                    />
+                </template>
+                <template #selected="{ label }">
+                    <span>{{ label }}</span>
+                </template>
+            </Combobox>
+            <Combobox
+                v-if="showRangeFilter"
+                v-model="range"
+                width="content"
+                :options="rangeOptions ?? []"
+                :show-icon-in-selected="false"
+                dropdown-min-width="180px"
+            >
+                <template #prefix>
+                    <GridIcon
+                        class="size-5 text-[var(--color-text-default)]"
+                        :aria-label="formatMessage(messages.rangeFilter)"
                     />
                 </template>
                 <template #selected="{ label }">
