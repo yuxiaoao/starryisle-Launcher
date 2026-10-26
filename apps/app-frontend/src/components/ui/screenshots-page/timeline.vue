@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { defineMessages, useFormatDateTime, useVIntl } from '@modrinth/ui'
 import dayjs from 'dayjs'
-import { computed } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 
 import type { InstanceScreenshot } from '@/helpers/screenshots'
+
+import TimelineRow from './timeline-row.vue'
 
 const props = defineProps<{
     screenshots: InstanceScreenshot[]
@@ -22,22 +24,28 @@ const messages = defineMessages({
 })
 
 const formatFullDate = useFormatDateTime({ dateStyle: 'full' })
-const formatTime = useFormatDateTime({ timeStyle: 'short' })
 
 /** Days with more screenshots than this get hour separators inside them. */
 const HOUR_SEPARATOR_THRESHOLD = 5
 
-type TimelineEntry =
-    | { kind: 'hour'; key: string; label: string }
-    | { kind: 'shot'; key: string; screenshot: InstanceScreenshot }
+const DAY_HEIGHT = 46
+const HOUR_HEIGHT = 26
+const ROW_HEIGHT = 248
+const DAY_GAP = 16
+const OVERSCAN = 600
 
-type TimelineDay = {
-    id: string
-    label: string
-    entries: TimelineEntry[]
-}
+type TimelineItem =
+    | { kind: 'day'; key: string; label: string; top: number; height: number }
+    | { kind: 'hour'; key: string; label: string; top: number; height: number }
+    | {
+          kind: 'shot'
+          key: string
+          screenshot: InstanceScreenshot
+          top: number
+          height: number
+      }
 
-const days = computed<TimelineDay[]>(() => {
+const items = computed<TimelineItem[]>(() => {
     const grouped = new Map<string, InstanceScreenshot[]>()
     for (const screenshot of props.screenshots) {
         const key = dayjs(screenshot.created_at).format('YYYY-MM-DD')
@@ -46,93 +54,133 @@ const days = computed<TimelineDay[]>(() => {
         grouped.set(key, bucket)
     }
 
-    return [...grouped.entries()].map(([id, shots]) => {
-        const entries: TimelineEntry[] = []
+    const result: TimelineItem[] = []
+    let top = 0
+    for (const [id, shots] of grouped) {
+        result.push({
+            kind: 'day',
+            key: `day-${id}`,
+            label: formatMessage(messages.dayLabel, {
+                date: formatFullDate(dayjs(shots[0].created_at).toDate()),
+                count: shots.length,
+            }),
+            top,
+            height: DAY_HEIGHT,
+        })
+        top += DAY_HEIGHT
+
         const useHours = shots.length > HOUR_SEPARATOR_THRESHOLD
         let currentHour = ''
-
         for (const screenshot of shots) {
             const moment = dayjs(screenshot.created_at)
             const hour = moment.format('HH')
             if (useHours && hour !== currentHour) {
                 currentHour = hour
-                entries.push({
+                result.push({
                     kind: 'hour',
-                    key: `${id}-${hour}`,
+                    key: `hour-${id}-${hour}`,
                     label: moment.startOf('hour').format('HH:00'),
+                    top,
+                    height: HOUR_HEIGHT,
                 })
+                top += HOUR_HEIGHT
             }
-            entries.push({ kind: 'shot', key: screenshot.id, screenshot })
+            top += ROW_HEIGHT
+            result.push({
+                kind: 'shot',
+                key: `shot-${screenshot.id}`,
+                screenshot,
+                top: top - ROW_HEIGHT,
+                height: ROW_HEIGHT,
+            })
         }
-
-        return {
-            id,
-            label: formatMessage(messages.dayLabel, {
-                date: formatFullDate(dayjs(shots[0].created_at).toDate()),
-                count: shots.length,
-            }),
-            entries,
-        }
-    })
+        top += DAY_GAP
+    }
+    return result
 })
 
+const totalHeight = computed(() => {
+    const list = items.value
+    if (list.length === 0) return 0
+    const last = list[list.length - 1]
+    return last.top + last.height + DAY_GAP
+})
+
+const scroller = ref<HTMLElement>()
+const scrollTop = ref(0)
+const viewportHeight = ref(800)
+
+let resizeObserver: ResizeObserver | undefined
+
+function measure() {
+    if (!scroller.value) return
+    viewportHeight.value = scroller.value.clientHeight || 800
+    scrollTop.value = scroller.value.scrollTop
+}
+
+onMounted(() => {
+    measure()
+    if (scroller.value && typeof ResizeObserver !== 'undefined') {
+        resizeObserver = new ResizeObserver(measure)
+        resizeObserver.observe(scroller.value)
+    }
+})
+
+onBeforeUnmount(() => {
+    resizeObserver?.disconnect()
+})
+
+const visibleItems = computed(() => {
+    const start = Math.max(0, scrollTop.value - OVERSCAN)
+    const end = scrollTop.value + viewportHeight.value + OVERSCAN
+    return items.value.filter((item) => item.top + item.height >= start && item.top <= end)
+})
 </script>
 
 <template>
-    <div class="flex w-full flex-col gap-6 pb-10">
-        <p v-if="days.length === 0" class="m-0 text-secondary">
+    <div class="flex min-h-0 w-full flex-1 flex-col">
+        <p v-if="items.length === 0" class="m-0 text-secondary">
             {{ formatMessage(messages.empty) }}
         </p>
-        <section v-for="day in days" :key="day.id" class="flex flex-col gap-2">
-            <h2
-                class="m-0 flex items-center gap-2 rounded-xl bg-surface-2 px-4 py-2.5 text-base font-semibold text-[var(--color-text-default)]"
-            >
-                {{ day.label }}
-            </h2>
-            <ol class="relative m-0 flex list-none flex-col gap-2 p-0 pl-5">
-                <span
-                    class="pointer-events-none absolute inset-y-1 left-[5px] w-px bg-surface-5"
-                    aria-hidden="true"
-                />
-                <template v-for="entry in day.entries" :key="entry.key">
-                    <li
-                        v-if="entry.kind === 'hour'"
-                        class="ml-1 mt-1 text-sm font-medium text-[var(--color-text-tertiary)]"
+        <div
+            v-else
+            ref="scroller"
+            class="min-h-0 flex-1 overflow-y-auto pr-1"
+            @scroll.passive="scrollTop = ($event.target as HTMLElement).scrollTop"
+        >
+            <div class="relative w-full" :style="{ height: `${totalHeight}px` }">
+                <div
+                    v-for="item in visibleItems"
+                    :key="item.key"
+                    class="absolute left-0 right-0"
+                    :style="{ top: `${item.top}px` }"
+                >
+                    <h2
+                        v-if="item.kind === 'day'"
+                        class="m-0 flex items-center gap-2 rounded-xl bg-surface-2 px-4 py-2.5 text-base font-semibold text-[var(--color-text-default)]"
                     >
-                        {{ entry.label }}
-                    </li>
-                    <li
-                        v-else
-                        class="relative flex cursor-pointer items-center gap-5 rounded-xl bg-surface-2 p-3 transition-colors hover:bg-surface-3 [contain-intrinsic-size:0_240px] [content-visibility:auto]"
-                        @click="emit('activate', entry.screenshot, $event)"
+                        {{ item.label }}
+                    </h2>
+                    <div
+                        v-else-if="item.kind === 'hour'"
+                        class="flex items-center gap-2 pl-1 text-sm font-medium text-[var(--color-text-tertiary)]"
                     >
+                        <span class="h-px w-4 bg-surface-5" aria-hidden="true" />
+                        {{ item.label }}
+                    </div>
+                    <div v-else class="relative pl-5">
                         <span
-                            class="absolute -left-[19px] size-2 rounded-full bg-brand ring-2 ring-bg"
+                            class="pointer-events-none absolute inset-y-0 left-[5px] w-px bg-surface-5"
                             aria-hidden="true"
                         />
-                        <img
-                            :src="entry.screenshot.url"
-                            :alt="entry.screenshot.file_name"
-                            loading="lazy"
-                            class="aspect-video w-96 shrink-0 rounded-lg object-cover"
+                        <TimelineRow
+                            :screenshot="item.screenshot"
+                            :show-instance="showInstance"
+                            @activate="(shot, event) => emit('activate', shot, event)"
                         />
-                        <div class="flex min-w-0 flex-col gap-0.5">
-                            <span class="text-xl font-semibold text-[var(--color-text-primary)]">
-                                {{ formatTime(dayjs(entry.screenshot.created_at).toDate()) }}
-                            </span>
-                            <span
-                                v-if="showInstance"
-                                class="truncate text-base text-[var(--color-text-secondary)]"
-                            >
-                                {{ entry.screenshot.instance_name }}
-                            </span>
-                            <span class="truncate text-sm text-[var(--color-text-tertiary)]">
-                                {{ entry.screenshot.file_name }}
-                            </span>
-                        </div>
-                    </li>
-                </template>
-            </ol>
-        </section>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </template>

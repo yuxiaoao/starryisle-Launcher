@@ -10545,6 +10545,15 @@
   "app.screenshots.group.new": {
     "message": "新建分组"
   },
+  "app.screenshots.filter.group": {
+    "message": "筛选分组"
+  },
+  "app.screenshots.filter.group-all": {
+    "message": "全部分组"
+  },
+  "app.screenshots.filter.group-ungrouped": {
+    "message": "未分组"
+  },
   "app.screenshots.filter.range": {
     "message": "筛选时间"
   },
