@@ -12102,6 +12102,15 @@
   "app.screenshots.group.custom": {
     "message": "Custom group"
   },
+  "app.screenshots.group.session": {
+    "message": "Play session"
+  },
+  "app.screenshots.group.session-range": {
+    "message": "{date} {start} – {end}"
+  },
+  "app.screenshots.group.session-range-instance": {
+    "message": "{range} · {instance}"
+  },
   "app.screenshots.group.date": {
     "message": "Date"
   },
