@@ -101,10 +101,11 @@ pub use self::screenshot_groups::{
     set_screenshot_group_memberships,
 };
 pub use self::screenshots::{
-    InstanceScreenshot, ScreenshotEditSaveMode, ScreenshotKey,
+    InstanceScreenshot, ScreenshotEditSaveMode, ScreenshotKey, ScreenshotNote,
     delete_screenshots, export_screenshots, get_screenshot_path,
     list_all_screenshots, list_all_screenshots_with_warnings, list_screenshots,
-    list_synced_screenshots, move_screenshots, save_edited_screenshot,
+    list_screenshot_notes, list_synced_screenshots, move_screenshots,
+    save_edited_screenshot, set_screenshot_note,
 };
 pub(crate) use self::screenshots::{
     reconcile_screenshots, reconcile_screenshots_with_state,

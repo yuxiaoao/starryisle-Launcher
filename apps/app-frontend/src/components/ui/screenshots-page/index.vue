@@ -70,6 +70,11 @@ import {
 } from '@/helpers/instance'
 import { MAX_INSTANCE_GROUP_NAME_LENGTH } from '@/helpers/instance-groups'
 import {
+    getScreenshotNotes,
+    screenshotNoteKey,
+    setScreenshotNote,
+} from '@/helpers/screenshot-notes'
+import {
     instanceListQueryOptions,
     instanceScreenshotsQueryOptions,
     screenshotGroupsQueryOptions,
@@ -161,6 +166,69 @@ const viewMode = useStorage<'grid' | 'timeline'>(`screenshots-view-${storageSuff
 if (viewMode.value !== 'grid' && viewMode.value !== 'timeline') viewMode.value = 'grid'
 if (!['custom', 'instance', 'date', 'none'].includes(groupBy.value)) groupBy.value = 'date'
 const timelineGroupFilter = useStorage<string>(`screenshots-timeline-group-${storageSuffix}`, 'all')
+const screenshotNotes = ref(new Map<string, string>())
+const editingNoteKey = ref<string | null>(null)
+const noteMenu = ref<{ x: number, y: number, screenshot: InstanceScreenshot } | null>(null)
+
+function noteKeyFor(screenshot: InstanceScreenshot): string {
+    return screenshotNoteKey(screenshot.instance_id, screenshot.file_name)
+}
+
+function noteFor(screenshot: InstanceScreenshot): string | undefined {
+    return screenshotNotes.value.get(noteKeyFor(screenshot))
+}
+
+async function loadScreenshotNotes() {
+    try {
+        const rows = await getScreenshotNotes()
+        const map = new Map<string, string>()
+        for (const row of rows) {
+            map.set(screenshotNoteKey(row.instanceId, row.fileName), row.note)
+        }
+        screenshotNotes.value = map
+    } catch (error) {
+        console.warn('Failed to load screenshot notes', error)
+    }
+}
+
+async function saveScreenshotNote(screenshot: InstanceScreenshot, note: string) {
+    const key = noteKeyFor(screenshot)
+    const previous = screenshotNotes.value.get(key) ?? ''
+    editingNoteKey.value = null
+    if (previous === note) return
+    try {
+        await setScreenshotNote(screenshot.instance_id, screenshot.file_name, note)
+        const next = new Map(screenshotNotes.value)
+        if (note) next.set(key, note)
+        else next.delete(key)
+        screenshotNotes.value = next
+    } catch (error) {
+        handleError(error)
+    }
+}
+
+function openScreenshotNoteMenu(screenshot: InstanceScreenshot, event: MouseEvent) {
+    noteMenu.value = { x: event.clientX, y: event.clientY, screenshot }
+}
+
+function startEditingNote(screenshot: InstanceScreenshot) {
+    noteMenu.value = null
+    editingNoteKey.value = noteKeyFor(screenshot)
+}
+
+async function copyScreenshotPath(screenshot: InstanceScreenshot) {
+    noteMenu.value = null
+    try {
+        await navigator.clipboard.writeText(screenshot.path)
+    } catch (error) {
+        console.warn('Failed to copy screenshot path', error)
+    }
+}
+
+function deleteScreenshotFromMenu(screenshot: InstanceScreenshot) {
+    noteMenu.value = null
+    requestDelete(screenshot)
+}
 const sortModel = computed<string>({
     get: () => sort.value,
     set: (value) => {
@@ -283,6 +351,9 @@ const messages = defineMessages({
     viewGrid: { id: 'app.screenshots.view.grid', defaultMessage: 'Grid' },
     viewTimeline: { id: 'app.screenshots.view.timeline', defaultMessage: 'Timeline' },
     allInstances: { id: 'app.screenshots.filter.all-instances', defaultMessage: 'All instances' },
+    menuEditNote: { id: 'app.screenshots.menu.edit-note', defaultMessage: 'Edit note' },
+    menuCopyPath: { id: 'app.screenshots.menu.copy-path', defaultMessage: 'Copy file path' },
+    menuDelete: { id: 'app.screenshots.menu.delete', defaultMessage: 'Delete' },
     rangeAll: { id: 'app.screenshots.filter.range-all', defaultMessage: 'All time' },
     rangeToday: { id: 'app.screenshots.filter.range-today', defaultMessage: 'Today' },
     rangeWeek: { id: 'app.screenshots.filter.range-week', defaultMessage: 'Last 7 days' },
@@ -517,6 +588,8 @@ const timelineScreenshots = computed(() =>
     }),
 )
 
+watch(screenshots, () => { void loadScreenshotNotes() }, { immediate: true })
+
 const filteredScreenshots = computed(() => {
 
     const query = search.value.trim().toLocaleLowerCase()
@@ -525,7 +598,8 @@ const filteredScreenshots = computed(() => {
         return (
             !query ||
             screenshot.file_name.toLocaleLowerCase().includes(query) ||
-            screenshot.instance_name.toLocaleLowerCase().includes(query)
+            screenshot.instance_name.toLocaleLowerCase().includes(query) ||
+            (noteFor(screenshot) ?? '').toLocaleLowerCase().includes(query)
         )
     })
 
@@ -1723,7 +1797,42 @@ onBeforeUnmount(() => {
                 v-else-if="viewMode === 'timeline'"
                 :screenshots="timelineScreenshots"
                 :show-instance="isGlobal"
+                :note-for="noteFor"
+                :editing-key="editingNoteKey"
                 @activate="activateScreenshot"
+                @contextmenu="openScreenshotNoteMenu"
+                @save-note="saveScreenshotNote"
+                @cancel-note="editingNoteKey = null"
+            />
+
+            <div
+                v-if="noteMenu"
+                class="fixed z-[60] min-w-[180px] overflow-hidden rounded-lg border border-solid border-surface-4 bg-surface-2 py-1 shadow-xl"
+                :style="{ left: `${noteMenu.x}px`, top: `${noteMenu.y}px` }"
+            >
+                <button
+                    class="block w-full cursor-pointer border-0 bg-transparent px-3 py-2 text-left text-sm text-[var(--color-text-default)] hover:bg-surface-3"
+                    @click="startEditingNote(noteMenu.screenshot)"
+                >
+                    {{ formatMessage(messages.menuEditNote) }}
+                </button>
+                <button
+                    class="block w-full cursor-pointer border-0 bg-transparent px-3 py-2 text-left text-sm text-[var(--color-text-default)] hover:bg-surface-3"
+                    @click="copyScreenshotPath(noteMenu.screenshot)"
+                >
+                    {{ formatMessage(messages.menuCopyPath) }}
+                </button>
+                <button
+                    class="block w-full cursor-pointer border-0 bg-transparent px-3 py-2 text-left text-sm text-red hover:bg-surface-3"
+                    @click="deleteScreenshotFromMenu(noteMenu.screenshot)"
+                >
+                    {{ formatMessage(messages.menuDelete) }}
+                </button>
+            </div>
+            <div
+                v-if="noteMenu"
+                class="fixed inset-0 z-[55]"
+                @click="noteMenu = null"
             />
 
             <DragDropProvider

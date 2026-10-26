@@ -163,7 +163,9 @@ pub async fn delete_screenshots(keys: &[ScreenshotKey]) -> crate::Result<()> {
         .await?;
     }
 
+    super::notes::delete_notes_for_keys(keys, &state.pool).await?;
     Ok(())
+
 }
 
 pub async fn export_screenshots(
