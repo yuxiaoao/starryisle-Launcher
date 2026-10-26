@@ -278,6 +278,8 @@ const messages = defineMessages({
     date: { id: 'app.screenshots.group.date', defaultMessage: 'Date' },
     none: { id: 'app.screenshots.group.none', defaultMessage: 'No grouping' },
     timeline: { id: 'app.screenshots.group.timeline', defaultMessage: 'Timeline' },
+    viewGrid: { id: 'app.screenshots.view.grid', defaultMessage: 'Grid' },
+    viewTimeline: { id: 'app.screenshots.view.timeline', defaultMessage: 'Timeline' },
     allInstances: { id: 'app.screenshots.filter.all-instances', defaultMessage: 'All instances' },
     rangeAll: { id: 'app.screenshots.filter.range-all', defaultMessage: 'All time' },
     rangeToday: { id: 'app.screenshots.filter.range-today', defaultMessage: 'Today' },
