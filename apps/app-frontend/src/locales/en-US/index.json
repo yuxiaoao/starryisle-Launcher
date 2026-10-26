@@ -12126,6 +12126,15 @@
   "app.screenshots.group.new": {
     "message": "New group"
   },
+  "app.screenshots.filter.group": {
+    "message": "Filter by group"
+  },
+  "app.screenshots.filter.group-all": {
+    "message": "All groups"
+  },
+  "app.screenshots.filter.group-ungrouped": {
+    "message": "Ungrouped"
+  },
   "app.screenshots.filter.range": {
     "message": "Filter by time"
   },

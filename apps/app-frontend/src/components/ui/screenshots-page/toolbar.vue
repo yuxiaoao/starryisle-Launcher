@@ -14,6 +14,7 @@ const sort = defineModel<string>('sort', { required: true })
 const group = defineModel<string>('group', { required: true })
 const instance = defineModel<string>('instance', { required: false, default: 'all' })
 const range = defineModel<string>('range', { required: false, default: 'all' })
+const groupFilter = defineModel<string>('groupFilter', { required: false, default: 'all' })
 
 defineProps<{
     sortOptions: ComboboxOption<string>[]
@@ -22,6 +23,8 @@ defineProps<{
     instanceOptions?: ComboboxOption<string>[]
     showRangeFilter?: boolean
     rangeOptions?: ComboboxOption<string>[]
+    showGroupFilter?: boolean
+    groupFilterOptions?: ComboboxOption<string>[]
 }>()
 
 const emit = defineEmits<{
@@ -36,6 +39,7 @@ const messages = defineMessages({
     groupBy: { id: 'app.screenshots.group-by', defaultMessage: 'Group by' },
     instanceFilter: { id: 'app.screenshots.filter.instance', defaultMessage: 'Filter by instance' },
     rangeFilter: { id: 'app.screenshots.filter.range', defaultMessage: 'Filter by time' },
+    groupFilter: { id: 'app.screenshots.filter.group', defaultMessage: 'Filter by group' },
 })
 </script>
 
@@ -120,6 +124,24 @@ const messages = defineMessages({
                     <GridIcon
                         class="size-5 text-[var(--color-text-default)]"
                         :aria-label="formatMessage(messages.rangeFilter)"
+                    />
+                </template>
+                <template #selected="{ label }">
+                    <span>{{ label }}</span>
+                </template>
+            </Combobox>
+            <Combobox
+                v-if="showGroupFilter"
+                v-model="groupFilter"
+                width="content"
+                :options="groupFilterOptions ?? []"
+                :show-icon-in-selected="false"
+                dropdown-min-width="200px"
+            >
+                <template #prefix>
+                    <GridIcon
+                        class="size-5 text-[var(--color-text-default)]"
+                        :aria-label="formatMessage(messages.groupFilter)"
                     />
                 </template>
                 <template #selected="{ label }">

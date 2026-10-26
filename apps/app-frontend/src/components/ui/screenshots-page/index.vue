@@ -158,6 +158,7 @@ const sort = useStorage<ScreenshotSort>(`screenshots-sort-${storageSuffix}`, 'ne
 const groupBy = useStorage<ScreenshotGroupBy>(`screenshots-group-v2-${storageSuffix}`, 'date')
 const timelineInstanceId = useStorage<string>(`screenshots-timeline-instance-${storageSuffix}`, 'all')
 const timelineRange = useStorage<string>(`screenshots-timeline-range-${storageSuffix}`, 'all')
+const timelineGroupFilter = useStorage<string>(`screenshots-timeline-group-${storageSuffix}`, 'all')
 const sortModel = computed<string>({
     get: () => sort.value,
     set: (value) => {
@@ -282,6 +283,8 @@ const messages = defineMessages({
     rangeToday: { id: 'app.screenshots.filter.range-today', defaultMessage: 'Today' },
     rangeWeek: { id: 'app.screenshots.filter.range-week', defaultMessage: 'Last 7 days' },
     rangeMonth: { id: 'app.screenshots.filter.range-month', defaultMessage: 'Last 30 days' },
+    groupFilterAll: { id: 'app.screenshots.filter.group-all', defaultMessage: 'All groups' },
+    groupFilterUngrouped: { id: 'app.screenshots.filter.group-ungrouped', defaultMessage: 'Ungrouped' },
     today: { id: 'app.screenshots.group.today', defaultMessage: 'Today' },
     yesterday: { id: 'app.screenshots.group.yesterday', defaultMessage: 'Yesterday' },
     thisWeek: { id: 'app.screenshots.group.this-week', defaultMessage: 'This week' },
@@ -493,17 +496,31 @@ const rangeOptions = computed<ComboboxOption<string>[]>(() => [
     { value: 'month', label: formatMessage(messages.rangeMonth) },
 ])
 
+const groupFilterOptions = computed<ComboboxOption<string>[]>(() => [
+    { value: 'all', label: formatMessage(messages.groupFilterAll) },
+    ...customGroups.value.map((group) => ({ value: group.id, label: group.name })),
+    { value: 'ungrouped', label: formatMessage(messages.groupFilterUngrouped) },
+])
+
 const timelineScreenshots = computed(() => {
     const days = RANGE_DAYS[timelineRange.value]
     const cutoff = days
         ? Date.now() - days * 24 * 60 * 60 * 1000
         : Number.NEGATIVE_INFINITY
-    return filteredScreenshots.value.filter(
-        (screenshot) =>
-            (timelineInstanceId.value === 'all' ||
-                screenshot.instance_id === timelineInstanceId.value) &&
-            new Date(screenshot.created_at).getTime() >= cutoff,
-    )
+    return filteredScreenshots.value.filter((screenshot) => {
+        if (
+            timelineInstanceId.value !== 'all' &&
+            screenshot.instance_id !== timelineInstanceId.value
+        ) {
+            return false
+        }
+        if (new Date(screenshot.created_at).getTime() < cutoff) return false
+        if (timelineGroupFilter.value === 'ungrouped') return !screenshot.group_id
+        if (timelineGroupFilter.value !== 'all') {
+            return screenshot.group_id === timelineGroupFilter.value
+        }
+        return true
+    })
 })
 
 const filteredScreenshots = computed(() => {
@@ -1662,12 +1679,15 @@ onBeforeUnmount(() => {
                 v-model:group="groupByModel"
                 v-model:instance="timelineInstanceId"
                 v-model:range="timelineRange"
+                v-model:group-filter="timelineGroupFilter"
                 :sort-options="sortOptions"
                 :group-options="groupOptions"
                 :instance-options="instanceFilterOptions"
                 :show-instance-filter="groupBy === 'timeline'"
                 :range-options="rangeOptions"
                 :show-range-filter="groupBy === 'timeline'"
+                :group-filter-options="groupFilterOptions"
+                :show-group-filter="groupBy === 'timeline'"
                 @new-group="createCustomGroup"
             />
         </template>
