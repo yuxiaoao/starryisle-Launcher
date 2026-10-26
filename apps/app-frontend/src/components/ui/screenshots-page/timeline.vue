@@ -57,23 +57,23 @@ const days = computed<TimelineDay[]>(() => {
         </p>
         <section v-for="day in days" :key="day.id" class="flex flex-col gap-2">
             <h2
-                class="sticky top-0 z-[2] m-0 bg-[var(--color-raised-bg)] py-2 text-base font-semibold text-[var(--color-text-primary)]"
+                class="m-0 flex items-center gap-2 border-0 border-b border-solid border-b-surface-5 bg-bg py-2 text-base font-semibold text-[var(--color-text-default)]"
             >
                 {{ day.label }}
             </h2>
             <ol class="relative m-0 flex list-none flex-col gap-2 p-0 pl-5">
                 <span
-                    class="pointer-events-none absolute inset-y-1 left-[5px] w-px bg-[var(--color-divider)]"
+                    class="pointer-events-none absolute inset-y-1 left-[5px] w-px bg-surface-5"
                     aria-hidden="true"
                 />
                 <li
                     v-for="screenshot in day.entries"
                     :key="screenshot.id"
-                    class="relative flex cursor-pointer items-center gap-3 rounded-xl border border-[var(--color-divider)] bg-[var(--color-raised-bg)] p-2 transition-colors hover:border-brand"
+                    class="relative flex cursor-pointer items-center gap-3 rounded-xl border border-solid border-surface-4 bg-surface-2 p-2 transition-colors hover:border-brand"
                     @click="emit('activate', screenshot, $event)"
                 >
                     <span
-                        class="absolute -left-[17px] size-2 rounded-full border-2 border-[var(--color-raised-bg)] bg-brand"
+                        class="absolute -left-[17px] size-2 rounded-full border-2 border-solid border-bg bg-brand"
                         aria-hidden="true"
                     />
                     <img
