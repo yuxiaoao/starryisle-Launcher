@@ -10554,26 +10554,20 @@
   "app.screenshots.filter.group-ungrouped": {
     "message": "未分组"
   },
-  "app.screenshots.filter.range": {
-    "message": "筛选时间"
-  },
-  "app.screenshots.filter.range-all": {
-    "message": "全部时间"
-  },
-  "app.screenshots.filter.range-today": {
-    "message": "今天"
-  },
-  "app.screenshots.filter.range-week": {
-    "message": "最近 7 天"
-  },
-  "app.screenshots.filter.range-month": {
-    "message": "最近 30 天"
-  },
   "app.screenshots.filter.instance": {
     "message": "筛选实例"
   },
   "app.screenshots.filter.all-instances": {
     "message": "全部实例"
+  },
+  "app.screenshots.view": {
+    "message": "显示方式"
+  },
+  "app.screenshots.view.grid": {
+    "message": "网格"
+  },
+  "app.screenshots.view.timeline": {
+    "message": "时间线"
   },
   "app.screenshots.group.timeline": {
     "message": "时间线"
