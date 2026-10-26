@@ -13,16 +13,16 @@ const search = defineModel<string>('search', { required: true })
 const sort = defineModel<string>('sort', { required: true })
 const group = defineModel<string>('group', { required: true })
 const instance = defineModel<string>('instance', { required: false, default: 'all' })
-const range = defineModel<string>('range', { required: false, default: 'all' })
 const groupFilter = defineModel<string>('groupFilter', { required: false, default: 'all' })
+const view = defineModel<string>('view', { required: false, default: 'grid' })
 
 defineProps<{
     sortOptions: ComboboxOption<string>[]
     groupOptions: ComboboxOption<string>[]
     showInstanceFilter?: boolean
     instanceOptions?: ComboboxOption<string>[]
-    showRangeFilter?: boolean
-    rangeOptions?: ComboboxOption<string>[]
+    showViewToggle?: boolean
+    viewOptions?: ComboboxOption<string>[]
     showGroupFilter?: boolean
     groupFilterOptions?: ComboboxOption<string>[]
 }>()
@@ -38,8 +38,8 @@ const messages = defineMessages({
     sortBy: { id: 'app.screenshots.sort-by', defaultMessage: 'Sort by' },
     groupBy: { id: 'app.screenshots.group-by', defaultMessage: 'Group by' },
     instanceFilter: { id: 'app.screenshots.filter.instance', defaultMessage: 'Filter by instance' },
-    rangeFilter: { id: 'app.screenshots.filter.range', defaultMessage: 'Filter by time' },
     groupFilter: { id: 'app.screenshots.filter.group', defaultMessage: 'Filter by group' },
+    viewToggle: { id: 'app.screenshots.view', defaultMessage: 'View' },
 })
 </script>
 
@@ -95,6 +95,24 @@ const messages = defineMessages({
                 </template>
             </Combobox>
             <Combobox
+                v-if="showViewToggle"
+                v-model="view"
+                width="content"
+                :options="viewOptions ?? []"
+                :show-icon-in-selected="false"
+                dropdown-min-width="160px"
+            >
+                <template #prefix>
+                    <GridIcon
+                        class="size-5 text-[var(--color-text-default)]"
+                        :aria-label="formatMessage(messages.viewToggle)"
+                    />
+                </template>
+                <template #selected="{ label }">
+                    <span>{{ label }}</span>
+                </template>
+            </Combobox>
+            <Combobox
                 v-if="showInstanceFilter"
                 v-model="instance"
                 width="content"
@@ -106,24 +124,6 @@ const messages = defineMessages({
                     <GridIcon
                         class="size-5 text-[var(--color-text-default)]"
                         :aria-label="formatMessage(messages.instanceFilter)"
-                    />
-                </template>
-                <template #selected="{ label }">
-                    <span>{{ label }}</span>
-                </template>
-            </Combobox>
-            <Combobox
-                v-if="showRangeFilter"
-                v-model="range"
-                width="content"
-                :options="rangeOptions ?? []"
-                :show-icon-in-selected="false"
-                dropdown-min-width="180px"
-            >
-                <template #prefix>
-                    <GridIcon
-                        class="size-5 text-[var(--color-text-default)]"
-                        :aria-label="formatMessage(messages.rangeFilter)"
                     />
                 </template>
                 <template #selected="{ label }">

@@ -27,7 +27,7 @@ const thumbnail = useImageThumbnail(
 
 <template>
     <div
-        class="relative flex h-[240px] cursor-pointer items-center gap-5 rounded-xl bg-surface-2 p-3 transition-colors hover:bg-surface-3"
+        class="relative flex h-[252px] cursor-pointer items-center gap-8 rounded-xl bg-surface-2 p-3 transition-colors hover:bg-surface-3"
         @click="emit('activate', screenshot, $event)"
     >
         <span

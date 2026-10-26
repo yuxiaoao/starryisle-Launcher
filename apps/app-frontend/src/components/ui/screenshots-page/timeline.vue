@@ -30,8 +30,8 @@ const HOUR_SEPARATOR_THRESHOLD = 5
 
 const DAY_HEIGHT = 46
 const HOUR_HEIGHT = 26
-const ROW_HEIGHT = 248
-const DAY_GAP = 16
+const ROW_HEIGHT = 264
+const DAY_GAP = 24
 const OVERSCAN = 600
 
 type TimelineItem =
@@ -106,13 +106,19 @@ const totalHeight = computed(() => {
     return last.top + last.height + DAY_GAP
 })
 
+const root = ref<HTMLElement>()
 const scroller = ref<HTMLElement>()
 const scrollTop = ref(0)
 const viewportHeight = ref(800)
+const availableHeight = ref(600)
 
 let resizeObserver: ResizeObserver | undefined
 
 function measure() {
+    if (root.value) {
+        const top = root.value.getBoundingClientRect().top
+        availableHeight.value = Math.max(240, window.innerHeight - top - 32)
+    }
     if (!scroller.value) return
     viewportHeight.value = scroller.value.clientHeight || 800
     scrollTop.value = scroller.value.scrollTop
@@ -120,6 +126,7 @@ function measure() {
 
 onMounted(() => {
     measure()
+    window.addEventListener('resize', measure)
     if (scroller.value && typeof ResizeObserver !== 'undefined') {
         resizeObserver = new ResizeObserver(measure)
         resizeObserver.observe(scroller.value)
@@ -127,6 +134,7 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
+    window.removeEventListener('resize', measure)
     resizeObserver?.disconnect()
 })
 
@@ -164,7 +172,7 @@ const visibleItems = computed(() => {
 </script>
 
 <template>
-    <div class="flex min-h-0 w-full flex-1 flex-col">
+    <div ref="root" class="flex min-h-0 w-full flex-1 flex-col">
         <p v-if="items.length === 0" class="m-0 text-secondary">
             {{ formatMessage(messages.empty) }}
         </p>
@@ -172,7 +180,8 @@ const visibleItems = computed(() => {
             v-else
             ref="scroller"
             tabindex="0"
-            class="min-h-0 flex-1 overflow-y-auto pr-1 outline-none [overscroll-behavior:contain] [scrollbar-color:var(--color-surface-5)_transparent] [scrollbar-width:thin]"
+            :style="{ height: `${availableHeight}px` }"
+            class="min-h-0 flex-1 overflow-y-auto pr-2 outline-none [overscroll-behavior:contain] [scrollbar-color:var(--color-surface-5)_transparent] [scrollbar-width:thin]"
             @scroll.passive="scrollTop = ($event.target as HTMLElement).scrollTop"
             @keydown="handleKeydown"
         >
@@ -196,7 +205,7 @@ const visibleItems = computed(() => {
                         <span class="h-px w-4 bg-surface-5" aria-hidden="true" />
                         {{ item.label }}
                     </div>
-                    <div v-else class="relative pl-5">
+                    <div v-else class="relative pl-5 pb-3">
                         <span
                             class="pointer-events-none absolute inset-y-0 left-[5px] w-px bg-surface-5"
                             aria-hidden="true"

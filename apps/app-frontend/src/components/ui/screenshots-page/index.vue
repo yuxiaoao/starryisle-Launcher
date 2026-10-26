@@ -487,41 +487,26 @@ const instanceFilterOptions = computed<ComboboxOption<string>[]>(() => {
     ]
 })
 
-const RANGE_DAYS: Record<string, number> = { today: 1, week: 7, month: 30 }
-
-const rangeOptions = computed<ComboboxOption<string>[]>(() => [
-    { value: 'all', label: formatMessage(messages.rangeAll) },
-    { value: 'today', label: formatMessage(messages.rangeToday) },
-    { value: 'week', label: formatMessage(messages.rangeWeek) },
-    { value: 'month', label: formatMessage(messages.rangeMonth) },
+const viewOptions = computed<ComboboxOption<string>[]>(() => [
+    { value: 'grid', label: formatMessage(messages.viewGrid) },
+    { value: 'timeline', label: formatMessage(messages.viewTimeline) },
 ])
 
-const groupFilterOptions = computed<ComboboxOption<string>[]>(() => [
-    { value: 'all', label: formatMessage(messages.groupFilterAll) },
-    ...customGroups.value.map((group) => ({ value: group.id, label: group.name })),
-    { value: 'ungrouped', label: formatMessage(messages.groupFilterUngrouped) },
-])
-
-const timelineScreenshots = computed(() => {
-    const days = RANGE_DAYS[timelineRange.value]
-    const cutoff = days
-        ? Date.now() - days * 24 * 60 * 60 * 1000
-        : Number.NEGATIVE_INFINITY
-    return filteredScreenshots.value.filter((screenshot) => {
+const timelineScreenshots = computed(() =>
+    filteredScreenshots.value.filter((screenshot) => {
         if (
             timelineInstanceId.value !== 'all' &&
             screenshot.instance_id !== timelineInstanceId.value
         ) {
             return false
         }
-        if (new Date(screenshot.created_at).getTime() < cutoff) return false
         if (timelineGroupFilter.value === 'ungrouped') return !screenshot.group_id
         if (timelineGroupFilter.value !== 'all') {
             return screenshot.group_id === timelineGroupFilter.value
         }
         return true
-    })
-})
+    }),
+)
 
 const filteredScreenshots = computed(() => {
 
@@ -553,15 +538,6 @@ const groupedScreenshots = computed((): ScreenshotGroupData[] => {
         ]
     }
 
-    if (groupBy.value === 'timeline') {
-        return [
-            {
-                id: 'timeline',
-                title: formatMessage(messages.timeline),
-                screenshots: filteredScreenshots.value,
-            },
-        ]
-    }
 
     if (groupBy.value === 'instance') {
         const screenshotGroups = new Map<string, InstanceScreenshot[]>()
@@ -1678,16 +1654,16 @@ onBeforeUnmount(() => {
                 v-model:sort="sortModel"
                 v-model:group="groupByModel"
                 v-model:instance="timelineInstanceId"
-                v-model:range="timelineRange"
+                v-model:view="viewMode"
                 v-model:group-filter="timelineGroupFilter"
                 :sort-options="sortOptions"
                 :group-options="groupOptions"
                 :instance-options="instanceFilterOptions"
-                :show-instance-filter="groupBy === 'timeline'"
-                :range-options="rangeOptions"
-                :show-range-filter="groupBy === 'timeline'"
+                :show-instance-filter="viewMode === 'timeline'"
+                :view-options="viewOptions"
+                :show-view-toggle="true"
                 :group-filter-options="groupFilterOptions"
-                :show-group-filter="groupBy === 'timeline'"
+                :show-group-filter="viewMode === 'timeline'"
                 @new-group="createCustomGroup"
             />
         </template>
@@ -1734,7 +1710,7 @@ onBeforeUnmount(() => {
             />
 
             <ScreenshotTimeline
-                v-else-if="groupBy === 'timeline'"
+                v-else-if="viewMode === 'timeline'"
                 :screenshots="timelineScreenshots"
                 :show-instance="isGlobal"
                 @activate="activateScreenshot"
