@@ -291,7 +291,16 @@ pub async fn check_app_update<R: Runtime>(
 ) -> Result<Option<UpdateMetadata>> {
     // Only the StarryIsle manifest is queried; the upstream Axolotl service is
     // never contacted, so this fork can never be replaced by that product.
-    check_with_updater(&webview, &channel).await
+    //
+    // A failed lookup (offline, blocked network, missing manifest) must not
+    // surface as an error notification: it simply means no update is available.
+    match check_with_updater(&webview, &channel).await {
+        Ok(update) => Ok(update),
+        Err(error) => {
+            tracing::warn!("Skipped launcher update check: {error}");
+            Ok(None)
+        }
+    }
 }
 
 // Reimplementation of Update::download mostly, minus the actual download part
