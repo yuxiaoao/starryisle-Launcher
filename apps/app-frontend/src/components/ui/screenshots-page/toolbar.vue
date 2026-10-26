@@ -21,6 +21,7 @@ defineProps<{
     groupOptions: ComboboxOption<string>[]
     showInstanceFilter?: boolean
     instanceOptions?: ComboboxOption<string>[]
+    showGroup?: boolean
     showViewToggle?: boolean
     viewOptions?: ComboboxOption<string>[]
     showGroupFilter?: boolean
@@ -78,23 +79,6 @@ const messages = defineMessages({
                 </template>
             </Combobox>
             <Combobox
-                v-model="group"
-                width="content"
-                :options="groupOptions"
-                :show-icon-in-selected="false"
-                dropdown-min-width="160px"
-            >
-                <template #prefix>
-                    <GridIcon
-                        class="size-5 text-[var(--color-text-default)]"
-                        :aria-label="formatMessage(messages.groupBy)"
-                    />
-                </template>
-                <template #selected="{ label }">
-                    <span>{{ label }}</span>
-                </template>
-            </Combobox>
-            <Combobox
                 v-if="showViewToggle"
                 v-model="view"
                 width="content"
@@ -106,6 +90,24 @@ const messages = defineMessages({
                     <GridIcon
                         class="size-5 text-[var(--color-text-default)]"
                         :aria-label="formatMessage(messages.viewToggle)"
+                    />
+                </template>
+                <template #selected="{ label }">
+                    <span>{{ label }}</span>
+                </template>
+            </Combobox>
+            <Combobox
+                v-if="showGroup"
+                v-model="group"
+                width="content"
+                :options="groupOptions"
+                :show-icon-in-selected="false"
+                dropdown-min-width="160px"
+            >
+                <template #prefix>
+                    <GridIcon
+                        class="size-5 text-[var(--color-text-default)]"
+                        :aria-label="formatMessage(messages.groupBy)"
                     />
                 </template>
                 <template #selected="{ label }">

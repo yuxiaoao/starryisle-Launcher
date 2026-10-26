@@ -28,9 +28,9 @@ const formatFullDate = useFormatDateTime({ dateStyle: 'full' })
 /** Days with more screenshots than this get hour separators inside them. */
 const HOUR_SEPARATOR_THRESHOLD = 5
 
-const DAY_HEIGHT = 46
-const HOUR_HEIGHT = 26
-const ROW_HEIGHT = 264
+const DAY_HEIGHT = 60
+const HOUR_HEIGHT = 34
+const ROW_HEIGHT = 268
 const DAY_GAP = 24
 const OVERSCAN = 600
 
