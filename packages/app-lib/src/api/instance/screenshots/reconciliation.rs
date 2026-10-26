@@ -9,7 +9,7 @@ use crate::state::instances::adapters::sqlite::{
 };
 use crate::util::fetch::sha1_file_async;
 use crate::util::io::IOError;
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, Local, NaiveDate, NaiveTime, TimeZone, Utc};
 use futures::stream::{self, StreamExt, TryStreamExt};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
@@ -149,11 +149,21 @@ fn scan_screenshots_dir(
         let metadata = entry
             .metadata()
             .map_err(|error| IOError::with_path(error, &path))?;
-        let created_at = metadata
-            .created()
-            .or_else(|_| metadata.modified())
-            .map(DateTime::<Utc>::from)
-            .map_err(|error| IOError::with_path(error, &path))?;
+        // Copying a game directory resets the filesystem creation time, which
+        // would otherwise collapse every screenshot onto the copy timestamp.
+        // Minecraft embeds the capture time in the file name, so prefer it.
+        let created_at = screenshot_time_from_name(&file_name)
+            .or_else(|| metadata.created().ok().map(DateTime::<Utc>::from))
+            .or_else(|| metadata.modified().ok().map(DateTime::<Utc>::from))
+            .ok_or_else(|| {
+                IOError::with_path(
+                    std::io::Error::new(
+                        std::io::ErrorKind::Other,
+                        "Screenshot has no usable timestamp",
+                    ),
+                    &path,
+                )
+            })?;
         let modified_at = metadata
             .modified()
             .map(DateTime::<Utc>::from)
@@ -306,4 +316,15 @@ pub(super) async fn reconcile_source_screenshots(
         .collect::<Vec<_>>();
     sort_screenshots(&mut screenshots);
     Ok(screenshots)
+}
+
+/// Minecraft names screenshots `YYYY-MM-DD_HH.MM.SS.png` in local time.
+fn screenshot_time_from_name(file_name: &str) -> Option<DateTime<Utc>> {
+    let stem = file_name.rsplit_once('.').map(|(stem, _)| stem).unwrap_or(file_name);
+    let (date_part, time_part) = stem.split_once('_')?;
+    let date = NaiveDate::parse_from_str(date_part, "%Y-%m-%d").ok()?;
+    let time = NaiveTime::parse_from_str(time_part, "%H.%M.%S").ok()?;
+    let naive = date.and_time(time);
+    let local = Local.from_local_datetime(&naive).single()?;
+    Some(DateTime::<Utc>::from(local))
 }
