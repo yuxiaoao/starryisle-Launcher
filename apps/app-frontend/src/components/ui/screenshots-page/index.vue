@@ -229,6 +229,24 @@ function deleteScreenshotFromMenu(screenshot: InstanceScreenshot) {
     noteMenu.value = null
     requestDelete(screenshot)
 }
+
+function isScreenshotSelected(screenshot: InstanceScreenshot): boolean {
+    return selectedKeys.value.has(getSelectionKey(screenshot))
+}
+
+function toggleTimelineSelection(screenshot: InstanceScreenshot) {
+    toggleScreenshotSelection(screenshot)
+}
+
+async function assignScreenshotToGroup(screenshot: InstanceScreenshot, groupId: string | null) {
+    noteMenu.value = null
+    try {
+        await set_screenshot_group_memberships([{ screenshot_id: screenshot.id, group_id: groupId }])
+        await screenshotsQuery.refetch()
+    } catch (error) {
+        handleError(error)
+    }
+}
 const sortModel = computed<string>({
     get: () => sort.value,
     set: (value) => {
@@ -354,6 +372,8 @@ const messages = defineMessages({
     menuEditNote: { id: 'app.screenshots.menu.edit-note', defaultMessage: 'Edit note' },
     menuCopyPath: { id: 'app.screenshots.menu.copy-path', defaultMessage: 'Copy file path' },
     menuDelete: { id: 'app.screenshots.menu.delete', defaultMessage: 'Delete' },
+    menuAddToGroup: { id: 'app.screenshots.menu.add-to-group', defaultMessage: 'Add to group' },
+    menuRemoveFromGroup: { id: 'app.screenshots.menu.remove-from-group', defaultMessage: 'Remove from group' },
     rangeAll: { id: 'app.screenshots.filter.range-all', defaultMessage: 'All time' },
     rangeToday: { id: 'app.screenshots.filter.range-today', defaultMessage: 'Today' },
     rangeWeek: { id: 'app.screenshots.filter.range-week', defaultMessage: 'Last 7 days' },
@@ -1799,10 +1819,12 @@ onBeforeUnmount(() => {
                 :show-instance="isGlobal"
                 :note-for="noteFor"
                 :editing-key="editingNoteKey"
+                :is-selected="isScreenshotSelected"
                 @activate="activateScreenshot"
                 @contextmenu="openScreenshotNoteMenu"
                 @save-note="saveScreenshotNote"
                 @cancel-note="editingNoteKey = null"
+                @toggle-select="toggleTimelineSelection"
             />
 
             <div
@@ -1822,6 +1844,28 @@ onBeforeUnmount(() => {
                 >
                     {{ formatMessage(messages.menuCopyPath) }}
                 </button>
+                <div
+                    v-if="customGroups.length > 0"
+                    class="border-t border-solid border-surface-4"
+                >
+                    <p class="m-0 px-3 pb-1 pt-2 text-xs text-[var(--color-text-tertiary)]">
+                        {{ formatMessage(messages.menuAddToGroup) }}
+                    </p>
+                    <button
+                        v-for="group in customGroups"
+                        :key="group.id"
+                        class="block w-full cursor-pointer border-0 bg-transparent px-5 py-1.5 text-left text-sm text-[var(--color-text-default)] hover:bg-surface-3"
+                        @click="assignScreenshotToGroup(noteMenu.screenshot, group.id)"
+                    >
+                        {{ group.name }}
+                    </button>
+                    <button
+                        class="block w-full cursor-pointer border-0 bg-transparent px-5 py-1.5 pb-2 text-left text-sm text-[var(--color-text-secondary)] hover:bg-surface-3"
+                        @click="assignScreenshotToGroup(noteMenu.screenshot, null)"
+                    >
+                        {{ formatMessage(messages.menuRemoveFromGroup) }}
+                    </button>
+                </div>
                 <button
                     class="block w-full cursor-pointer border-0 bg-transparent px-3 py-2 text-left text-sm text-red hover:bg-surface-3"
                     @click="deleteScreenshotFromMenu(noteMenu.screenshot)"
