@@ -158,6 +158,8 @@ const sort = useStorage<ScreenshotSort>(`screenshots-sort-${storageSuffix}`, 'ne
 const groupBy = useStorage<ScreenshotGroupBy>(`screenshots-group-v2-${storageSuffix}`, 'date')
 const timelineInstanceId = useStorage<string>(`screenshots-timeline-instance-${storageSuffix}`, 'all')
 const viewMode = useStorage<'grid' | 'timeline'>(`screenshots-view-${storageSuffix}`, 'grid')
+if (viewMode.value !== 'grid' && viewMode.value !== 'timeline') viewMode.value = 'grid'
+if (!['custom', 'instance', 'date', 'none'].includes(groupBy.value)) groupBy.value = 'date'
 const timelineGroupFilter = useStorage<string>(`screenshots-timeline-group-${storageSuffix}`, 'all')
 const sortModel = computed<string>({
     get: () => sort.value,
@@ -473,7 +475,6 @@ const groupOptions = computed<ComboboxOption<string>[]>(() => [
     ...(isGlobal.value ? [{ value: 'instance', label: formatMessage(messages.instance) }] : []),
     { value: 'date', label: formatMessage(messages.date) },
     { value: 'none', label: formatMessage(messages.none) },
-    { value: 'timeline', label: formatMessage(messages.timeline) },
 ])
 
 const instanceFilterOptions = computed<ComboboxOption<string>[]>(() => {
@@ -492,6 +493,12 @@ const instanceFilterOptions = computed<ComboboxOption<string>[]>(() => {
 const viewOptions = computed<ComboboxOption<string>[]>(() => [
     { value: 'grid', label: formatMessage(messages.viewGrid) },
     { value: 'timeline', label: formatMessage(messages.viewTimeline) },
+])
+
+const groupFilterOptions = computed<ComboboxOption<string>[]>(() => [
+    { value: 'all', label: formatMessage(messages.groupFilterAll) },
+    ...customGroups.value.map((group) => ({ value: group.id, label: group.name })),
+    { value: 'ungrouped', label: formatMessage(messages.groupFilterUngrouped) },
 ])
 
 const timelineScreenshots = computed(() =>
@@ -1663,6 +1670,7 @@ onBeforeUnmount(() => {
                 :instance-options="instanceFilterOptions"
                 :show-instance-filter="viewMode === 'timeline'"
                 :view-options="viewOptions"
+                :show-group="viewMode === 'grid'"
                 :show-view-toggle="true"
                 :group-filter-options="groupFilterOptions"
                 :show-group-filter="viewMode === 'timeline'"
