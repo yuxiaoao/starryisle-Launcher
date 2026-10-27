@@ -10573,13 +10573,13 @@
     "message": "StarryIsle 截图包.zip"
   },
   "app.screenshots.bundle.import": {
-    "message": "导入截图包"
+    "message": "导入包"
   },
   "app.screenshots.bundle.need-instance": {
     "message": "请先在一个实例中选择截图"
   },
   "app.screenshots.bundle.export": {
-    "message": "导出截图包"
+    "message": "导出包"
   },
   "app.screenshots.bundle.export-success": {
     "message": "已导出 {count} 张截图、{notes} 条备注"
