@@ -10,12 +10,14 @@ import {
 import {
     CheckIcon,
     ClipboardCopyIcon,
+    DownloadIcon,
     EditIcon,
     FileArchiveIcon,
     FolderOpenIcon,
     MinusIcon,
     PlusIcon,
     TrashIcon,
+    UploadIcon,
     XIcon,
 } from '@modrinth/assets'
 import {
@@ -468,6 +470,8 @@ const messages = defineMessages({
         defaultMessage: 'Imported {count} screenshots and {notes} notes',
     },
     bundleFilters: { id: 'app.screenshots.bundle.filters', defaultMessage: 'StarryIsle bundle' },
+    bundleExport: { id: 'app.screenshots.bundle.export', defaultMessage: 'Export bundle' },
+    bundleImport: { id: 'app.screenshots.bundle.import', defaultMessage: 'Import bundle' },
     bundleNeedInstance: {
         id: 'app.screenshots.bundle.need-instance',
         defaultMessage: 'Select screenshots from a single instance first',
@@ -1867,10 +1871,7 @@ onBeforeUnmount(() => {
                 :show-view-toggle="true"
                 :group-filter-options="groupFilterOptions"
                 :show-group-filter="viewMode === 'timeline'"
-                :show-bundle-actions="true"
                 @new-group="createCustomGroup"
-                @export-bundle="exportBundle"
-                @import-bundle="importBundle"
             />
         </template>
 
@@ -2199,6 +2200,24 @@ onBeforeUnmount(() => {
             >
                 <FileArchiveIcon />
                 <span class="bar-label">{{ formatMessage(messages.exportZip) }}</span>
+            </Button>
+            <Button
+                v-tooltip="formatMessage(messages.bundleExport)"
+                type="quiet"
+                :disabled="bulkBusy"
+                @click="exportBundle"
+            >
+                <DownloadIcon />
+                <span class="bar-label">{{ formatMessage(messages.bundleExport) }}</span>
+            </Button>
+            <Button
+                v-tooltip="formatMessage(messages.bundleImport)"
+                type="quiet"
+                :disabled="bulkBusy"
+                @click="importBundle"
+            >
+                <UploadIcon />
+                <span class="bar-label">{{ formatMessage(messages.bundleImport) }}</span>
             </Button>
             <div class="mx-1 h-6 w-px bg-surface-5" />
             <Button

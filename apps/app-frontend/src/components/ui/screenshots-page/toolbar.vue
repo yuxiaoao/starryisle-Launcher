@@ -1,9 +1,7 @@
 <script setup lang="ts">
 import {
     ArrowUpDownIcon,
-    FileArchiveIcon,
     GridIcon,
-    ImportIcon,
     PlusIcon,
     SearchIcon,
 } from '@modrinth/assets'
@@ -33,13 +31,10 @@ defineProps<{
     viewOptions?: ComboboxOption<string>[]
     showGroupFilter?: boolean
     groupFilterOptions?: ComboboxOption<string>[]
-    showBundleActions?: boolean
 }>()
 
 const emit = defineEmits<{
     (e: 'new-group'): void
-    (e: 'export-bundle'): void
-    (e: 'import-bundle'): void
 }>()
 
 const { formatMessage } = useVIntl()
@@ -51,8 +46,6 @@ const messages = defineMessages({
     instanceFilter: { id: 'app.screenshots.filter.instance', defaultMessage: 'Filter by instance' },
     groupFilter: { id: 'app.screenshots.filter.group', defaultMessage: 'Filter by group' },
     viewToggle: { id: 'app.screenshots.view', defaultMessage: 'View' },
-    exportBundle: { id: 'app.screenshots.bundle.export', defaultMessage: 'Export bundle' },
-    importBundle: { id: 'app.screenshots.bundle.import', defaultMessage: 'Import bundle' },
 })
 </script>
 
@@ -71,24 +64,6 @@ const messages = defineMessages({
                 <PlusIcon />
                 {{ formatMessage(messages.newGroup) }}
             </Button>
-            <template v-if="showBundleActions">
-                <Button
-                    v-tooltip="formatMessage(messages.exportBundle)"
-                    type="outlined"
-                    @click="emit('export-bundle')"
-                >
-                    <FileArchiveIcon />
-                    <span class="cq-show-label">{{ formatMessage(messages.exportBundle) }}</span>
-                </Button>
-                <Button
-                    v-tooltip="formatMessage(messages.importBundle)"
-                    type="outlined"
-                    @click="emit('import-bundle')"
-                >
-                    <ImportIcon />
-                    <span class="cq-show-label">{{ formatMessage(messages.importBundle) }}</span>
-                </Button>
-            </template>
         </div>
         <div class="flex flex-wrap items-center gap-2">
             <Combobox
