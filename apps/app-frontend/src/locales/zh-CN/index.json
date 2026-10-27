@@ -10575,6 +10575,9 @@
   "app.screenshots.bundle.import": {
     "message": "导入截图包"
   },
+  "app.screenshots.bundle.need-instance": {
+    "message": "请先在一个实例中选择截图"
+  },
   "app.screenshots.bundle.export": {
     "message": "导出截图包"
   },

@@ -71,6 +71,24 @@ const messages = defineMessages({
                 <PlusIcon />
                 {{ formatMessage(messages.newGroup) }}
             </Button>
+            <template v-if="showBundleActions">
+                <Button
+                    v-tooltip="formatMessage(messages.exportBundle)"
+                    type="outlined"
+                    @click="emit('export-bundle')"
+                >
+                    <FileArchiveIcon />
+                    <span class="cq-show-label">{{ formatMessage(messages.exportBundle) }}</span>
+                </Button>
+                <Button
+                    v-tooltip="formatMessage(messages.importBundle)"
+                    type="outlined"
+                    @click="emit('import-bundle')"
+                >
+                    <ImportIcon />
+                    <span class="cq-show-label">{{ formatMessage(messages.importBundle) }}</span>
+                </Button>
+            </template>
         </div>
         <div class="flex flex-wrap items-center gap-2">
             <Combobox
