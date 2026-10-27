@@ -11,7 +11,7 @@ const props = defineProps<{
     screenshots: InstanceScreenshot[]
     showInstance: boolean
     noteFor?: (screenshot: InstanceScreenshot) => string | undefined
-    editingKey?: string | null
+    editingFor?: (screenshot: InstanceScreenshot) => boolean
 }>()
 
 const emit = defineEmits<{
@@ -20,6 +20,7 @@ const emit = defineEmits<{
     (e: 'save-note', screenshot: InstanceScreenshot, note: string): void
     (e: 'cancel-note'): void
     (e: 'toggle-select', screenshot: InstanceScreenshot): void
+    (e: 'clear-selection'): void
 }>()
 
 const { formatMessage } = useVIntl()
@@ -188,7 +189,11 @@ const visibleItems = computed(() => {
 </script>
 
 <template>
-    <div ref="root" class="flex min-h-0 w-full flex-1 flex-col">
+    <div
+        ref="root"
+        class="flex min-h-0 w-full flex-1 flex-col"
+        @click="emit('clear-selection')"
+    >
         <p v-if="items.length === 0" class="m-0 text-secondary">
             {{ formatMessage(messages.empty) }}
         </p>
@@ -230,7 +235,7 @@ const visibleItems = computed(() => {
                             :screenshot="item.screenshot"
                             :show-instance="showInstance"
                             :note="noteFor?.(item.screenshot)"
-                            :editing="editingKey === item.key"
+                            :editing="editingFor?.(item.screenshot) ?? false"
                             :selected="isSelected?.(item.screenshot) ?? false"
                             @activate="(shot, event) => emit('activate', shot, event)"
                             @contextmenu="(shot, event) => emit('contextmenu', shot, event)"

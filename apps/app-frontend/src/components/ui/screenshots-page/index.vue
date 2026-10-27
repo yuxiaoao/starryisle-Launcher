@@ -230,6 +230,10 @@ function deleteScreenshotFromMenu(screenshot: InstanceScreenshot) {
     requestDelete(screenshot)
 }
 
+function isEditingNote(screenshot: InstanceScreenshot): boolean {
+    return editingNoteKey.value === noteKeyFor(screenshot)
+}
+
 function isScreenshotSelected(screenshot: InstanceScreenshot): boolean {
     return selectedKeys.value.has(getSelectionKey(screenshot))
 }
@@ -1818,13 +1822,14 @@ onBeforeUnmount(() => {
                 :screenshots="timelineScreenshots"
                 :show-instance="isGlobal"
                 :note-for="noteFor"
-                :editing-key="editingNoteKey"
+                :editing-for="isEditingNote"
                 :is-selected="isScreenshotSelected"
                 @activate="activateScreenshot"
                 @contextmenu="openScreenshotNoteMenu"
                 @save-note="saveScreenshotNote"
                 @cancel-note="editingNoteKey = null"
                 @toggle-select="toggleTimelineSelection"
+                @clear-selection="clearSelection"
             />
 
             <div
