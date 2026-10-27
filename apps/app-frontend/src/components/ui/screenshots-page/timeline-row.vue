@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { CheckIcon } from '@modrinth/assets'
 import { MAX_SCREENSHOT_NOTE_LENGTH } from '@/helpers/screenshot-notes'
 import { useImageThumbnail } from '@/composables/use-image-thumbnail'
 import type { InstanceScreenshot } from '@/helpers/screenshots'
@@ -68,20 +69,31 @@ function commit() {
             class="absolute -left-[19px] size-2 rounded-full bg-brand ring-2 ring-bg"
             aria-hidden="true"
         />
-        <button
-            class="absolute right-2 top-2 z-[3] flex size-6 cursor-pointer items-center justify-center rounded-full border-2 border-solid border-surface-5 bg-black/30 opacity-0 transition-opacity group-hover/row:opacity-100"
-            :class="{ 'border-brand bg-brand opacity-100': selected }"
-            @click.stop="emit('toggle-select', screenshot)"
-        >
-            <span v-if="selected" class="text-xs font-bold text-black">✓</span>
-        </button>
-        <img
-            v-if="thumbnail"
-            :src="thumbnail"
-            :alt="screenshot.file_name"
-            class="aspect-video w-96 shrink-0 rounded-lg object-cover"
-        />
-        <div v-else class="aspect-video w-96 shrink-0 animate-pulse rounded-lg bg-surface-3" />
+        <div class="relative shrink-0">
+            <img
+                v-if="thumbnail"
+                :src="thumbnail"
+                :alt="screenshot.file_name"
+                class="aspect-video w-96 shrink-0 rounded-lg object-cover"
+            />
+            <div
+                v-else
+                class="aspect-video w-96 shrink-0 animate-pulse rounded-lg bg-surface-3"
+            />
+            <button
+                class="absolute right-2 top-2 z-[3] flex size-6 cursor-pointer items-center justify-center rounded-full border-2 border-solid border-white/70 bg-black/30 text-transparent transition-all group-hover/row:opacity-100"
+                :class="
+                    selected
+                        ? 'border-brand bg-brand text-white'
+                        : 'opacity-0 hover:border-brand hover:bg-brand hover:text-white'
+                "
+                :aria-pressed="selected"
+                aria-label="选择截图"
+                @click.stop="emit('toggle-select', screenshot)"
+            >
+                <CheckIcon class="size-4" :stroke-width="3" />
+            </button>
+        </div>
         <div class="flex min-w-0 shrink-0 flex-col gap-0.5">
             <span class="text-xl font-semibold text-[var(--color-text-primary)]">
                 {{ formatTime(new Date(screenshot.created_at)) }}
