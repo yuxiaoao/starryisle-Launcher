@@ -12156,6 +12156,9 @@
   "app.screenshots.bundle.import": {
     "message": "Import bundle"
   },
+  "app.screenshots.bundle.need-instance": {
+    "message": "Select screenshots from a single instance first"
+  },
   "app.screenshots.bundle.export": {
     "message": "Export bundle"
   },

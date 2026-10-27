@@ -229,9 +229,27 @@ async function copyScreenshotPath(screenshot: InstanceScreenshot) {
     }
 }
 
+function bundleTargetInstanceId(): string | null {
+    if (props.instanceId) return props.instanceId
+    const ids = new Set(selectedScreenshots.value.map((shot) => shot.instance_id))
+    if (ids.size === 1) return Array.from(ids)[0] ?? null
+    return null
+}
+
+function warnBundleInstanceMissing() {
+    addNotification({
+        type: 'warning',
+        title: formatMessage(messages.bundleNeedInstance),
+    })
+}
+
 async function exportBundle() {
-    const instanceId = props.instanceId
-    if (!instanceId || bulkBusy.value) return
+    const instanceId = bundleTargetInstanceId()
+    if (!instanceId) {
+        warnBundleInstanceMissing()
+        return
+    }
+    if (bulkBusy.value) return
     const outputPath = await save({
         defaultPath: formatMessage(messages.bundleExportFilename),
         filters: [{ name: formatMessage(messages.bundleFilters), extensions: ['zip'] }],
@@ -255,8 +273,12 @@ async function exportBundle() {
 }
 
 async function importBundle() {
-    const instanceId = props.instanceId
-    if (!instanceId || bulkBusy.value) return
+    const instanceId = bundleTargetInstanceId()
+    if (!instanceId) {
+        warnBundleInstanceMissing()
+        return
+    }
+    if (bulkBusy.value) return
     const selected = await open({
         multiple: false,
         filters: [{ name: formatMessage(messages.bundleFilters), extensions: ['zip'] }],
@@ -446,6 +468,10 @@ const messages = defineMessages({
         defaultMessage: 'Imported {count} screenshots and {notes} notes',
     },
     bundleFilters: { id: 'app.screenshots.bundle.filters', defaultMessage: 'StarryIsle bundle' },
+    bundleNeedInstance: {
+        id: 'app.screenshots.bundle.need-instance',
+        defaultMessage: 'Select screenshots from a single instance first',
+    },
     menuRemoveFromGroup: { id: 'app.screenshots.menu.remove-from-group', defaultMessage: 'Remove from group' },
     rangeAll: { id: 'app.screenshots.filter.range-all', defaultMessage: 'All time' },
     rangeToday: { id: 'app.screenshots.filter.range-today', defaultMessage: 'Today' },
@@ -1841,7 +1867,7 @@ onBeforeUnmount(() => {
                 :show-view-toggle="true"
                 :group-filter-options="groupFilterOptions"
                 :show-group-filter="viewMode === 'timeline'"
-                :show-bundle-actions="!isGlobal"
+                :show-bundle-actions="true"
                 @new-group="createCustomGroup"
                 @export-bundle="exportBundle"
                 @import-bundle="importBundle"
@@ -1904,57 +1930,6 @@ onBeforeUnmount(() => {
                 @clear-selection="clearSelection"
             />
 
-            <div
-                v-if="noteMenu"
-                class="fixed z-[60] min-w-[180px] overflow-hidden rounded-lg border border-solid border-surface-4 bg-surface-2 py-1 shadow-xl"
-                :style="{ left: `${noteMenu.x}px`, top: `${noteMenu.y}px` }"
-            >
-                <button
-                    class="block w-full cursor-pointer border-0 bg-transparent px-3 py-2 text-left text-sm text-[var(--color-text-default)] hover:bg-surface-3"
-                    @click="startEditingNote(noteMenu.screenshot)"
-                >
-                    {{ formatMessage(messages.menuEditNote) }}
-                </button>
-                <button
-                    class="block w-full cursor-pointer border-0 bg-transparent px-3 py-2 text-left text-sm text-[var(--color-text-default)] hover:bg-surface-3"
-                    @click="copyScreenshotPath(noteMenu.screenshot)"
-                >
-                    {{ formatMessage(messages.menuCopyPath) }}
-                </button>
-                <div
-                    v-if="customGroups.length > 0"
-                    class="border-t border-solid border-surface-4"
-                >
-                    <p class="m-0 px-3 pb-1 pt-2 text-xs text-[var(--color-text-tertiary)]">
-                        {{ formatMessage(messages.menuAddToGroup) }}
-                    </p>
-                    <button
-                        v-for="group in customGroups"
-                        :key="group.id"
-                        class="block w-full cursor-pointer border-0 bg-transparent px-5 py-1.5 text-left text-sm text-[var(--color-text-default)] hover:bg-surface-3"
-                        @click="assignScreenshotToGroup(noteMenu.screenshot, group.id)"
-                    >
-                        {{ group.name }}
-                    </button>
-                    <button
-                        class="block w-full cursor-pointer border-0 bg-transparent px-5 py-1.5 pb-2 text-left text-sm text-[var(--color-text-secondary)] hover:bg-surface-3"
-                        @click="assignScreenshotToGroup(noteMenu.screenshot, null)"
-                    >
-                        {{ formatMessage(messages.menuRemoveFromGroup) }}
-                    </button>
-                </div>
-                <button
-                    class="block w-full cursor-pointer border-0 bg-transparent px-3 py-2 text-left text-sm text-red hover:bg-surface-3"
-                    @click="deleteScreenshotFromMenu(noteMenu.screenshot)"
-                >
-                    {{ formatMessage(messages.menuDelete) }}
-                </button>
-            </div>
-            <div
-                v-if="noteMenu"
-                class="fixed inset-0 z-[55]"
-                @click="noteMenu = null"
-            />
 
             <DragDropProvider
                 v-else
@@ -2075,10 +2050,12 @@ onBeforeUnmount(() => {
                                         <TrashIcon />
                                     </IconButton>
                                 </div>
+
                             </template>
                         </ScreenshotGroupSection>
                     </div>
                 </div>
+
                 <Teleport to="body">
                     <div class="pointer-events-none fixed inset-0 z-[9999]">
                         <DragOverlay :drop-animation="null">
@@ -2104,6 +2081,60 @@ onBeforeUnmount(() => {
             />
         </ReadyTransition>
     </div>
+
+    <Teleport to="body">
+                <div
+                    v-if="noteMenu"
+                    class="fixed z-[60] min-w-[180px] overflow-hidden rounded-lg border border-solid border-surface-4 bg-surface-2 py-1 shadow-xl"
+                    :style="{ left: `${noteMenu.x}px`, top: `${noteMenu.y}px` }"
+                >
+                    <button
+                        class="block w-full cursor-pointer border-0 bg-transparent px-3 py-2 text-left text-sm text-[var(--color-text-default)] hover:bg-surface-3"
+                        @click="startEditingNote(noteMenu.screenshot)"
+                    >
+                        {{ formatMessage(messages.menuEditNote) }}
+                    </button>
+                    <button
+                        class="block w-full cursor-pointer border-0 bg-transparent px-3 py-2 text-left text-sm text-[var(--color-text-default)] hover:bg-surface-3"
+                        @click="copyScreenshotPath(noteMenu.screenshot)"
+                    >
+                        {{ formatMessage(messages.menuCopyPath) }}
+                    </button>
+                    <div
+                        v-if="customGroups.length > 0"
+                        class="border-t border-solid border-surface-4"
+                    >
+                        <p class="m-0 px-3 pb-1 pt-2 text-xs text-[var(--color-text-tertiary)]">
+                            {{ formatMessage(messages.menuAddToGroup) }}
+                        </p>
+                        <button
+                            v-for="group in customGroups"
+                            :key="group.id"
+                            class="block w-full cursor-pointer border-0 bg-transparent px-5 py-1.5 text-left text-sm text-[var(--color-text-default)] hover:bg-surface-3"
+                            @click="assignScreenshotToGroup(noteMenu.screenshot, group.id)"
+                        >
+                            {{ group.name }}
+                        </button>
+                        <button
+                            class="block w-full cursor-pointer border-0 bg-transparent px-5 py-1.5 pb-2 text-left text-sm text-[var(--color-text-secondary)] hover:bg-surface-3"
+                            @click="assignScreenshotToGroup(noteMenu.screenshot, null)"
+                        >
+                            {{ formatMessage(messages.menuRemoveFromGroup) }}
+                        </button>
+                    </div>
+                    <button
+                        class="block w-full cursor-pointer border-0 bg-transparent px-3 py-2 text-left text-sm text-red hover:bg-surface-3"
+                        @click="deleteScreenshotFromMenu(noteMenu.screenshot)"
+                    >
+                        {{ formatMessage(messages.menuDelete) }}
+                    </button>
+                </div>
+                <div
+                    v-if="noteMenu"
+                    class="fixed inset-0 z-[55]"
+                    @click="noteMenu = null"
+                />
+    </Teleport>
 
     <Teleport to="body">
         <div
