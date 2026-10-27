@@ -11,6 +11,7 @@ const props = defineProps<{
     showInstance: boolean
     note?: string
     editing: boolean
+    selected?: boolean
 }>()
 
 const emit = defineEmits<{
