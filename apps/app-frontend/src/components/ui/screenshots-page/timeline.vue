@@ -12,6 +12,7 @@ const props = defineProps<{
     showInstance: boolean
     noteFor?: (screenshot: InstanceScreenshot) => string | undefined
     editingFor?: (screenshot: InstanceScreenshot) => boolean
+    isSelected?: (screenshot: InstanceScreenshot) => boolean
 }>()
 
 const emit = defineEmits<{
