@@ -1470,9 +1470,10 @@ pub async fn instance_list_screenshot_notes(
 #[tauri::command]
 pub async fn instance_export_screenshots_bundle(
     instance_id: String,
+    file_names: Option<Vec<String>>,
     path: PathBuf,
 ) -> Result<theseus::instance::BundleExportReport> {
-    Ok(theseus::instance::export_instance_bundle(&instance_id, path).await?)
+    Ok(theseus::instance::export_instance_bundle(&instance_id, file_names, path).await?)
 }
 
 #[tauri::command]

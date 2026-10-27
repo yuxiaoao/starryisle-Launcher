@@ -84,6 +84,7 @@ async fn screenshots_source(
 
 pub async fn export_instance_bundle(
     instance_id: &str,
+    file_names: Option<Vec<String>>,
     export_path: PathBuf,
 ) -> crate::Result<BundleExportReport> {
     let state = State::get().await?;
@@ -102,6 +103,12 @@ pub async fn export_instance_bundle(
                 continue;
             }
             files.push((name, entry.path()));
+        }
+    }
+    if let Some(selected) = file_names {
+        if !selected.is_empty() {
+            let allowed: std::collections::HashSet<String> = selected.into_iter().collect();
+            files.retain(|(name, _)| allowed.contains(name));
         }
     }
     files.sort_by(|left, right| left.0.cmp(&right.0));

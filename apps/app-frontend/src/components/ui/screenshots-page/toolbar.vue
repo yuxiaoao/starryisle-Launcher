@@ -2,6 +2,7 @@
 import {
     ArrowUpDownIcon,
     GridIcon,
+    ImportIcon,
     PlusIcon,
     SearchIcon,
 } from '@modrinth/assets'
@@ -31,10 +32,12 @@ defineProps<{
     viewOptions?: ComboboxOption<string>[]
     showGroupFilter?: boolean
     groupFilterOptions?: ComboboxOption<string>[]
+    showImportAction?: boolean
 }>()
 
 const emit = defineEmits<{
     (e: 'new-group'): void
+    (e: 'import-bundle'): void
 }>()
 
 const { formatMessage } = useVIntl()
@@ -46,6 +49,7 @@ const messages = defineMessages({
     instanceFilter: { id: 'app.screenshots.filter.instance', defaultMessage: 'Filter by instance' },
     groupFilter: { id: 'app.screenshots.filter.group', defaultMessage: 'Filter by group' },
     viewToggle: { id: 'app.screenshots.view', defaultMessage: 'View' },
+    importBundle: { id: 'app.screenshots.bundle.import', defaultMessage: 'Import bundle' },
 })
 </script>
 
@@ -63,6 +67,15 @@ const messages = defineMessages({
             <Button @click="emit('new-group')">
                 <PlusIcon />
                 {{ formatMessage(messages.newGroup) }}
+            </Button>
+            <Button
+                v-if="showImportAction"
+                v-tooltip="formatMessage(messages.importBundle)"
+                type="outlined"
+                @click="emit('import-bundle')"
+            >
+                <ImportIcon />
+                <span>{{ formatMessage(messages.importBundle) }}</span>
             </Button>
         </div>
         <div class="flex flex-wrap items-center gap-2">

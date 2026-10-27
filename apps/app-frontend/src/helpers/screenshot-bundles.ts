@@ -19,9 +19,11 @@ export type BundleConflictPolicy = 'skip' | 'overwrite' | 'rename'
 export async function exportScreenshotBundle(
     instanceId: string,
     path: string,
+    fileNames?: string[],
 ): Promise<BundleExportReport> {
     return await invoke('plugin:instance|instance_export_screenshots_bundle', {
         instanceId,
+        fileNames: fileNames && fileNames.length > 0 ? fileNames : null,
         path,
     })
 }
