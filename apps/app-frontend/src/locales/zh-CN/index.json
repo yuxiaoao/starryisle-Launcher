@@ -10572,6 +10572,9 @@
   "app.screenshots.bundle.export-filename": {
     "message": "StarryIsle 截图包.zip"
   },
+  "app.screenshots.bundle.import-toolbar": {
+    "message": "导入截图包"
+  },
   "app.screenshots.bundle.import": {
     "message": "导入包"
   },

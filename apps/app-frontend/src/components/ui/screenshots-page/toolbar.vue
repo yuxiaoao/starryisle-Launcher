@@ -49,7 +49,7 @@ const messages = defineMessages({
     instanceFilter: { id: 'app.screenshots.filter.instance', defaultMessage: 'Filter by instance' },
     groupFilter: { id: 'app.screenshots.filter.group', defaultMessage: 'Filter by group' },
     viewToggle: { id: 'app.screenshots.view', defaultMessage: 'View' },
-    importBundle: { id: 'app.screenshots.bundle.import', defaultMessage: 'Import bundle' },
+    importBundle: { id: 'app.screenshots.bundle.import-toolbar', defaultMessage: 'Import bundle' },
 })
 </script>
 
@@ -162,11 +162,11 @@ const messages = defineMessages({
             <Button
                 v-if="showImportAction"
                 v-tooltip="formatMessage(messages.importBundle)"
-                type="outlined"
+                type="base"
                 @click="emit('import-bundle')"
             >
                 <ImportIcon />
-                <span>{{ formatMessage(messages.importBundle) }}</span>
+                <span class="text-[var(--color-text-default)]">{{ formatMessage(messages.importBundle) }}</span>
             </Button>
         </div>
     </div>
