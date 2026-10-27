@@ -61,7 +61,7 @@ function commit() {
     <div
         class="group/row relative flex h-[256px] cursor-pointer items-center gap-8 rounded-xl bg-surface-2 p-3 transition-colors hover:bg-surface-3"
         :class="{ 'ring-2 ring-brand': selected }"
-        @click="emit('activate', screenshot, $event)"
+        @click.stop="emit('activate', screenshot, $event)"
         @contextmenu.prevent.stop="emit('contextmenu', screenshot, $event)"
     >
         <span
