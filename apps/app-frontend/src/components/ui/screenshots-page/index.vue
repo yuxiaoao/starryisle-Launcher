@@ -17,6 +17,7 @@ import {
     MinusIcon,
     PlusIcon,
     TrashIcon,
+    UploadIcon,
     XIcon,
 } from '@modrinth/assets'
 import {
@@ -2206,7 +2207,6 @@ onBeforeUnmount(() => {
                 @click="exportSelected"
             >
                 <FileArchiveIcon />
-                <span class="bar-label">{{ formatMessage(messages.exportZip) }}</span>
             </Button>
             <Button
                 v-tooltip="formatMessage(messages.bundleExport)"
@@ -2215,7 +2215,14 @@ onBeforeUnmount(() => {
                 @click="exportBundle"
             >
                 <DownloadIcon />
-                <span class="bar-label">{{ formatMessage(messages.bundleExport) }}</span>
+            </Button>
+            <Button
+                v-tooltip="formatMessage(messages.bundleImport)"
+                type="quiet"
+                :disabled="bulkBusy"
+                @click="importBundle"
+            >
+                <UploadIcon />
             </Button>
             <div class="mx-1 h-6 w-px bg-surface-5" />
             <Button
