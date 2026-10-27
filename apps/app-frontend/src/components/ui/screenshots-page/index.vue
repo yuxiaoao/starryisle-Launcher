@@ -17,7 +17,6 @@ import {
     MinusIcon,
     PlusIcon,
     TrashIcon,
-    UploadIcon,
     XIcon,
 } from '@modrinth/assets'
 import {
@@ -259,7 +258,13 @@ async function exportBundle() {
     if (!outputPath) return
     bulkBusy.value = true
     try {
-        const report = await exportScreenshotBundle(instanceId, outputPath)
+        const report = await exportScreenshotBundle(
+            instanceId,
+            outputPath,
+            selectedScreenshots.value
+                .filter((shot) => shot.instance_id === instanceId)
+                .map((shot) => shot.file_name),
+        )
         addNotification({
             type: 'success',
             title: formatMessage(messages.bundleExportSuccess, {
@@ -1871,7 +1876,9 @@ onBeforeUnmount(() => {
                 :show-view-toggle="true"
                 :group-filter-options="groupFilterOptions"
                 :show-group-filter="viewMode === 'timeline'"
+                :show-import-action="true"
                 @new-group="createCustomGroup"
+                @import-bundle="importBundle"
             />
         </template>
 
@@ -2209,15 +2216,6 @@ onBeforeUnmount(() => {
             >
                 <DownloadIcon />
                 <span class="bar-label">{{ formatMessage(messages.bundleExport) }}</span>
-            </Button>
-            <Button
-                v-tooltip="formatMessage(messages.bundleImport)"
-                type="quiet"
-                :disabled="bulkBusy"
-                @click="importBundle"
-            >
-                <UploadIcon />
-                <span class="bar-label">{{ formatMessage(messages.bundleImport) }}</span>
             </Button>
             <div class="mx-1 h-6 w-px bg-surface-5" />
             <Button
