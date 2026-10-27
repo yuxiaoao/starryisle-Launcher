@@ -121,6 +121,8 @@ pub fn init<R: tauri::Runtime>() -> tauri::plugin::TauriPlugin<R> {
             instance_import_screenshot_groups,
             instance_delete_screenshots,
             instance_export_screenshots,
+            instance_export_screenshots_bundle,
+            instance_import_screenshots_bundle,
             instance_set_screenshot_note,
             instance_list_screenshot_notes,
             instance_move_screenshots,
@@ -1463,6 +1465,23 @@ pub async fn instance_list_screenshot_notes(
     instance_id: Option<String>,
 ) -> Result<Vec<theseus::instance::ScreenshotNote>> {
     Ok(theseus::instance::list_screenshot_notes(instance_id.as_deref()).await?)
+}
+
+#[tauri::command]
+pub async fn instance_export_screenshots_bundle(
+    instance_id: String,
+    path: PathBuf,
+) -> Result<theseus::instance::BundleExportReport> {
+    Ok(theseus::instance::export_instance_bundle(&instance_id, path).await?)
+}
+
+#[tauri::command]
+pub async fn instance_import_screenshots_bundle(
+    instance_id: String,
+    path: PathBuf,
+    conflict: String,
+) -> Result<theseus::instance::BundleImportReport> {
+    Ok(theseus::instance::import_instance_bundle(&instance_id, path, &conflict).await?)
 }
 
 #[tauri::command]

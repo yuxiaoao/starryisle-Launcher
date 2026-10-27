@@ -801,6 +801,8 @@ fn main() {
                         "instance_import_screenshot_groups",
                         "instance_delete_screenshots",
                         "instance_export_screenshots",
+                        "instance_export_screenshots_bundle",
+                        "instance_import_screenshots_bundle",
                         "instance_set_screenshot_note",
                         "instance_list_screenshot_notes",
                         "instance_move_screenshots",

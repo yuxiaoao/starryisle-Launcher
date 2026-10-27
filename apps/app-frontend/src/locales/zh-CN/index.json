@@ -10566,6 +10566,24 @@
   "app.screenshots.menu.remove-from-group": {
     "message": "移出分组"
   },
+  "app.screenshots.bundle.import-success": {
+    "message": "已导入 {count} 张截图、{notes} 条备注"
+  },
+  "app.screenshots.bundle.export-filename": {
+    "message": "StarryIsle 截图包.zip"
+  },
+  "app.screenshots.bundle.import": {
+    "message": "导入截图包"
+  },
+  "app.screenshots.bundle.export": {
+    "message": "导出截图包"
+  },
+  "app.screenshots.bundle.export-success": {
+    "message": "已导出 {count} 张截图、{notes} 条备注"
+  },
+  "app.screenshots.bundle.filters": {
+    "message": "StarryIsle 截图包"
+  },
   "app.screenshots.menu.edit-note": {
     "message": "编辑备注"
   },

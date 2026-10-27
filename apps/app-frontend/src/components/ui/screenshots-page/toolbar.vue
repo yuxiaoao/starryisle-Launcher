@@ -1,5 +1,12 @@
 <script setup lang="ts">
-import { ArrowUpDownIcon, GridIcon, PlusIcon, SearchIcon } from '@modrinth/assets'
+import {
+    ArrowUpDownIcon,
+    FileArchiveIcon,
+    GridIcon,
+    ImportIcon,
+    PlusIcon,
+    SearchIcon,
+} from '@modrinth/assets'
 import {
     Button,
     Combobox,
@@ -26,10 +33,13 @@ defineProps<{
     viewOptions?: ComboboxOption<string>[]
     showGroupFilter?: boolean
     groupFilterOptions?: ComboboxOption<string>[]
+    showBundleActions?: boolean
 }>()
 
 const emit = defineEmits<{
     (e: 'new-group'): void
+    (e: 'export-bundle'): void
+    (e: 'import-bundle'): void
 }>()
 
 const { formatMessage } = useVIntl()
@@ -41,6 +51,8 @@ const messages = defineMessages({
     instanceFilter: { id: 'app.screenshots.filter.instance', defaultMessage: 'Filter by instance' },
     groupFilter: { id: 'app.screenshots.filter.group', defaultMessage: 'Filter by group' },
     viewToggle: { id: 'app.screenshots.view', defaultMessage: 'View' },
+    exportBundle: { id: 'app.screenshots.bundle.export', defaultMessage: 'Export bundle' },
+    importBundle: { id: 'app.screenshots.bundle.import', defaultMessage: 'Import bundle' },
 })
 </script>
 
