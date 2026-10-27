@@ -311,6 +311,142 @@ async fn install_snapshot_reuses_hashes_and_only_rehashes_changed_files() {
 }
 
 #[tokio::test]
+async fn installed_identity_reuses_verified_bytes_across_analysis_retries_and_cache_reopen()
+ {
+    use super::installed::installed_file_identity;
+    use crate::util::download::verified_file::track_scans;
+    let (_temp, state, original, _, root) = fixture().await;
+    let cancel = CancellationToken::new();
+    let cache_path = state
+        .directories
+        .caches_dir()
+        .join("local-identity-test.db");
+    let cache = cache::ResourceCache::open(cache_path.clone()).await;
+    let (first, scans) = track_scans(installed_file_identity(
+        &root, &original, &cache, true, &cancel,
+    ))
+    .await;
+    let first = first.unwrap();
+    assert_eq!(scans, 1);
+    assert!(first.fingerprint.is_some());
+    assert!(identity::exact_integrity(
+        &original.integrity,
+        &first.integrity
+    ));
+    let (again, scans) = track_scans(installed_file_identity(
+        &root, &original, &cache, true, &cancel,
+    ))
+    .await;
+    assert_eq!(again.unwrap().fingerprint, first.fingerprint);
+    assert_eq!(
+        scans, 0,
+        "unknown and unrecognized files still reuse byte evidence"
+    );
+    cache.close().await;
+    let cache = cache::ResourceCache::open(cache_path).await;
+    let (again, scans) = track_scans(installed_file_identity(
+        &root, &original, &cache, true, &cancel,
+    ))
+    .await;
+    assert_eq!(again.unwrap().integrity, first.integrity);
+    assert_eq!(scans, 0, "evidence survives a launcher restart");
+
+    let mut changed = original.clone();
+    let bytes = b"changed file contents";
+    std::fs::write(root.join(&changed.relative_path), bytes).unwrap();
+    changed.integrity = ArtifactIntegrity {
+        size: Some(bytes.len() as u64),
+        hashes: vec![ContentHash {
+            algorithm: HashAlgorithm::Sha1,
+            value: sha1_smol::Sha1::from(bytes).hexdigest(),
+        }],
+    };
+    let (result, scans) = track_scans(installed_file_identity(
+        &root, &changed, &cache, true, &cancel,
+    ))
+    .await;
+    assert!(identity::exact_integrity(
+        &changed.integrity,
+        &result.unwrap().integrity
+    ));
+    assert_eq!(scans, 1, "a changed scanner SHA-1 invalidates the evidence");
+    let (result, scans) = track_scans(installed_file_identity(
+        &root, &changed, &cache, false, &cancel,
+    ))
+    .await;
+    result.unwrap();
+    assert_eq!(scans, 1, "explicit checks still verify current bytes");
+
+    cache.clear().await.unwrap();
+    let (result, scans) = track_scans(installed_file_identity(
+        &root, &changed, &cache, true, &cancel,
+    ))
+    .await;
+    result.unwrap();
+    assert_eq!(
+        scans, 1,
+        "clearing resource caches clears local byte evidence too"
+    );
+    cancel.cancel();
+    assert!(matches!(
+        installed_file_identity(&root, &changed, &cache, true, &cancel).await,
+        Err(ResourceError::Canceled)
+    ));
+    cache.close().await;
+    state.pool.close().await;
+}
+
+#[tokio::test]
+async fn local_identity_cache_rejects_stale_writes_and_same_size_content_changes()
+ {
+    use super::installed::installed_file_identity;
+    use crate::util::download::verified_file::track_scans;
+    let (_temp, state, original, _, root) = fixture().await;
+    let cancel = CancellationToken::new();
+    let cache = cache::ResourceCache::open(
+        state
+            .directories
+            .caches_dir()
+            .join("identity-generation.db"),
+    )
+    .await;
+    let generation = cache.generation().await;
+    let first =
+        installed_file_identity(&root, &original, &cache, true, &cancel)
+            .await
+            .unwrap();
+    cache.clear().await.unwrap();
+    cache.store_local_identity(&first, generation).await;
+    assert!(cache.local_identity(&original.integrity).await.is_none());
+
+    let bytes = vec![b'x'; original.integrity.size.unwrap() as usize];
+    std::fs::write(root.join(&original.relative_path), &bytes).unwrap();
+    let mut changed = original.clone();
+    changed.integrity.hashes = vec![ContentHash {
+        algorithm: HashAlgorithm::Sha1,
+        value: sha1_smol::Sha1::from(&bytes).hexdigest(),
+    }];
+    let (result, scans) = track_scans(installed_file_identity(
+        &root, &changed, &cache, true, &cancel,
+    ))
+    .await;
+    assert!(identity::exact_integrity(
+        &changed.integrity,
+        &result.unwrap().integrity
+    ));
+    assert_eq!(scans, 1);
+    assert!(
+        installed_file_identity(&root, &original, &cache, false, &cancel)
+            .await
+            .is_err(),
+        "an out-of-date snapshot cannot bless different bytes"
+    );
+    assert!(cache.local_identity(&original.integrity).await.is_none());
+    cache.close().await;
+    state.pool.close().await;
+}
+
+#[tokio::test]
 async fn unchanged_installed_artifacts_do_not_fetch_project_presentations() {
     use crate::resources::providers::*;
     use std::sync::atomic::{AtomicUsize, Ordering};
@@ -788,7 +924,7 @@ async fn replacing_import_files_restores_manual_requirements_and_increments_the_
     let plan = local_plan(&state, original, target, "download.zip", None).await;
     let id = plan.actions[0].node_id.clone();
     let added = plans::prepare_import_files_with_pool(
-        &state.pool,
+        &state.data,
         plan.clone(),
         HashMap::from([(id, source.to_string_lossy().to_string())]),
         &CancellationToken::new(),
@@ -803,7 +939,7 @@ async fn replacing_import_files_restores_manual_requirements_and_increments_the_
     );
     assert!(
         plans::prepare_import_files_with_pool(
-            &state.pool,
+            &state.data,
             plan,
             HashMap::new(),
             &CancellationToken::new()
@@ -814,13 +950,13 @@ async fn replacing_import_files_restores_manual_requirements_and_increments_the_
     let cancel = CancellationToken::new();
     let (first, second) = tokio::join!(
         plans::prepare_import_files_with_pool(
-            &state.pool,
+            &state.data,
             added.clone(),
             HashMap::new(),
             &cancel
         ),
         plans::prepare_import_files_with_pool(
-            &state.pool,
+            &state.data,
             added.clone(),
             HashMap::new(),
             &cancel
@@ -968,6 +1104,8 @@ async fn verified_manual_import_rejects_changed_bytes_and_preserves_connector_so
         entry_id: None,
         blocking: true,
         message: "manual".into(),
+        conflict: None,
+        context: None,
     });
     plans::verify_import_files(&mut draft).await.unwrap();
     assert!(draft.plan.issues.is_empty());
@@ -1196,14 +1334,14 @@ async fn update_restart_cache_clear_unlink_rollback_and_cleanup_keep_business_fa
         serde_json::to_value(&request).unwrap()
     );
     assert_eq!(recovered.status, crate::install::InstallJobStatus::Queued);
-    let settings = crate::state::Settings::get(&state.pool).await.unwrap();
+    let settings = crate::state::Settings::get(&state.data).await.unwrap();
     assert!(
         !settings.resource_chinese_filenames
             && !settings.resource_preserve_filenames
     );
     execute("instance", &plan, None, &state).await.unwrap();
     assert!(
-        plans::frozen_request_completed(&request, &state.pool)
+        plans::frozen_request_completed(&request, &state.data)
             .await
             .unwrap()
     );
@@ -1541,7 +1679,7 @@ async fn forced_writes_skip_readonly_files_without_changing_their_database_or_hi
             None,
         )
         .await;
-        let mut draft = plans::load(&state.pool, &plan.id, plan.revision)
+        let mut draft = plans::load(&state.data, &plan.id, plan.revision)
             .await
             .unwrap();
         let mut added = plan.actions[0].clone();
@@ -1668,7 +1806,7 @@ async fn forced_writes_detect_windows_files_open_without_delete_sharing() {
         artifact(SourceId::modrinth(), "root0000", "new", b"new bytes");
     let plan =
         local_plan(&state, original.clone(), target, "new.zip", None).await;
-    let mut draft = plans::load(&state.pool, &plan.id, plan.revision)
+    let mut draft = plans::load(&state.data, &plan.id, plan.revision)
         .await
         .unwrap();
     let locked = std::fs::OpenOptions::new()
@@ -1872,7 +2010,7 @@ async fn exact_cross_source_replace_and_rollback_preserve_entry_disabled_path_an
         display_icon: None,
     };
     assert!(
-        plans::frozen_request_completed(&request, &state.pool)
+        plans::frozen_request_completed(&request, &state.data)
             .await
             .unwrap()
     );

@@ -17,6 +17,223 @@ struct Provider {
     matched: bool,
 }
 
+#[cfg(not(feature = "tauri"))]
+#[tokio::test]
+async fn direct_link_instances_export_their_game_directory_and_loader_requirements()
+ {
+    use crate::launcher::ExternalGameDirMode;
+    use crate::state::{CreateDirectLinkInstance, State};
+    use std::io::Read;
+
+    if !State::initialized() {
+        let _ = State::init_for_test(
+            tempfile::tempdir()
+                .unwrap()
+                .keep()
+                .to_string_lossy()
+                .into_owned(),
+        )
+        .await;
+    }
+    let state = State::get().await.unwrap();
+    let (_cache, service, _, _) = setup(false).await;
+    for mode in [ExternalGameDirMode::Isolated, ExternalGameDirMode::Shared] {
+        for (loader, library, loader_version) in [
+            (None, None, None),
+            (
+                Some("fabric"),
+                Some("net.fabricmc:fabric-loader:0.16.9"),
+                Some("0.16.9"),
+            ),
+            (
+                Some("forge"),
+                Some("net.minecraftforge:forge:1.20.1-47.3.0"),
+                Some("47.3.0"),
+            ),
+        ] {
+            let temp = tempfile::tempdir().unwrap();
+            let minecraft = temp.path().join(".minecraft");
+            let version_dir = minecraft.join("versions/export-demo");
+            std::fs::create_dir_all(&version_dir).unwrap();
+            let version = serde_json::json!({
+                "id": "export-demo",
+                "inheritsFrom": "1.20.1",
+                "mainClass": "net.minecraft.client.main.Main",
+                "libraries": library.into_iter().map(|name| serde_json::json!({"name": name})).collect::<Vec<_>>(),
+            });
+            let version_bytes = serde_json::to_vec(&version).unwrap();
+            std::fs::write(
+                version_dir.join("export-demo.json"),
+                &version_bytes,
+            )
+            .unwrap();
+            std::fs::write(version_dir.join("export-demo.jar"), b"client")
+                .unwrap();
+            let game_dir = match mode {
+                ExternalGameDirMode::Isolated => &version_dir,
+                _ => &minecraft,
+            };
+            for (path, bytes) in [
+                ("config/settings.txt", "selected settings"),
+                ("mods/example.jar", "selected mod"),
+                ("assets/objects/runtime", "asset"),
+                ("libraries/runtime.jar", "library"),
+                ("launcher_accounts.json", "account"),
+            ] {
+                let path = game_dir.join(path);
+                std::fs::create_dir_all(path.parent().unwrap()).unwrap();
+                std::fs::write(path, bytes).unwrap();
+            }
+            let other_dir = if matches!(mode, ExternalGameDirMode::Isolated) {
+                &minecraft
+            } else {
+                &version_dir
+            };
+            std::fs::write(
+                other_dir.join("wrong-directory.txt"),
+                b"outside game directory",
+            )
+            .unwrap();
+            let instance = crate::state::create_direct_link_instance(
+                CreateDirectLinkInstance {
+                    name: None,
+                    launcher_type:
+                        crate::api::pack::import::ImportLauncherType::Generic,
+                    base_path: minecraft.clone(),
+                    instance_folder: "versions/export-demo".into(),
+                    instance_path: None,
+                    game_dir_mode: Some(mode),
+                },
+                &state,
+            )
+            .await
+            .unwrap();
+            let scan = super::scan::scan(
+                instance.id.clone(),
+                &CancellationToken::new(),
+            )
+            .await
+            .unwrap();
+            assert_eq!(scan.requirements.game_version, "1.20.1");
+            assert_eq!(scan.requirements.loader.as_deref(), loader);
+            assert_eq!(
+                scan.requirements.loader_version.as_deref(),
+                loader_version
+            );
+            assert_eq!(
+                scan.files
+                    .iter()
+                    .map(|file| file.relative_path.as_str())
+                    .collect::<Vec<_>>(),
+                vec!["config/settings.txt", "mods/example.jar"]
+            );
+            let root = crate::api::instance::get_full_path(&instance.id)
+                .await
+                .unwrap();
+            assert_eq!(root, crate::util::io::canonicalize(game_dir).unwrap());
+            let mut draft = ExportDraft::new(scan);
+            let selected = draft
+                .scan
+                .files
+                .iter()
+                .map(|file| file.relative_path.clone())
+                .collect();
+            run(&service, &mut draft, &root, selected, 1).await;
+            for format in [
+                ResourceExportFormat::Modrinth,
+                ResourceExportFormat::CurseForge,
+                ResourceExportFormat::GenericZip,
+            ] {
+                let plan = build(
+                    &draft,
+                    1,
+                    format,
+                    info(),
+                    vec![],
+                    &SourceId::modrinth(),
+                )
+                .unwrap();
+                let (_, manifest) = super::formats::manifest(&plan).unwrap();
+                if format == ResourceExportFormat::CurseForge {
+                    assert_eq!(manifest["minecraft"]["version"], "1.20.1");
+                    let loaders =
+                        manifest["minecraft"]["modLoaders"].as_array().unwrap();
+                    assert_eq!(loaders.len(), usize::from(loader.is_some()));
+                    if let Some(loader) = loader {
+                        assert_eq!(
+                            loaders[0]["id"],
+                            format!("{loader}-{}", loader_version.unwrap())
+                        );
+                    }
+                } else {
+                    assert_eq!(manifest["dependencies"]["minecraft"], "1.20.1");
+                    if let Some(loader) = loader {
+                        let key = if loader == "fabric" {
+                            "fabric-loader"
+                        } else {
+                            loader
+                        };
+                        assert_eq!(
+                            manifest["dependencies"][key],
+                            loader_version.unwrap()
+                        );
+                    }
+                }
+                let output = temp.path().join(format!("export-{format:?}.zip"));
+                let job = crate::install::runner::export_resource(
+                    plan,
+                    output.clone(),
+                )
+                .await
+                .unwrap();
+                let job = tokio::time::timeout(std::time::Duration::from_secs(10), async {
+                    loop {
+                        let job = crate::install::runner::get_job(job.job_id).await.unwrap();
+                        if matches!(job.status, crate::install::InstallJobStatus::Succeeded | crate::install::InstallJobStatus::Failed | crate::install::InstallJobStatus::Canceled) {
+                            break job;
+                        }
+                        tokio::time::sleep(std::time::Duration::from_millis(10)).await;
+                    }
+                }).await.unwrap();
+                assert_eq!(
+                    job.status,
+                    crate::install::InstallJobStatus::Succeeded,
+                    "{:?}",
+                    job.error
+                );
+                let mut archive =
+                    zip::ZipArchive::new(std::fs::File::open(output).unwrap())
+                        .unwrap();
+                assert_eq!(archive.len(), 3);
+                let mut settings = String::new();
+                archive
+                    .by_name("overrides/config/settings.txt")
+                    .unwrap()
+                    .read_to_string(&mut settings)
+                    .unwrap();
+                assert_eq!(settings, "selected settings");
+                assert!(archive.by_name("overrides/mods/example.jar").is_ok());
+            }
+            assert_eq!(
+                std::fs::read(version_dir.join("export-demo.json")).unwrap(),
+                version_bytes
+            );
+            assert_eq!(
+                std::fs::read(version_dir.join("export-demo.jar")).unwrap(),
+                b"client"
+            );
+            assert!(
+                !state
+                    .directories
+                    .instances_dir()
+                    .join(&instance.path)
+                    .exists()
+            );
+        }
+    }
+    service.cache().close().await;
+}
+
 #[tokio::test]
 async fn cleanroom_is_only_supported_by_the_generic_index() {
     let (_, service, _, _) = setup(false).await;
@@ -510,7 +727,7 @@ async fn fingerprint_and_hashes_use_current_bytes_and_cancel_before_network() {
             .unwrap();
     assert_eq!(
         fingerprint,
-        crate::api::curseforge::compute_fingerprint(bytes)
+        crate::util::fingerprint::compute_fingerprint(bytes)
     );
     let cancel = CancellationToken::new();
     cancel.cancel();
@@ -1076,7 +1293,14 @@ async fn frozen_export_job_survives_session_close_and_preserves_instance_stage()
     pending.scan.instance_id = instance.instance.id.clone();
     let session = pending.scan.session_id.clone();
     service.register_export(pending.scan).unwrap();
-    let permit = state.install_job_semaphore.acquire().await.unwrap();
+    let permit = state
+        .install_job_semaphore
+        .acquire_many(
+            crate::util::download::constants::MAX_CONCURRENT_INSTALL_JOBS
+                as u32,
+        )
+        .await
+        .unwrap();
     let output = output_dir.path().join("pending.zip");
     let job = super::job::queue(
         &service,
@@ -1495,7 +1719,7 @@ async fn frozen_file_hashing_reports_progress_before_the_file_finishes() {
     assert_eq!(snapshot.integrity.size, Some(bytes.len() as u64));
     assert_eq!(
         fingerprint,
-        crate::api::curseforge::compute_fingerprint(&bytes)
+        crate::util::fingerprint::compute_fingerprint(&bytes)
     );
     let total = bytes.len() as u64 * 2;
     assert_eq!(progress.first(), Some(&(0, total)));

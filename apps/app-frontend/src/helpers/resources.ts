@@ -381,6 +381,24 @@ export function resourcePrepareEntryOperation(
         signal,
     )
 }
+export type ResourceConflictDetails = {
+    reason:
+        | 'conflictingReleases'
+        | 'incompatibleResource'
+        | 'incompatibleInstalledDependent'
+        | 'dependencyVersion'
+        | 'versionConstraints'
+        | 'installedDependent'
+        | 'installedDependencyDisabled'
+        | 'installedDependencyMissing'
+        | 'installedDependencyVersion'
+        | 'notNewerRelease'
+    subject: string | null
+    related: string | null
+    required: string | null
+    actual: string | null
+}
+
 export type ResourceOperationPlan = {
     schemaVersion: number
     id: string
@@ -407,7 +425,14 @@ export type ResourceOperationPlan = {
         current: InstalledResource | null
         target: ResourceArtifact
     }[]
-    issues: { blocking: boolean; code: string; message: string; selectionId: string | null }[]
+    issues: {
+        blocking: boolean
+        code: string
+        message: string
+        selectionId: string | null
+        conflict?: ResourceConflictDetails | null
+        context?: { dependency: boolean; subject: string | null; source: string | null } | null
+    }[]
     exceptions: {
         selectionId: string
         release: SourceReleaseRef

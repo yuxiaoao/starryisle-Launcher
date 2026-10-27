@@ -88,12 +88,12 @@ export function setupInstanceImportProvider(notificationManager: AbstractWebNoti
                             sel.launcherType ?? sel.launcher,
                             sel.path,
                             instanceName,
-                            sel.symlink ?? false,
+                            false,
                             instancePath,
                             sel.gameVersion,
                             sel.loader,
                             sel.loaderVersion,
-                            sel.gameDirOverride ?? null,
+                            null,
                         )
                         await wait_for_install_job(job.job_id)
                     } catch (error) {

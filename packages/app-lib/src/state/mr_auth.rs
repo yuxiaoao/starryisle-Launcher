@@ -1,8 +1,9 @@
+use crate::state::store::Collection as _;
+use crate::state::store::Handle;
+use crate::state::store::modrinth_users::{ModrinthUserRecord, ModrinthUsers};
 use crate::state::{CacheBehaviour, CachedEntry};
 use crate::util::fetch::{FetchSemaphore, fetch_advanced};
 use chrono::{DateTime, Duration, TimeZone, Utc};
-use dashmap::DashMap;
-use futures::TryStreamExt;
 use reqwest::Method;
 use serde::{Deserialize, Serialize};
 
@@ -15,11 +16,32 @@ pub struct ModrinthCredentials {
 }
 
 impl ModrinthCredentials {
-    pub async fn get_and_refresh(
-        exec: impl sqlx::Executor<'_, Database = sqlx::Sqlite> + Copy,
+    fn from_record(user_id: String, record: ModrinthUserRecord) -> Self {
+        Self {
+            session: record.session_id,
+            expires: Utc
+                .timestamp_opt(record.expires, 0)
+                .single()
+                .unwrap_or_else(Utc::now),
+            user_id,
+            active: record.active,
+        }
+    }
+
+    fn to_record(&self) -> ModrinthUserRecord {
+        ModrinthUserRecord {
+            active: self.active,
+            session_id: self.session.clone(),
+            expires: self.expires.timestamp(),
+        }
+    }
+
+    pub(crate) async fn get_and_refresh(
+        handle: &Handle,
         semaphore: &FetchSemaphore,
+        exec: impl sqlx::Executor<'_, Database = sqlx::Sqlite> + Copy,
     ) -> crate::Result<Option<Self>> {
-        let creds = Self::get_active(exec).await?;
+        let creds = Self::get_active(handle).await?;
 
         if let Some(mut creds) = creds {
             if creds.expires < Utc::now() {
@@ -47,11 +69,11 @@ impl ModrinthCredentials {
                 if let Some(value) = resp {
                     creds.session = value.session;
                     creds.expires = Utc::now() + Duration::weeks(2);
-                    creds.upsert(exec).await?;
+                    creds.upsert(handle).await?;
 
                     Ok(Some(creds))
                 } else {
-                    Self::remove(&creds.user_id, exec).await?;
+                    Self::remove(&creds.user_id, handle).await?;
 
                     Ok(None)
                 }
@@ -63,121 +85,35 @@ impl ModrinthCredentials {
         }
     }
 
-    pub async fn get_active(
-        exec: impl sqlx::Executor<'_, Database = sqlx::Sqlite>,
+    /// The session the launcher signed in with.
+    pub(crate) async fn get_active(
+        handle: &Handle,
     ) -> crate::Result<Option<Self>> {
-        let res = sqlx::query!(
-            "
-            SELECT
-                id, active, session_id, expires
-            FROM modrinth_users
-            WHERE active = TRUE
-            "
-        )
-        .fetch_optional(exec)
-        .await?;
-
-        Ok(res.map(|x| Self {
-            session: x.session_id,
-            expires: Utc
-                .timestamp_opt(x.expires, 0)
-                .single()
-                .unwrap_or_else(Utc::now),
-            user_id: x.id,
-            active: x.active == 1,
-        }))
+        Ok(ModrinthUsers::get_scoped(handle, &true)
+            .await?
+            .into_iter()
+            .next()
+            .map(|(user_id, record)| Self::from_record(user_id, record)))
     }
 
-    pub async fn get_all(
-        exec: impl sqlx::Executor<'_, Database = sqlx::Sqlite>,
-    ) -> crate::Result<DashMap<String, Self>> {
-        let res = sqlx::query!(
-            "
-            SELECT
-                id, active, session_id, expires
-            FROM modrinth_users
-            "
-        )
-        .fetch(exec)
-        .try_fold(DashMap::new(), |acc, x| {
-            acc.insert(
-                x.id.clone(),
-                Self {
-                    session: x.session_id,
-                    expires: Utc
-                        .timestamp_opt(x.expires, 0)
-                        .single()
-                        .unwrap_or_else(Utc::now),
-                    user_id: x.id,
-                    active: x.active == 1,
-                },
-            );
-
-            async move { Ok(acc) }
-        })
-        .await?;
-
-        Ok(res)
+    pub(crate) async fn upsert(&self, handle: &Handle) -> crate::Result<()> {
+        ModrinthUsers::set(handle, &self.user_id, Some(&self.to_record())).await
     }
 
-    pub async fn upsert(
-        &self,
-        exec: impl sqlx::Executor<'_, Database = sqlx::Sqlite> + Copy,
-    ) -> crate::Result<()> {
-        let expires = self.expires.timestamp();
-
-        if self.active {
-            sqlx::query!(
-                "
-                UPDATE modrinth_users
-                SET active = FALSE
-                "
-            )
-            .execute(exec)
-            .await?;
-        }
-
-        sqlx::query!(
-            "
-            INSERT INTO modrinth_users (id, active, session_id, expires)
-            VALUES ($1, $2, $3, $4)
-            ON CONFLICT (id) DO UPDATE SET
-                active = $2,
-                session_id = $3,
-                expires = $4
-            ",
-            self.user_id,
-            self.active,
-            self.session,
-            expires,
-        )
-        .execute(exec)
-        .await?;
-
-        Ok(())
-    }
-
-    pub async fn remove(
+    pub(crate) async fn remove(
         user_id: &str,
-        exec: impl sqlx::Executor<'_, Database = sqlx::Sqlite>,
+        handle: &Handle,
     ) -> crate::Result<()> {
-        sqlx::query!(
-            "
-            DELETE FROM modrinth_users WHERE id = $1
-            ",
-            user_id,
-        )
-        .execute(exec)
-        .await?;
-
-        Ok(())
+        ModrinthUsers::set(handle, &user_id.to_string(), None).await
     }
 
     pub(crate) async fn refresh_all() -> crate::Result<()> {
         let state = crate::State::get().await?;
-        let all = Self::get_all(&state.pool).await?;
-
-        let user_ids = all.into_iter().map(|x| x.0).collect::<Vec<_>>();
+        let user_ids = ModrinthUsers::get_all(&state.data)
+            .await?
+            .into_iter()
+            .map(|(user_id, _)| user_id)
+            .collect::<Vec<_>>();
 
         CachedEntry::get_user_many(
             &user_ids.iter().map(|x| &**x).collect::<Vec<_>>(),

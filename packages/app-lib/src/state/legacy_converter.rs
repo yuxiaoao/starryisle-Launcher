@@ -24,14 +24,18 @@ use tokio::sync::Semaphore;
 use uuid::Uuid;
 
 use super::MinecraftProfile;
+use crate::state::store::Handle;
 
-pub async fn migrate_legacy_data<'a, E>(exec: E) -> crate::Result<()>
+pub async fn migrate_legacy_data<'a, E>(
+    handle: &Handle,
+    exec: E,
+) -> crate::Result<()>
 where
     E: sqlx::Executor<'a, Database = sqlx::Sqlite>
         + sqlx::Acquire<'a, Database = sqlx::Sqlite>
         + Copy,
 {
-    let mut settings = state::Settings::get(exec).await?;
+    let mut settings = state::Settings::get(handle).await?;
 
     if settings.migrated {
         return Ok(());
@@ -102,7 +106,7 @@ where
             if let Ok(java_version) =
                 check_jre(PathBuf::from(legacy_version.path)).await
             {
-                java_version.upsert(exec).await?;
+                java_version.upsert(handle).await?;
             }
         }
 
@@ -120,7 +124,7 @@ where
                 user_id: creds.user.id,
                 active: true,
             }
-            .upsert(exec)
+            .upsert(handle)
             .await?;
         }
 
@@ -149,7 +153,7 @@ where
                         || minecraft_users_len == 1,
                     yggdrasil: None,
                 }
-                .upsert(exec)
+                .upsert(handle)
                 .await?;
             }
 
@@ -172,7 +176,7 @@ where
                         y: device_token.y,
                     },
                 }
-                .upsert(exec)
+                .upsert(handle)
                 .await?;
             }
         }
@@ -408,7 +412,7 @@ where
         .await?;
 
         settings.migrated = true;
-        settings.update(exec).await?;
+        settings.update(handle).await?;
     }
 
     Ok(())
