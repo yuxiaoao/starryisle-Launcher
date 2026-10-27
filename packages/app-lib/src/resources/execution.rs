@@ -790,7 +790,7 @@ pub(crate) async fn execute(
             plan,
             &downloads,
             &journal,
-            &draft,
+            draft,
         )
         .await
     }

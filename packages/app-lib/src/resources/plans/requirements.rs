@@ -459,12 +459,18 @@ pub(super) fn local_file_dependency(
         .collect();
     if dependency.kind == ResourceDependencyKind::Incompatible {
         if !enabled.is_empty() {
-            issue(
+            conflict_issue(
                 &mut draft.plan,
-                ResourceIssueCode::VersionConflict,
                 &selection.id,
                 true,
                 format!("incompatible local file is active: {name}"),
+                ResourceConflictDetails {
+                    reason: ResourceConflictReason::IncompatibleResource,
+                    subject: None,
+                    related: Some(name.clone()),
+                    required: dependency.version_constraint.clone(),
+                    actual: None,
+                },
             );
         }
         return Ok(true);
@@ -484,19 +490,29 @@ pub(super) fn local_file_dependency(
         return Ok(true);
     }
     let entry = enabled[0];
-    if let Some(constraint) = &dependency.version_constraint
+    if draft.plan.intent != ResourceOperationIntent::Install
+        && let Some(constraint) = &dependency.version_constraint
         && !draft
             .local_metadata
             .get(&entry.entry_id)
             .and_then(|meta| meta.version.as_deref())
             .is_some_and(|version| mod_version_matches(constraint, version))
     {
-        issue(
+        conflict_issue(
             &mut draft.plan,
-            ResourceIssueCode::VersionConflict,
             &selection.id,
             dependency.kind == ResourceDependencyKind::Required,
             format!("local file does not satisfy the required version: {name}"),
+            ResourceConflictDetails {
+                reason: ResourceConflictReason::DependencyVersion,
+                subject: None,
+                related: Some(name.clone()),
+                required: dependency.version_constraint.clone(),
+                actual: draft
+                    .local_metadata
+                    .get(&entry.entry_id)
+                    .and_then(|meta| meta.version.clone()),
+            },
         );
         return Ok(true);
     }

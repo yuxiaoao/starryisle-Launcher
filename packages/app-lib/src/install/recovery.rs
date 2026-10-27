@@ -25,7 +25,7 @@ pub async fn recover_interrupted_jobs(state: &State) -> crate::Result<()> {
     for mut job in jobs {
         if crate::resources::plans::frozen_request_completed(
             &job.state.request,
-            &state.pool,
+            &state.data,
         )
         .await?
         {
@@ -196,9 +196,9 @@ fn display_from_request(state: &InstallJobState) -> Option<InstallJobDisplay> {
             icon: display_icon.clone(),
         }),
         InstallRequest::InstallCurseForgeWorld {
-			display_title,
-			display_icon,
-			..
+            display_title,
+            display_icon,
+            ..
         } => Some(InstallJobDisplay {
             title: display_title.clone(),
             icon: display_icon.clone(),

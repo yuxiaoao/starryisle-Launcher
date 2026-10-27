@@ -67,6 +67,7 @@ pub(crate) enum H2DownloadFailure {
     StreamReset,
     Http,
     RangeUnsupported,
+    IndependentRanges(u64),
     Integrity,
     Content,
     Io,
@@ -200,6 +201,14 @@ pub(crate) async fn try_download_via_h2(
         );
         let total_size = parse_content_range_total(headers)
             .or_else(|| parse_content_length(headers));
+        if status != StatusCode::PARTIAL_CONTENT {
+            // A server ignoring the probe may send the whole Java archive.
+            // Cancel that body before the fallback downloads it again.
+            return H2DownloadOutcome::Fallback {
+                failure: H2DownloadFailure::Http,
+                preserve_partial: false,
+            };
+        }
         // Drain the probe body so the stream slot is released.
         drain_body(&mut probe_body).await;
         drop(probe_body);
@@ -216,15 +225,23 @@ pub(crate) async fn try_download_via_h2(
                 preserve_partial: false,
             };
         }
-        if status != StatusCode::PARTIAL_CONTENT {
-            return H2DownloadOutcome::Fallback {
-                failure: H2DownloadFailure::Http,
-                preserve_partial: false,
-            };
-        }
         total_size
     };
 
+    if request.prefers_independent_ranges(total_size)
+        && route.supports_range
+        && fetch::range_splitting_allowed(route)
+    {
+        tracing::debug!(
+            url = %fetch::sanitize_url_for_log(&route.url),
+            total_size,
+            "Moving verified large file from HTTP/2 probe to independent ranges"
+        );
+        return H2DownloadOutcome::Fallback {
+            failure: H2DownloadFailure::IndependentRanges(total_size),
+            preserve_partial: false,
+        };
+    }
     if let Some(concurrency) = request.h2_range_concurrency {
         drop(connection_activity);
         let configured = fetch::configured_semaphore_limit(semaphore);
@@ -300,6 +317,7 @@ pub(crate) async fn try_download_via_h2(
         policy,
         _stream_permit,
         connection_activity,
+        semaphore,
     )
     .await;
     match result {
@@ -369,7 +387,7 @@ mod range_policy_tests {
 
     #[test]
     fn large_ranges_reserve_global_capacity_and_respect_disk_limit() {
-        assert_eq!(h2_range_limit(128 * 1024 * 1024, 16, 64, 8), 4);
+        assert_eq!(h2_range_limit(128 * 1024 * 1024, 16, 64, 8), 8);
         assert_eq!(h2_range_limit(128 * 1024 * 1024, 16, 4, 8), 2);
         assert_eq!(h2_range_limit(128 * 1024 * 1024, 16, 64, 1), 1);
         assert_eq!(h2_range_limit(1024 * 1024, 16, 64, 8), 1);
@@ -388,10 +406,7 @@ async fn connect_authority(
         route,
         reserve_native_budget,
         allow_cold_connection,
-        matches!(
-            resource,
-            fetch::ResourceClass::Modrinth | fetch::ResourceClass::Modpack
-        ),
+        resource != fetch::ResourceClass::Metadata,
     )
     .await
     {
@@ -580,6 +595,7 @@ async fn single_stream(
     policy: super::native::NativeH2Policy,
     permit: super::h2_stream_budget::H2DownloadPermit<'_>,
     connection_activity: super::h2_pool::H2StreamActivity,
+    semaphore: &fetch::FetchSemaphore,
 ) -> crate::Result<DownloadResult> {
     let mut headers = request_headers(request, route);
     headers
@@ -619,6 +635,8 @@ async fn single_stream(
     );
     let mut timer = tokio::time::interval(DOWNLOAD_SCHEDULER_INTERVAL);
     let mut last_endpoint_speed = 0;
+    let mut batch_tail =
+        super::h2_receive::BatchTailWindow::new(transfer_started);
     timer.tick().await;
     loop {
         let chunk = tokio::select! {
@@ -636,6 +654,25 @@ async fn single_stream(
                 }
                 let aggregate = aggregate_window.observe(connection.bytes_transferred_for_scheduler(), Instant::now());
                 let pressure = super::local_resources::pressure(part_path);
+                let can_recover_batch = request.supports_range_recovery()
+                    && !pressure.blocks_expansion()
+                    && semaphore.0.available_permits() >= super::constants::BATCH_DOWNLOAD_CONNECTION_FLOOR
+                    && super::native_budget::available(route) >= super::constants::BATCH_DOWNLOAD_CONNECTION_FLOOR;
+                if batch_tail.observe(downloaded, can_recover_batch, Instant::now())
+                    && downloaded < total_size
+                {
+                    tracing::debug!(
+                        url = %fetch::sanitize_url_for_log(&route.url),
+                        physical_connections = super::native_budget::in_use(route),
+                        active_streams = connection.active_streams(),
+                        remaining_bytes = total_size - downloaded,
+                        "Moving slow batch tail from shared HTTP/2 to an independent connection"
+                    );
+                    drop(stream);
+                    file.flush().await?;
+                    request.transfer_counters.commit(0, downloaded);
+                    return Err(crate::ErrorKind::DownloadTransferSlow.into());
+                }
                 let mut decision = slow_policy.observe_with_pressure(
                     downloaded,
                     total_size.saturating_sub(downloaded),
@@ -1037,8 +1074,8 @@ mod tests {
 /// Downloads a batch of small files over a shared HTTP/2 connection group,
 /// multiplexing up to `concurrency` logical workers. Physical H2 streams are
 /// governed by the shared authority stream budget. The group begins with one
-/// connection and may add one sibling only for a sustained saturated batch;
-/// it never creates one connection per file. Items that cannot be downloaded
+/// connection and expands the shared authority pool under sustained load.
+/// Items that cannot be downloaded
 /// after internal retries fail the batch instead of switching to per-file
 /// network downloads.
 pub(crate) async fn download_asset_batch_via_h2<F>(

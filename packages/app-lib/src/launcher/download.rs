@@ -1357,6 +1357,68 @@ pub async fn load_local_version_info(
     Ok(info)
 }
 
+/// Only reusable, fully merged profiles may bypass loader catalog resolution.
+pub(super) async fn try_load_launch_version_info(
+    st: &State,
+    version: &GameVersion,
+    mod_loader: ModLoader,
+    loader: Option<&LoaderVersion>,
+) -> Option<GameVersionInfo> {
+    let version_id = loader.map_or_else(
+        || version.id.clone(),
+        |it| format!("{}-{}", version.id, it.id),
+    );
+    let path = st
+        .directories
+        .version_dir(&version_id)
+        .join(format!("{version_id}.json"));
+    let info =
+        read_launch_profile(&path, &version_id, loader.is_some()).await?;
+    if mod_loader == ModLoader::Forge
+        && let Some(loader) = loader
+    {
+        let coordinate = format!("{}-{}", version.id, loader.id);
+        let legacy_coordinate = format!("{coordinate}-{}", version.id);
+        if !info.libraries.iter().any(|library| {
+            let mut parts = library.name.split(':');
+            parts.next() == Some("net.minecraftforge")
+                && matches!(parts.next(), Some("forge" | "fmlloader"))
+                && parts.next().is_some_and(|value| {
+                    value == coordinate || value == legacy_coordinate
+                })
+        }) {
+            tracing::warn!(%version_id, "Local Forge profile does not match the requested loader");
+            return None;
+        }
+    }
+    match load_local_version_info(st, version, mod_loader, loader).await {
+        Ok(info) => Some(info),
+        Err(error) => {
+            tracing::warn!(%version_id, %error, "Local launch profile could not be loaded; resolving metadata online");
+            None
+        }
+    }
+}
+
+async fn read_launch_profile(
+    path: &Path,
+    version_id: &str,
+    derived: bool,
+) -> Option<GameVersionInfo> {
+    if derived && !derived_version_cache_is_current(path).await {
+        return None;
+    }
+    let bytes = tokio::fs::read(path).await.ok()?;
+    let info: GameVersionInfo = serde_json::from_slice(&bytes).ok()?;
+    if info.id != version_id
+        || info.main_class.trim().is_empty()
+        || info.asset_index.id.is_empty()
+    {
+        return None;
+    }
+    Some(info)
+}
+
 async fn write_version_info(path: &Path, data: Vec<u8>) -> crate::Result<()> {
     if let Some(parent) = path.parent() {
         io::create_dir_all(parent).await?;
@@ -2288,8 +2350,8 @@ pub async fn download_libraries(
 
     let num_files = tasks.len();
     loading_try_for_each_concurrent(
-		stream::iter(tasks).map(Ok::<LibraryDownloadTask<'_>, crate::Error>),
-		crate::util::download::task_concurrency_limit(st),
+        stream::iter(tasks).map(Ok::<LibraryDownloadTask<'_>, crate::Error>),
+        crate::util::download::task_concurrency_limit(st),
         loading_bar,
         loading_amount,
         num_files,
@@ -2894,10 +2956,10 @@ mod tests {
         sqlx::migrate!().run(&pool).await.unwrap();
         let state = crate::state::test_state(directories, pool).await.unwrap();
         let version: GameVersion = serde_json::from_value(serde_json::json!({
-			"id": "1.12.2", "type": "release", "url": "invalid://no-network",
-			"releaseTime": "2017-09-18T08:39:46Z", "time": "2021-12-15T15:04:05Z",
-			"sha1": "", "complianceLevel": 0
-		})).unwrap();
+            "id": "1.12.2", "type": "release", "url": "invalid://no-network",
+            "releaseTime": "2017-09-18T08:39:46Z", "time": "2021-12-15T15:04:05Z",
+            "sha1": "", "complianceLevel": 0
+        })).unwrap();
         let loader: LoaderVersion = serde_json::from_value(serde_json::json!({
             "id": "test-loader", "stable": true, "url": "invalid://no-network"
         }))
@@ -2949,6 +3011,138 @@ mod tests {
             assert_eq!(saved.time, version.time);
             assert!(!normalize_version_timestamps(&version, &mut loaded));
             assert_eq!(derived_version_cache_is_current(&path).await, !offline);
+        }
+    }
+
+    #[tokio::test]
+    async fn installed_forge_profile_is_validated_without_loader_catalogs() {
+        let temp = tempfile::tempdir().unwrap();
+        let directories = crate::state::DirectoryInfo {
+            settings_dir: temp.path().join("settings"),
+            config_dir: temp.path().join("config"),
+            app_identifier: "test".into(),
+        };
+        std::fs::create_dir_all(directories.instances_dir()).unwrap();
+        let pool = sqlx::sqlite::SqlitePoolOptions::new()
+            .max_connections(1)
+            .connect("sqlite::memory:")
+            .await
+            .unwrap();
+        sqlx::migrate!().run(&pool).await.unwrap();
+        let state = crate::state::test_state(directories, pool).await.unwrap();
+        let version: GameVersion = serde_json::from_value(serde_json::json!({
+            "id":"1.20.1", "type":"release", "url":"invalid://no-network",
+            "releaseTime":"2023-06-12T13:25:51Z", "time":"2023-06-12T13:25:51Z",
+            "sha1":"", "complianceLevel":1
+        }))
+        .unwrap();
+        let loader: LoaderVersion = serde_json::from_value(serde_json::json!({
+            "id":"47.4.28", "stable":false, "url":""
+        }))
+        .unwrap();
+        let path = state
+            .directories
+            .version_dir("1.20.1-47.4.28")
+            .join("1.20.1-47.4.28.json");
+        let mut info = version_info_with_java(None);
+        info.id = "1.20.1-47.4.28".into();
+        info.main_class = "cpw.mods.bootstraplauncher.BootstrapLauncher".into();
+        info.libraries = vec![
+            serde_json::from_value(serde_json::json!({
+                "name":"net.minecraftforge:forge:1.20.1-47.4.28:universal"
+            }))
+            .unwrap(),
+        ];
+        assert!(
+            try_load_launch_version_info(
+                &state,
+                &version,
+                ModLoader::Forge,
+                Some(&loader)
+            )
+            .await
+            .is_none()
+        );
+        write_version_info(&path, serde_json::to_vec(&info).unwrap())
+            .await
+            .unwrap();
+        assert!(
+            try_load_launch_version_info(
+                &state,
+                &version,
+                ModLoader::Forge,
+                Some(&loader)
+            )
+            .await
+            .is_none()
+        );
+        write_derived_version_cache_marker(&path).await.unwrap();
+        let loaded = try_load_launch_version_info(
+            &state,
+            &version,
+            ModLoader::Forge,
+            Some(&loader),
+        )
+        .await
+        .unwrap();
+        assert_eq!(loaded.id, "1.20.1-47.4.28");
+        assert_eq!(loaded.main_class, info.main_class);
+        assert_eq!(loaded.release_time, version.release_time);
+        let (selected, launch_info) =
+            crate::launcher::load_managed_launch_profile(
+                &state,
+                &version,
+                ModLoader::Forge,
+                Some("47.4.28"),
+                false,
+            )
+            .await
+            .unwrap();
+        assert_eq!(selected.unwrap().id, "47.4.28");
+        assert_eq!(launch_info.id, "1.20.1-47.4.28");
+        for bad in ["{", "{}"] {
+            write_version_info(&path, bad.as_bytes().to_vec())
+                .await
+                .unwrap();
+            assert!(
+                try_load_launch_version_info(
+                    &state,
+                    &version,
+                    ModLoader::Forge,
+                    Some(&loader)
+                )
+                .await
+                .is_none()
+            );
+        }
+        for variant in 0..4 {
+            let mut invalid: GameVersionInfo =
+                serde_json::from_value(serde_json::to_value(&info).unwrap())
+                    .unwrap();
+            match variant {
+                0 => invalid.id = "1.20.1-47.4.22".into(),
+                1 => invalid.main_class.clear(),
+                2 => invalid.libraries.clear(),
+                _ => {
+                    invalid.libraries[0].name =
+                        "net.minecraftforge:forge:1.20.1-47.4.22:universal"
+                            .into()
+                }
+            }
+            write_version_info(&path, serde_json::to_vec(&invalid).unwrap())
+                .await
+                .unwrap();
+            assert!(
+                try_load_launch_version_info(
+                    &state,
+                    &version,
+                    ModLoader::Forge,
+                    Some(&loader)
+                )
+                .await
+                .is_none(),
+                "variant {variant}"
+            );
         }
     }
 

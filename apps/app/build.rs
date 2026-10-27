@@ -478,17 +478,8 @@ fn main() {
                         "curseforge_set_api_key",
                         "curseforge_validate_credentials",
                         "curseforge_search_projects",
-                        "curseforge_get_project",
-                        "curseforge_get_projects",
-                        "curseforge_get_description",
-                        "curseforge_get_files",
-                        "curseforge_get_files_page",
-                        "curseforge_get_file",
-                        "curseforge_get_files_many",
-                        "curseforge_get_changelog",
                         "curseforge_get_download_url",
                         "curseforge_get_categories",
-                        "curseforge_match_fingerprints",
                         "curseforge_recognize_instance_files",
                         "curseforge_import_manual_downloads",
                         "curseforge_list_pending_manual_downloads",
@@ -918,6 +909,19 @@ fn main() {
                         "tags_get_loaders",
                         "tags_get_game_versions",
                         "tags_get_donation_platforms",
+                    ])
+                    .default_permission(
+                        DefaultPermissionRule::AllowAllCommands,
+                    ),
+            )
+            .plugin(
+                "mcp",
+                InlinedPlugin::new()
+                    .commands(&[
+                        "mcp_get_state",
+                        "mcp_configure",
+                        "mcp_respond",
+                        "mcp_disconnect",
                     ])
                     .default_permission(
                         DefaultPermissionRule::AllowAllCommands,

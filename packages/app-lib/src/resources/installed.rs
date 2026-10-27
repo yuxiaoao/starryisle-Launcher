@@ -520,6 +520,103 @@ pub(crate) async fn hydrate_update_batch_with_service(
     .await
 }
 
+pub(super) async fn installed_file_identity(
+    root: &std::path::Path,
+    entry: &InstalledResource,
+    cache: &super::cache::ResourceCache,
+    reuse: bool,
+    cancel: &CancellationToken,
+) -> ResourceResult<LocalArtifactIdentity> {
+    if cancel.is_cancelled() {
+        return Err(ResourceError::Canceled);
+    }
+    if reuse
+        && let Some(identity) = cache.local_identity(&entry.integrity).await
+    {
+        return Ok(identity);
+    }
+    let generation = cache.generation().await;
+    #[cfg(test)]
+    crate::util::download::verified_file::record_scan();
+    let bytes =
+        match super::execution::checked_path(root, &entry.relative_path) {
+            Ok(path) => tokio::select! { biased; _ = cancel.cancelled() => return Err(ResourceError::Canceled), bytes = tokio::fs::read(path) => bytes }
+                .map(bytes::Bytes::from)
+                .map_err(|error| error.to_string()),
+            Err(error) => Err(error.to_string()),
+        };
+    let bytes = match bytes {
+        Ok(bytes) => bytes,
+        Err(error) => {
+            return Err(ResourceError::InvalidRequest(format!(
+                "{}: {error}",
+                entry.relative_path
+            )));
+        }
+    };
+    let hash_bytes = bytes.clone();
+    let hash_cancel = cancel.clone();
+    let (mut hashes, sha1, fingerprint) =
+        tokio::task::spawn_blocking(move || {
+            use sha2::Digest;
+            let mut sha512 = sha2::Sha512::new();
+            let mut sha256 = sha2::Sha256::new();
+            let mut sha1 = sha1_smol::Sha1::new();
+            for part in hash_bytes.chunks(256 * 1024) {
+                if hash_cancel.is_cancelled() {
+                    return Err(ResourceError::Canceled);
+                }
+                sha512.update(part);
+                sha256.update(part);
+                sha1.update(part);
+            }
+            let hashes = vec![
+                ContentHash {
+                    algorithm: HashAlgorithm::Sha512,
+                    value: format!("{:x}", sha512.finalize()),
+                },
+                ContentHash {
+                    algorithm: HashAlgorithm::Sha256,
+                    value: format!("{:x}", sha256.finalize()),
+                },
+            ];
+            Ok((
+                hashes,
+                sha1.digest().to_string(),
+                crate::util::fingerprint::compute_fingerprint(&hash_bytes),
+            ))
+        })
+        .await
+        .map_err(|error| ResourceError::InvalidRequest(error.to_string()))??;
+    if entry.integrity.size != Some(bytes.len() as u64)
+        || !entry.integrity.hashes.iter().any(|hash| {
+            hash.algorithm == HashAlgorithm::Sha1
+                && hash.value.eq_ignore_ascii_case(&sha1)
+        })
+    {
+        return Err(ResourceError::InvalidRequest(format!(
+            "{}: installed files changed; refresh content first",
+            entry.relative_path
+        )));
+    }
+    hashes.push(ContentHash {
+        algorithm: HashAlgorithm::Sha1,
+        value: sha1,
+    });
+
+    let identity = LocalArtifactIdentity {
+        integrity: ArtifactIntegrity {
+            size: Some(bytes.len() as u64),
+            hashes,
+        },
+        fingerprint: Some(fingerprint),
+    };
+    // Keep byte evidence even if recognition fails or a concurrent content
+    // change invalidates this analysis; the next snapshot must match its hash.
+    cache.store_local_identity(&identity, generation).await;
+    Ok(identity)
+}
+
 async fn hydrate_entries_with_service(
     state: &crate::State,
     instance_id: &str,
@@ -582,78 +679,24 @@ async fn hydrate_entries_with_service(
             // probe its counterpart on another source.
             continue;
         }
-        let bytes =
-            match super::execution::checked_path(&root, &entry.relative_path) {
-                Ok(path) => tokio::select! { biased; _ = cancel.cancelled() => return Err(ResourceError::Canceled), bytes = tokio::fs::read(path) => bytes }
-                    .map(bytes::Bytes::from)
-                    .map_err(|error| error.to_string()),
-                Err(error) => Err(error.to_string()),
-            };
-        let bytes = match bytes {
-            Ok(bytes) => bytes,
+        let local = match installed_file_identity(
+            &root,
+            entry,
+            service.cache(),
+            selected.is_none_or(|ids| !ids.contains(&entry.entry_id)),
+            cancel,
+        )
+        .await
+        {
+            Ok(identity) => identity,
+            Err(ResourceError::Canceled) => {
+                return Err(ResourceError::Canceled);
+            }
             Err(error) => {
-                failures.push((
-                    entry.entry_id.clone(),
-                    format!("{}: {error}", entry.relative_path),
-                ));
+                failures.push((entry.entry_id.clone(), error.to_string()));
                 continue;
             }
         };
-        let hash_bytes = bytes.clone();
-        let hash_cancel = cancel.clone();
-        let (mut hashes, sha1, fingerprint) =
-            tokio::task::spawn_blocking(move || {
-                use sha2::Digest;
-                let mut sha512 = sha2::Sha512::new();
-                let mut sha256 = sha2::Sha256::new();
-                let mut sha1 = sha1_smol::Sha1::new();
-                for part in hash_bytes.chunks(256 * 1024) {
-                    if hash_cancel.is_cancelled() {
-                        return Err(ResourceError::Canceled);
-                    }
-                    sha512.update(part);
-                    sha256.update(part);
-                    sha1.update(part);
-                }
-                let hashes = vec![
-                    ContentHash {
-                        algorithm: HashAlgorithm::Sha512,
-                        value: format!("{:x}", sha512.finalize()),
-                    },
-                    ContentHash {
-                        algorithm: HashAlgorithm::Sha256,
-                        value: format!("{:x}", sha256.finalize()),
-                    },
-                ];
-                Ok((
-                    hashes,
-                    sha1.digest().to_string(),
-                    crate::api::curseforge::compute_fingerprint(&hash_bytes),
-                ))
-            })
-            .await
-            .map_err(|error| {
-                ResourceError::InvalidRequest(error.to_string())
-            })??;
-        if entry.integrity.size != Some(bytes.len() as u64)
-            || !entry.integrity.hashes.iter().any(|hash| {
-                hash.algorithm == HashAlgorithm::Sha1
-                    && hash.value.eq_ignore_ascii_case(&sha1)
-            })
-        {
-            failures.push((
-                entry.entry_id.clone(),
-                format!(
-                    "{}: installed files changed; refresh content first",
-                    entry.relative_path
-                ),
-            ));
-            continue;
-        }
-        hashes.push(ContentHash {
-            algorithm: HashAlgorithm::Sha1,
-            value: sha1,
-        });
         let saved = saved_records.get(entry.entry_id.as_str()).cloned();
         if let Some(artifact) = saved
             .and_then(|value| {
@@ -662,23 +705,14 @@ async fn hydrate_entries_with_service(
             .filter(|artifact| {
                 super::valid_artifact(artifact)
                     && identity::exact_integrity(
-                        &ArtifactIntegrity {
-                            size: Some(bytes.len() as u64),
-                            hashes: hashes.clone(),
-                        },
+                        &local.integrity,
                         &artifact.integrity,
                     )
             })
         {
             verified.insert(index, artifact);
         }
-        identities.push(LocalArtifactIdentity {
-            integrity: ArtifactIntegrity {
-                size: Some(bytes.len() as u64),
-                hashes,
-            },
-            fingerprint: Some(fingerprint),
-        });
+        identities.push(local);
         indices.push(index);
     }
     let sources: Vec<_> = service

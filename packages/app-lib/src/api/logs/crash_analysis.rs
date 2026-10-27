@@ -700,7 +700,7 @@ async fn collect_crash_context(
         collect_candidates(&instance_root, &state.directories).await?;
     let selected = select_run_candidates(candidates);
     let sources = read_sources(selected).await;
-    let credentials = Credentials::get_all(&state.pool)
+    let credentials = Credentials::get_all(&state.data)
         .await?
         .into_iter()
         .collect::<Vec<_>>();

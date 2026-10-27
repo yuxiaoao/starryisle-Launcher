@@ -15,10 +15,65 @@ pub const INITIAL_ARTIFACT_PROBE_LIMIT: usize = 3;
 pub const HISTORY_PAGE_LIMIT: usize = 2;
 pub const HISTORY_ARTIFACT_PROBE_LIMIT: usize = 10;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct LocalArtifactIdentity {
     pub integrity: ArtifactIntegrity,
     pub fingerprint: Option<u32>,
+}
+
+fn local_identity_key(integrity: &ArtifactIntegrity) -> Option<String> {
+    // The scanner's current SHA-1 and size address the bytes, independently
+    // of their path, provider recognition, or a cart's instance revision.
+    let sha1 = integrity.hashes.iter().find(|hash| {
+        hash.algorithm == HashAlgorithm::Sha1
+            && hash.value.len() == 40
+            && hash.value.bytes().all(|byte| byte.is_ascii_hexdigit())
+    })?;
+    Some(format!(
+        "local-identity-v1:{}:{}",
+        integrity.size?,
+        sha1.value.to_ascii_lowercase()
+    ))
+}
+
+impl super::cache::ResourceCache {
+    pub(crate) async fn local_identity(
+        &self,
+        integrity: &ArtifactIntegrity,
+    ) -> Option<LocalArtifactIdentity> {
+        let cached: LocalArtifactIdentity =
+            self.evidence(&local_identity_key(integrity)?).await?;
+        (exact_integrity(integrity, &cached.integrity)
+            && cached.fingerprint.is_some()
+            && [HashAlgorithm::Sha256, HashAlgorithm::Sha512].iter().all(
+                |algorithm| {
+                    cached.integrity.hashes.iter().any(|hash| {
+                        &hash.algorithm == algorithm
+                            && hash.value.len()
+                                == if *algorithm == HashAlgorithm::Sha256 {
+                                    64
+                                } else {
+                                    128
+                                }
+                            && hash
+                                .value
+                                .bytes()
+                                .all(|byte| byte.is_ascii_hexdigit())
+                    })
+                },
+            ))
+        .then_some(cached)
+    }
+
+    pub(crate) async fn store_local_identity(
+        &self,
+        identity: &LocalArtifactIdentity,
+        generation: i64,
+    ) {
+        if let Some(key) = local_identity_key(&identity.integrity) {
+            self.store_evidence(&key, identity, generation).await;
+        }
+    }
 }
 
 #[derive(Clone, Debug)]

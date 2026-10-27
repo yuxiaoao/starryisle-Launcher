@@ -92,7 +92,6 @@ const emit = defineEmits<{
             </Button>
             <Button
                 v-if="props.viewDependencies"
-                v-tooltip="formatMessage(messages.viewDependencies)"
                 type="outlined"
                 :disabled="props.busy"
                 class="!h-10 flex items-center gap-2"

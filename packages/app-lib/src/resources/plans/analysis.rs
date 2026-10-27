@@ -245,7 +245,7 @@ async fn context(
     let instance = crate::state::get_instance(instance_id, &state.pool)
         .await?
         .ok_or_else(|| invalid("unknown instance"))?;
-    let settings = crate::state::Settings::get(&state.pool).await?;
+    let settings = crate::state::Settings::get(&state.data).await?;
     let service = state.resources().await?;
     Ok(serde_json::to_string(&(
         instance_revision(&state.pool, instance_id).await?,

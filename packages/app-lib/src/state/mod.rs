@@ -97,8 +97,9 @@ mod legacy_converter;
 
 pub mod attached_world_data;
 pub(crate) mod content_store;
+pub(crate) mod content_types;
 pub mod instance_groups;
-pub mod server_join_log;
+pub(crate) mod store;
 
 // Global state
 // RwLock on state only has concurrent reads, except for config dir change which takes control of the State
@@ -180,6 +181,8 @@ pub struct State {
     download_sample_throttles: AtomicU64,
     pub(crate) install_job_semaphore: Semaphore,
     pub(crate) install_db_semaphore: Semaphore,
+    pub(crate) install_admission_locks: DashMap<String, Arc<AsyncMutex<()>>>,
+    pub(crate) install_execution_locks: DashMap<String, Arc<AsyncMutex<()>>>,
     pub(crate) install_job_cancellations: DashMap<Uuid, CancellationToken>,
     pub(crate) install_job_operation_locks:
         DashMap<Uuid, Arc<AsyncMutex<InstallJobOperationState>>>,
@@ -212,6 +215,10 @@ pub struct State {
     pub(crate) instance_locks: Arc<InstanceLockManager>,
 
     pub(crate) pool: SqlitePool,
+
+    /// What the collections of [`store`] are read and written through.
+    pub(crate) data: store::Handle,
+
     resource_service: OnceCell<Arc<crate::resources::ResourceService>>,
 
     /// CurseForge API key set in the launcher. Takes precedence over the key
@@ -225,9 +232,9 @@ pub struct State {
     configured_http_client_update: AsyncMutex<()>,
 
     pub(crate) file_watcher: FileWatcher,
-	pub(crate) screenshot_locks: DashMap<String, Arc<AsyncMutex<()>>>,
-	pub(crate) synced_options_lock: Arc<AsyncMutex<()>>,
-	pub(crate) game_locale_indexer: crate::api::instance::synced_options::game_options::locales::GameLocaleIndexer,
+    pub(crate) screenshot_locks: DashMap<String, Arc<AsyncMutex<()>>>,
+    pub(crate) synced_options_lock: Arc<AsyncMutex<()>>,
+    pub(crate) game_locale_indexer: crate::api::instance::synced_options::game_options::locales::GameLocaleIndexer,
 }
 
 impl State {
@@ -655,6 +662,11 @@ impl State {
             .get_or_try_init(move || Self::initialize_state(app_identifier))
             .await?;
 
+        if let Err(error) =
+            instances::commands::recover_content_file_operations(state).await
+        {
+            tracing::error!(%error, "Error recovering content file operations");
+        }
         if let Err(e) =
             crate::install::recovery::recover_interrupted_jobs(state).await
         {
@@ -712,7 +724,7 @@ impl State {
                 let res = tokio::try_join!(
                     state.discord_rpc.clear_to_default(true),
                     instances::refresh_all_instances(),
-                    Settings::migrate(&state.pool),
+                    Settings::migrate(&state.data),
                     ModrinthCredentials::refresh_all(),
                 );
 
@@ -739,21 +751,59 @@ impl State {
     }
 
     /// Get the current launcher state, waiting for initialization
+    ///
+    /// Frontend commands routinely race `init`, so a brief wait is expected and
+    /// must not be turned into an error on the first poll. The wait is bounded
+    /// rather than open-ended: without a ceiling, a host that serves a command in
+    /// a process where nothing ever calls `init` waits forever instead of
+    /// reporting why (this is what made isolated lib tests hang).
     pub async fn get() -> crate::Result<Arc<Self>> {
         if !LAUNCHER_STATE.initialized() {
-            // Frontend commands routinely race initialize_state; wait instead of
-            // treating the first poll as a hard error.
             tracing::debug!(
                 "State not ready yet; waiting for launcher initialization before serving command"
             );
+
+            // Why 10s. The callers that legitimately race `init` are early commands
+            // (deep links, window events) that arrive while the frontend is still on
+            // its loading screen: the frontend awaits `initialize_state` before it
+            // issues its own commands, so the race window is the tail of a startup
+            // the user is already waiting on. Opening the database, running
+            // migrations and loading settings take a few seconds on a cold start, so
+            // 10s keeps a wide margin over that. It is deliberately not larger: this
+            // budget is spent per call and one command can call `get` several times,
+            // so a generous ceiling turns "no longer hangs" into "hangs for minutes"
+            // for every caller that can never succeed. Callers that must not wait at
+            // all can use `get_if_initialized` instead.
+            const MAX_WAIT: Duration = Duration::from_secs(10);
+            // Keep the existing poll cadence: it is cheap next to the startup work
+            // and keeps this loop from interacting with the OnceCell any differently
+            // than it did before.
+            const POLL_INTERVAL: Duration = Duration::from_millis(100);
+
+            let started = Instant::now();
             while !LAUNCHER_STATE.initialized() {
-                tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+                if started.elapsed() >= MAX_WAIT {
+                    tracing::error!(
+                        "Launcher state was still not initialized after {:?}; refusing to wait any longer",
+                        MAX_WAIT
+                    );
+                    return Err(crate::ErrorKind::StateNotInitialized(format!(
+                        "The launcher state was not initialized within {:?}. Something must call State::init before commands are served; commands cannot run against an uninitialized state.",
+                        MAX_WAIT
+                    ))
+                    .into());
+                }
+
+                tokio::time::sleep(POLL_INTERVAL).await;
             }
         }
 
-        Ok(Arc::clone(
-            LAUNCHER_STATE.get().expect("State is not initialized!"),
-        ))
+        LAUNCHER_STATE.get().cloned().ok_or_else(|| {
+            crate::ErrorKind::StateNotInitialized(
+                "The launcher state reported itself initialized but no state was stored; this is an internal inconsistency.".to_string(),
+            )
+            .into()
+        })
     }
 
     pub fn initialized() -> bool {
@@ -824,7 +874,7 @@ impl State {
         config: &crate::util::proxy::ProxyConfig,
     ) -> crate::Result<()> {
         let _update = self.configured_http_client_update.lock().await;
-        let settings = Settings::get(&self.pool).await?;
+        let settings = Settings::get(&self.data).await?;
         let client = crate::util::fetch::DownloadClients::build(
             config,
             settings.ignore_ssl_errors,
@@ -1175,14 +1225,15 @@ impl State {
     ) -> crate::Result<Arc<Self>> {
         tracing::info!("Connecting to app database");
         let pool = db::connect(&app_identifier).await?;
+        let data = store::Handle::new(pool.clone());
 
-        legacy_converter::migrate_legacy_data(&pool).await?;
+        legacy_converter::migrate_legacy_data(&data, &pool).await?;
 
         tracing::info!("Fetching app settings");
-        let mut settings = Settings::get(&pool).await?;
+        let mut settings = Settings::get(&data).await?;
         installer_settings::apply_pending_installer_directory(
             &mut settings,
-            &pool,
+            &data,
             &app_identifier,
         )
         .await?;
@@ -1209,6 +1260,7 @@ impl State {
         tracing::info!("Initializing directories");
         DirectoryInfo::move_launcher_directory(
             &mut settings,
+            &data,
             &pool,
             &io_semaphore,
             &app_identifier,
@@ -1269,6 +1321,8 @@ impl State {
             download_sample_errors: AtomicU64::new(0),
             download_sample_throttles: AtomicU64::new(0),
             install_job_semaphore: Semaphore::new(MAX_CONCURRENT_INSTALL_JOBS),
+            install_admission_locks: DashMap::new(),
+            install_execution_locks: DashMap::new(),
             install_db_semaphore: Semaphore::new(1),
             install_job_cancellations: DashMap::new(),
             install_job_operation_locks: DashMap::new(),
@@ -1279,6 +1333,7 @@ impl State {
             friends_socket,
             restart_after_pending_update: AtomicBool::new(false),
             instance_locks: Arc::new(InstanceLockManager::default()),
+            data,
             pool,
             resource_service: OnceCell::new(),
             curseforge_api_key: RwLock::new(curseforge_api_key),
@@ -1358,7 +1413,7 @@ pub(crate) async fn test_state(
     let file_watcher = instances::watcher::init_watcher().await?;
     let curseforge_api_key = curseforge_settings::get(&pool).await?;
     let proxy_config = proxy_settings::get(&pool).await?;
-    let settings = Settings::get(&pool).await?;
+    let settings = Settings::get(&store::Handle::new(pool.clone())).await?;
     let configured_http_client = crate::util::fetch::DownloadClients::build(
         &proxy_config,
         settings.ignore_ssl_errors,
@@ -1389,7 +1444,9 @@ pub(crate) async fn test_state(
         download_sample_requests: AtomicU64::new(0),
         download_sample_errors: AtomicU64::new(0),
         download_sample_throttles: AtomicU64::new(0),
-        install_job_semaphore: Semaphore::new(1),
+        install_job_semaphore: Semaphore::new(MAX_CONCURRENT_INSTALL_JOBS),
+        install_admission_locks: DashMap::new(),
+        install_execution_locks: DashMap::new(),
         install_db_semaphore: Semaphore::new(1),
         install_job_cancellations: DashMap::new(),
         install_job_operation_locks: DashMap::new(),
@@ -1400,6 +1457,7 @@ pub(crate) async fn test_state(
         friends_socket: FriendsSocket::new(),
         restart_after_pending_update: AtomicBool::new(false),
         instance_locks: Arc::new(InstanceLockManager::default()),
+        data: store::Handle::new(pool.clone()),
         pool,
         resource_service: OnceCell::new(),
         curseforge_api_key: RwLock::new(curseforge_api_key),
@@ -1476,6 +1534,14 @@ mod auto_concurrency_tests {
         }
     }
 
+    /// A window in which the provider throttled at least one request.
+    fn throttled_window(active: usize) -> AutoConcurrencySample {
+        AutoConcurrencySample {
+            throttles: 1,
+            ..healthy(active, 100)
+        }
+    }
+
     #[test]
     fn contaminated_trial_restores_previous_target_and_requires_new_baseline() {
         let now = Instant::now();
@@ -1508,20 +1574,31 @@ mod auto_concurrency_tests {
         assert_eq!(controller.next_target(now, 72, 128, healthy(72, 100)), 72);
         assert_eq!(controller.next_target(now, 72, 128, healthy(72, 100)), 64);
 
-        let throttled = AutoConcurrencySample {
-            throttles: 1,
-            ..healthy(96, 100)
-        };
-        // A single throttled window is absorbed by the per-host limiter.
+        // A single throttled window is absorbed by the per-host limiter, and so
+        // is every window below the sustained-pressure threshold. The threshold
+        // is a tuned product decision, so the window count is spelled out here
+        // rather than read from the constant: a silent retune has to fail this
+        // test instead of passing unnoticed.
+        let throttled = throttled_window(96);
         let mut throttled_controller = AutoConcurrencyController::default();
+        for window in 1..8 {
+            assert_eq!(
+                throttled_controller.next_target(now, 96, 128, throttled),
+                96,
+                "pressured window {window} of 8 must not back off yet"
+            );
+        }
+        // Sustained pressure backs off by one step
+        // (AUTO_DOWNLOAD_CONCURRENCY_STEP), not a quarter.
+        let stepped = throttled_controller.next_target(now, 96, 128, throttled);
         assert_eq!(
-            throttled_controller.next_target(now, 96, 128, throttled),
-            96
+            stepped, 88,
+            "the eighth pressured window steps down one step"
         );
-        // Sustained pressure backs off by one step, not a quarter.
-        assert_eq!(
-            throttled_controller.next_target(now, 96, 128, throttled),
-            88
+        assert_ne!(
+            stepped,
+            96 - 96 / 4,
+            "the backoff must be a single step, not a quarter of the target"
         );
     }
 
@@ -1529,22 +1606,48 @@ mod auto_concurrency_tests {
     fn sustained_pressure_steps_down_across_cooldowns_and_recovers() {
         let mut controller = AutoConcurrencyController::default();
         let now = Instant::now();
-        let throttled = AutoConcurrencySample {
-            throttles: 1,
-            ..healthy(96, 100)
-        };
-        assert_eq!(controller.next_target(now, 96, 128, throttled), 96);
-        assert_eq!(controller.next_target(now, 96, 128, throttled), 88);
-        // Backing off starts a cooldown that absorbs further pressure.
-        assert_eq!(controller.next_target(now, 88, 128, throttled), 88);
+        let throttled = throttled_window(96);
+
+        // Spend the whole eight-window budget at a single timestamp: only the
+        // last window steps down. The boundary itself is covered window by
+        // window in the test above.
+        let mut current = 96;
+        for _ in 0..8 {
+            current = controller.next_target(now, current, 128, throttled);
+        }
+        assert_eq!(current, 88, "eight pressured windows step down once");
+        assert_eq!(
+            controller.pressure_windows, 8,
+            "the step down must consume the full window budget"
+        );
+        assert_eq!(
+            controller.cooldown_until,
+            Some(now + Duration::from_secs(30)),
+            "stepping down starts the probe cooldown"
+        );
+
+        // Backing off starts a cooldown that absorbs further pressure: inside
+        // it the target holds and the pressure count does not grow.
+        let during = now + Duration::from_secs(29);
+        assert_eq!(controller.next_target(during, 88, 128, throttled), 88);
+        assert_eq!(
+            controller.pressure_windows, 8,
+            "pressure absorbed by the cooldown must not accumulate"
+        );
+
         // After the cooldown, continued pressure steps down again.
         let later = now + Duration::from_secs(31);
         assert_eq!(controller.next_target(later, 88, 128, throttled), 80);
+
         // Clean samples reset pressure and allow growth after the cooldown.
         let later_2 = now + Duration::from_secs(62);
         assert_eq!(
             controller.next_target(later_2, 80, 128, healthy(80, 100)),
             80
+        );
+        assert_eq!(
+            controller.pressure_windows, 0,
+            "a clean sample resets the pressure count"
         );
         assert_eq!(
             controller.next_target(later_2, 80, 128, healthy(80, 100)),
@@ -1715,5 +1818,37 @@ mod instance_lock_tests {
             .await
             .expect("cleanup can acquire the lock after the writer exits");
         drop(guard);
+    }
+}
+
+/// The launcher state is process-wide, so the never-initialized path can only be
+/// observed when nothing else in the process has initialized it. That is exactly
+/// what a runner with one process per test provides; under a shared-process
+/// runner a sibling test may have initialized the state first, and then there is
+/// no wait left to bound. Both branches assert, so the test is never vacuous.
+#[cfg(test)]
+mod uninitialized_state_tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn get_gives_up_with_a_readable_error_instead_of_polling_forever() {
+        let started = Instant::now();
+        let result = State::get().await;
+        let waited = started.elapsed();
+
+        match result {
+            Ok(_) => {}
+            Err(error) => {
+                let message = error.to_string();
+                assert!(
+                    message.contains("was not initialized"),
+                    "the failure must say the state was not initialized, got: {message}"
+                );
+                assert!(
+                    waited < Duration::from_secs(30),
+                    "an uninitialized state must fail in bounded time, waited {waited:?}"
+                );
+            }
+        }
     }
 }

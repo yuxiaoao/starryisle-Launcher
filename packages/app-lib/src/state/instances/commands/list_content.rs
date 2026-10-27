@@ -11,6 +11,7 @@ use crate::state::instances::{
     ContentSourceKind, Instance, InstanceFile, InstanceInstallCandidate,
     InstanceInstallTarget, InstanceLink,
 };
+use crate::state::store::Handle;
 use crate::state::{
     CacheBehaviour, CachedEntry, ContentFile, ContentItem, ContentItemOwner,
     ContentItemProject, ContentItemRollback, ContentItemUpdate,
@@ -215,48 +216,48 @@ pub(crate) async fn get_instance_install_candidates(
 ) -> crate::Result<Vec<InstanceInstallCandidate>> {
     let rows = sqlx::query_as::<_, InstanceInstallCandidateRow>(
         r#"
-		SELECT
-			i.id,
-			i.name,
-			i.icon_path,
-			cs.game_version,
-			cs.loader,
-			CASE
-				WHEN EXISTS (
-					SELECT 1
-					FROM instance_content_entries entry
-					INNER JOIN instance_files file
-						ON file.id = entry.file_id
-					WHERE entry.content_set_id = cs.id
-						AND EXISTS (
-							SELECT 1
-							FROM instance_content_provider_refs ref
-							WHERE ref.content_entry_id = entry.id
-								AND ref.provider = CASE
-									WHEN ? LIKE 'curseforge:%' THEN 'curseforge'
-									ELSE 'modrinth'
-								END
-								AND ref.provider_project_id = CASE
-									WHEN ? LIKE 'curseforge:%' THEN substr(?, 12)
-									ELSE ?
-									END
-						)
-						AND file.missing = 0
-				)
-					THEN 1
-				ELSE 0
-			END AS installed
-		FROM instances i
-		INNER JOIN instance_content_sets cs
-			ON cs.id = i.applied_content_set_id
-		LEFT JOIN instance_links link
-			ON link.instance_id = i.id
-		WHERE COALESCE(link.link_kind, 'unmanaged') NOT IN (
-			'server_project',
-			'server_project_modpack'
-		)
-		ORDER BY i.name ASC
-		"#,
+        SELECT
+            i.id,
+            i.name,
+            i.icon_path,
+            cs.game_version,
+            cs.loader,
+            CASE
+                WHEN EXISTS (
+                    SELECT 1
+                    FROM instance_content_entries entry
+                    INNER JOIN instance_files file
+                        ON file.id = entry.file_id
+                    WHERE entry.content_set_id = cs.id
+                        AND EXISTS (
+                            SELECT 1
+                            FROM instance_content_provider_refs ref
+                            WHERE ref.content_entry_id = entry.id
+                                AND ref.provider = CASE
+                                    WHEN ? LIKE 'curseforge:%' THEN 'curseforge'
+                                    ELSE 'modrinth'
+                                END
+                                AND ref.provider_project_id = CASE
+                                    WHEN ? LIKE 'curseforge:%' THEN substr(?, 12)
+                                    ELSE ?
+                                    END
+                        )
+                        AND file.missing = 0
+                )
+                    THEN 1
+                ELSE 0
+            END AS installed
+        FROM instances i
+        INNER JOIN instance_content_sets cs
+            ON cs.id = i.applied_content_set_id
+        LEFT JOIN instance_links link
+            ON link.instance_id = i.id
+        WHERE COALESCE(link.link_kind, 'unmanaged') NOT IN (
+            'server_project',
+            'server_project_modpack'
+        )
+        ORDER BY i.name ASC
+        "#,
     )
     .bind(project_id)
     .bind(project_id)
@@ -331,12 +332,7 @@ pub(crate) async fn list_content(
     } else {
         match linked_modrinth_modpack_ids(&link) {
             Some((_, version_id)) => {
-                get_cached_modpack_identifiers(
-                    version_id,
-                    &state.pool,
-                    &state.api_semaphore,
-                )
-                .await?
+                get_cached_modpack_identifiers(version_id, &state.data).await?
             }
             None => None,
         }
@@ -559,7 +555,7 @@ pub(crate) async fn list_linked_modpack_content(
     let ids = match get_modpack_identifiers(
         version_id,
         &resolved.content_set,
-        &state.pool,
+        state,
         &state.api_semaphore,
     )
     .await
@@ -698,7 +694,7 @@ pub(crate) async fn get_linked_modpack_info(
             avatar_url: org.icon_url,
             owner_type: OwnerType::Organization,
         })
-    } else {
+    } else if !project.team.is_empty() {
         let team = CachedEntry::get_team(
             &project.team,
             cache_behaviour,
@@ -716,6 +712,8 @@ pub(crate) async fn get_linked_modpack_info(
                     owner_type: OwnerType::User,
                 })
         })
+    } else {
+        None
     };
     let (_, update_version_id, update_version) = check_modpack_update(
         version_id,
@@ -842,7 +840,7 @@ async fn get_curseforge_linked_modpack_info(
                     avatar_url: org.icon_url,
                     owner_type: OwnerType::Organization,
                 })
-            } else {
+            } else if !mr_project.team.is_empty() {
                 CachedEntry::get_team(
                     &mr_project.team,
                     cache_behaviour,
@@ -860,6 +858,8 @@ async fn get_curseforge_linked_modpack_info(
                         },
                     )
                 })
+            } else {
+                None
             };
 
             let files = crate::api::curseforge::get_files(
@@ -1299,9 +1299,9 @@ async fn resolve_content_scope_with_instance(
 
             if content_set.instance_id != instance.id {
                 return Err(crate::ErrorKind::InputError(format!(
-					"Content set {content_set_id} does not belong to instance {}",
-					instance.id
-				))
+                    "Content set {content_set_id} does not belong to instance {}",
+                    instance.id
+                ))
                 .into());
             }
 
@@ -2335,6 +2335,7 @@ async fn resolve_metadata(
     let team_ids = projects
         .iter()
         .map(|project| project.team.clone())
+        .filter(|team| !team.is_empty())
         .collect::<HashSet<_>>();
     let org_ids = projects
         .iter()
@@ -2567,12 +2568,10 @@ impl ModpackIdentifiers {
 
 async fn get_cached_modpack_identifiers(
     version_id: &str,
-    pool: &SqlitePool,
-    fetch_semaphore: &FetchSemaphore,
+    handle: &Handle,
 ) -> crate::Result<Option<ModpackIdentifiers>> {
     let Some(cached) =
-        CachedEntry::get_modpack_files(version_id, pool, fetch_semaphore)
-            .await?
+        CachedEntry::get_modpack_files(version_id, handle).await?
     else {
         return Ok(None);
     };
@@ -2590,13 +2589,12 @@ async fn get_cached_modpack_identifiers(
 async fn get_modpack_identifiers(
     version_id: &str,
     content_set: &ContentSet,
-    pool: &SqlitePool,
+    state: &State,
     fetch_semaphore: &FetchSemaphore,
 ) -> crate::Result<ModpackIdentifiers> {
     let _cache_usage = crate::storage::usage::lease().await?;
     if let Some(cached) =
-        CachedEntry::get_modpack_files(version_id, pool, fetch_semaphore)
-            .await?
+        CachedEntry::get_modpack_files(version_id, &state.data).await?
     {
         if !cached.project_ids.is_empty() {
             return Ok(ModpackIdentifiers {
@@ -2610,9 +2608,13 @@ async fn get_modpack_identifiers(
             .iter()
             .map(String::as_str)
             .collect::<Vec<_>>();
-        let files =
-            CachedEntry::get_file_many(&hash_refs, None, pool, fetch_semaphore)
-                .await?;
+        let files = CachedEntry::get_file_many(
+            &hash_refs,
+            None,
+            &state.pool,
+            fetch_semaphore,
+        )
+        .await?;
         let project_ids = files
             .iter()
             .map(|file| file.project_id.clone())
@@ -2623,7 +2625,6 @@ async fn get_modpack_identifiers(
             version_id,
             cached.file_hashes.clone(),
             project_ids.clone(),
-            pool,
         )
         .await?;
 
@@ -2636,7 +2637,7 @@ async fn get_modpack_identifiers(
     let version = CachedEntry::get_version(
         &ModrinthVersionId::new(version_id.to_string())?,
         None,
-        pool,
+        &state.pool,
         fetch_semaphore,
     )
     .await?
@@ -2661,7 +2662,6 @@ async fn get_modpack_identifiers(
         loader: content_set.loader.as_str().to_string(),
         dependent_on: Some(version_id.to_string()),
     };
-    let state = State::get().await?;
     let file_name = Path::new(&primary_file.filename);
     if file_name.components().count() != 1
         || !matches!(file_name.components().next(), Some(Component::Normal(_)))
@@ -2693,7 +2693,7 @@ async fn get_modpack_identifiers(
             .with_download_meta(download_meta),
         &pack_path,
         &state.download_semaphore,
-        pool,
+        &state.pool,
         None,
     )
     .await?;
@@ -2760,7 +2760,6 @@ async fn get_modpack_identifiers(
         version_id,
         hashes.clone(),
         project_ids.clone(),
-        pool,
     )
     .await?;
 
@@ -3230,6 +3229,13 @@ mod tests {
 
     #[tokio::test]
     async fn external_file_edit_invalidates_exact_provider_refs() {
+        // The legacy cache projection uses global runtime state even when the
+        // content snapshot itself is backed by the isolated fixture below.
+        crate::event::EventState::init().await.unwrap();
+        let runtime = tempfile::tempdir().unwrap().keep();
+        State::init_for_test(runtime.to_string_lossy().into_owned())
+            .await
+            .unwrap();
         let (_temp, state, resolved) = reconciliation_fixture().await;
         let relative_path = "mods/lithium.jar";
         let file = insert_test_file(

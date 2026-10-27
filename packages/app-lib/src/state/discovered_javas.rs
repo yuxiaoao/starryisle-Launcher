@@ -1,7 +1,12 @@
 use std::path::Path;
 use std::time::UNIX_EPOCH;
 
-use sqlx::Row;
+use crate::state::store::Atom;
+use crate::state::store::Collection as _;
+use crate::state::store::Handle;
+use crate::state::store::discovered_javas::{
+    DiscoveredJavaRecord, DiscoveredJavas,
+};
 
 use super::JavaVersion;
 
@@ -44,122 +49,75 @@ impl DiscoveredJava {
         })
     }
 
-    pub async fn get_all(
-        exec: impl sqlx::Executor<'_, Database = sqlx::Sqlite>,
-    ) -> crate::Result<Vec<Self>> {
-        let rows = sqlx::query(
-            "
-            SELECT path, major_version, full_version, architecture,
-                file_size, file_mtime_ms, distribution
-            FROM discovered_javas
-            ORDER BY major_version, path
-            ",
-        )
-        .fetch_all(exec)
-        .await?;
+    fn from_record(path: String, record: DiscoveredJavaRecord) -> Self {
+        Self {
+            java: JavaVersion {
+                parsed_version: record.major_version,
+                version: record.full_version,
+                architecture: record.architecture,
+                path,
+                distribution: record.distribution,
+            },
+            file_size: record.file_size,
+            file_mtime_ms: record.file_mtime_ms,
+        }
+    }
 
-        Ok(rows
+    fn to_record(&self) -> DiscoveredJavaRecord {
+        DiscoveredJavaRecord {
+            major_version: self.java.parsed_version,
+            full_version: self.java.version.clone(),
+            architecture: self.java.architecture.clone(),
+            distribution: self.java.distribution.clone(),
+            file_size: self.file_size,
+            file_mtime_ms: self.file_mtime_ms,
+        }
+    }
+
+    pub async fn get_all(handle: &Handle) -> crate::Result<Vec<Self>> {
+        let mut entries = DiscoveredJavas::get_all(handle)
+            .await?
             .into_iter()
-            .map(|row| Self {
-                java: JavaVersion {
-                    parsed_version: row.get::<i64, _>("major_version") as u32,
-                    version: row.get("full_version"),
-                    architecture: row.get("architecture"),
-                    path: row.get("path"),
-                    distribution: row.get("distribution"),
-                },
-                file_size: row.get("file_size"),
-                file_mtime_ms: row.get("file_mtime_ms"),
-            })
-            .collect())
+            .map(|(path, record)| Self::from_record(path, record))
+            .collect::<Vec<_>>();
+        entries.sort_by(|left, right| {
+            left.java
+                .parsed_version
+                .cmp(&right.java.parsed_version)
+                .then_with(|| left.java.path.cmp(&right.java.path))
+        });
+
+        Ok(entries)
     }
 
-    pub async fn upsert(
-        &self,
-        exec: impl sqlx::Executor<'_, Database = sqlx::Sqlite>,
-    ) -> crate::Result<()> {
-        sqlx::query(
-            "
-            INSERT INTO discovered_javas (
-                path, major_version, full_version, architecture,
-                file_size, file_mtime_ms, distribution
-            )
-            VALUES ($1, $2, $3, $4, $5, $6, $7)
-            ON CONFLICT (path) DO UPDATE SET
-                major_version = $2,
-                full_version = $3,
-                architecture = $4,
-                file_size = $5,
-                file_mtime_ms = $6,
-                distribution = $7
-            ",
+    pub async fn upsert(&self, handle: &Handle) -> crate::Result<()> {
+        DiscoveredJavas::set(handle, &self.java.path, Some(&self.to_record()))
+            .await
+    }
+
+    pub(crate) async fn upsert_in(&self, unit: &mut Atom) -> crate::Result<()> {
+        DiscoveredJavas::atom_set(
+            unit,
+            &self.java.path,
+            Some(&self.to_record()),
         )
-        .bind(&self.java.path)
-        .bind(self.java.parsed_version as i64)
-        .bind(&self.java.version)
-        .bind(&self.java.architecture)
-        .bind(self.file_size)
-        .bind(self.file_mtime_ms)
-        .bind(&self.java.distribution)
-        .execute(exec)
-        .await?;
-
-        Ok(())
+        .await
     }
 
-    pub async fn remove(
-        path: &str,
-        exec: impl sqlx::Executor<'_, Database = sqlx::Sqlite>,
-    ) -> crate::Result<()> {
-        sqlx::query("DELETE FROM discovered_javas WHERE path = $1")
-            .bind(path)
-            .execute(exec)
-            .await?;
-
-        Ok(())
+    pub async fn remove(path: &str, handle: &Handle) -> crate::Result<()> {
+        DiscoveredJavas::set(handle, &path.to_string(), None).await
     }
 
     /// Replaces the entire cache with the results of a fresh scan.
     pub async fn replace_all(
-        pool: &sqlx::SqlitePool,
+        handle: &Handle,
         entries: &[Self],
     ) -> crate::Result<()> {
-        let mut transaction = pool.begin().await?;
+        let records = entries
+            .iter()
+            .map(|entry| (entry.java.path.clone(), entry.to_record()))
+            .collect::<Vec<_>>();
 
-        sqlx::query("DELETE FROM discovered_javas")
-            .execute(&mut *transaction)
-            .await?;
-
-        for entry in entries {
-            sqlx::query(
-                "
-                INSERT INTO discovered_javas (
-                    path, major_version, full_version, architecture,
-                    file_size, file_mtime_ms, distribution
-                )
-                VALUES ($1, $2, $3, $4, $5, $6, $7)
-                ON CONFLICT (path) DO UPDATE SET
-                    major_version = $2,
-                    full_version = $3,
-                    architecture = $4,
-                    file_size = $5,
-                    file_mtime_ms = $6,
-                    distribution = $7
-                ",
-            )
-            .bind(&entry.java.path)
-            .bind(entry.java.parsed_version as i64)
-            .bind(&entry.java.version)
-            .bind(&entry.java.architecture)
-            .bind(entry.file_size)
-            .bind(entry.file_mtime_ms)
-            .bind(&entry.java.distribution)
-            .execute(&mut *transaction)
-            .await?;
-        }
-
-        transaction.commit().await?;
-
-        Ok(())
+        DiscoveredJavas::set_all(handle, &records).await
     }
 }

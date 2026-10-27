@@ -2,6 +2,7 @@ use crate::ErrorKind;
 use crate::data::ModrinthCredentials;
 use crate::event::FriendPayload;
 use crate::event::emit::{emit_friend, emit_notification};
+use crate::state::store::Handle;
 use crate::state::tunnel::{
     InternalTunnelSocket, SocketRegistry, close_sockets, take_sockets,
 };
@@ -70,12 +71,14 @@ impl FriendsSocket {
     #[tracing::instrument(skip_all)]
     pub async fn connect(
         &self,
+        handle: &Handle,
         exec: impl sqlx::Executor<'_, Database = sqlx::Sqlite> + Copy,
         semaphore: &FetchSemaphore,
         process_manager: &ProcessManager,
     ) -> crate::Result<()> {
         let credentials =
-            ModrinthCredentials::get_and_refresh(exec, semaphore).await?;
+            ModrinthCredentials::get_and_refresh(handle, semaphore, exec)
+                .await?;
 
         if let Some(credentials) = credentials {
             let mut request = format!(
@@ -282,6 +285,7 @@ impl FriendsSocket {
                     let _ = state
                         .friends_socket
                         .connect(
+                            &state.data,
                             &state.pool,
                             &state.api_semaphore,
                             &state.process_manager,

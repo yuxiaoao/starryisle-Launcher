@@ -206,6 +206,7 @@ async fn initialize_state(app: tauri::AppHandle) -> api::Result<()> {
 
     tracing::info!("Initializing app state...");
     State::init(app.config().identifier.clone()).await?;
+    api::mcp::initialize(&app).await;
     let anti_piracy_app = app.clone();
     tauri::async_runtime::spawn(async move {
         let status = theseus::anti_piracy::check_region().await;
@@ -881,6 +882,7 @@ fn main() {
         .plugin(api::process::init())
         .plugin(api::planet_minecraft::init())
         .plugin(api::settings::init())
+        .plugin(api::mcp::init())
         .plugin(api::storage::init())
         .plugin(api::system_accent::init())
         .plugin(api::seed_map::init())
@@ -973,6 +975,7 @@ fn main() {
 
                 if matches!(&event, tauri::RunEvent::ExitRequested { .. }) {
                     tauri::async_runtime::block_on(async {
+                        api::mcp::shutdown(app).await;
                         let killed = theseus::servers::shutdown_all().await;
                         if killed > 0 {
                             tracing::info!(
