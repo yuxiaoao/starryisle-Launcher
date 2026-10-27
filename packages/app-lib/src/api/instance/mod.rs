@@ -101,7 +101,9 @@ pub use self::screenshot_groups::{
     set_screenshot_group_memberships,
 };
 pub use self::screenshots::{
+    BundleExportReport, BundleImportReport, BundleManifest,
     InstanceScreenshot, ScreenshotEditSaveMode, ScreenshotKey, ScreenshotNote,
+    export_instance_bundle, import_instance_bundle,
     delete_screenshots, export_screenshots, get_screenshot_path,
     list_all_screenshots, list_all_screenshots_with_warnings, list_screenshots,
     list_screenshot_notes, list_synced_screenshots, move_screenshots,

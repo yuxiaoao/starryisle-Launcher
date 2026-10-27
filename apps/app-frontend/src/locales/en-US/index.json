@@ -12147,6 +12147,24 @@
   "app.screenshots.menu.remove-from-group": {
     "message": "Remove from group"
   },
+  "app.screenshots.bundle.import-success": {
+    "message": "Imported {count} screenshots and {notes} notes"
+  },
+  "app.screenshots.bundle.export-filename": {
+    "message": "StarryIsle screenshots.zip"
+  },
+  "app.screenshots.bundle.import": {
+    "message": "Import bundle"
+  },
+  "app.screenshots.bundle.export": {
+    "message": "Export bundle"
+  },
+  "app.screenshots.bundle.export-success": {
+    "message": "Exported {count} screenshots and {notes} notes"
+  },
+  "app.screenshots.bundle.filters": {
+    "message": "StarryIsle bundle"
+  },
   "app.screenshots.menu.edit-note": {
     "message": "Edit note"
   },

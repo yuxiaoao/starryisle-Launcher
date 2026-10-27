@@ -41,7 +41,7 @@ import {
     useVIntl,
 } from '@modrinth/ui'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
-import { save } from '@tauri-apps/plugin-dialog'
+import { open, save } from '@tauri-apps/plugin-dialog'
 import { readFile } from '@tauri-apps/plugin-fs'
 import { useElementSize, useStorage, useWindowSize } from '@vueuse/core'
 import dayjs from 'dayjs'
@@ -69,6 +69,10 @@ import {
     set_screenshot_group_memberships,
 } from '@/helpers/instance'
 import { MAX_INSTANCE_GROUP_NAME_LENGTH } from '@/helpers/instance-groups'
+import {
+    exportScreenshotBundle,
+    importScreenshotBundle,
+} from '@/helpers/screenshot-bundles'
 import {
     getScreenshotNotes,
     screenshotNoteKey,
@@ -225,6 +229,58 @@ async function copyScreenshotPath(screenshot: InstanceScreenshot) {
     }
 }
 
+async function exportBundle() {
+    const instanceId = props.instanceId
+    if (!instanceId || bulkBusy.value) return
+    const outputPath = await save({
+        defaultPath: formatMessage(messages.bundleExportFilename),
+        filters: [{ name: formatMessage(messages.bundleFilters), extensions: ['zip'] }],
+    })
+    if (!outputPath) return
+    bulkBusy.value = true
+    try {
+        const report = await exportScreenshotBundle(instanceId, outputPath)
+        addNotification({
+            type: 'success',
+            title: formatMessage(messages.bundleExportSuccess, {
+                count: report.screenshotCount,
+                notes: report.noteCount,
+            }),
+        })
+    } catch (error) {
+        handleError(error)
+    } finally {
+        bulkBusy.value = false
+    }
+}
+
+async function importBundle() {
+    const instanceId = props.instanceId
+    if (!instanceId || bulkBusy.value) return
+    const selected = await open({
+        multiple: false,
+        filters: [{ name: formatMessage(messages.bundleFilters), extensions: ['zip'] }],
+    })
+    if (!selected || Array.isArray(selected)) return
+    bulkBusy.value = true
+    try {
+        const report = await importScreenshotBundle(instanceId, selected, 'skip')
+        addNotification({
+            type: 'success',
+            title: formatMessage(messages.bundleImportSuccess, {
+                count: report.imported,
+                notes: report.notesWritten,
+            }),
+        })
+        await screenshotsQuery.refetch()
+        await loadScreenshotNotes()
+    } catch (error) {
+        handleError(error)
+    } finally {
+        bulkBusy.value = false
+    }
+}
+
 function deleteScreenshotFromMenu(screenshot: InstanceScreenshot) {
     noteMenu.value = null
     requestDelete(screenshot)
@@ -377,6 +433,19 @@ const messages = defineMessages({
     menuCopyPath: { id: 'app.screenshots.menu.copy-path', defaultMessage: 'Copy file path' },
     menuDelete: { id: 'app.screenshots.menu.delete', defaultMessage: 'Delete' },
     menuAddToGroup: { id: 'app.screenshots.menu.add-to-group', defaultMessage: 'Add to group' },
+    bundleExportSuccess: {
+        id: 'app.screenshots.bundle.export-success',
+        defaultMessage: 'Exported {count} screenshots and {notes} notes',
+    },
+    bundleExportFilename: {
+        id: 'app.screenshots.bundle.export-filename',
+        defaultMessage: 'StarryIsle screenshots.zip',
+    },
+    bundleImportSuccess: {
+        id: 'app.screenshots.bundle.import-success',
+        defaultMessage: 'Imported {count} screenshots and {notes} notes',
+    },
+    bundleFilters: { id: 'app.screenshots.bundle.filters', defaultMessage: 'StarryIsle bundle' },
     menuRemoveFromGroup: { id: 'app.screenshots.menu.remove-from-group', defaultMessage: 'Remove from group' },
     rangeAll: { id: 'app.screenshots.filter.range-all', defaultMessage: 'All time' },
     rangeToday: { id: 'app.screenshots.filter.range-today', defaultMessage: 'Today' },
@@ -1772,7 +1841,10 @@ onBeforeUnmount(() => {
                 :show-view-toggle="true"
                 :group-filter-options="groupFilterOptions"
                 :show-group-filter="viewMode === 'timeline'"
+                :show-bundle-actions="!isGlobal"
                 @new-group="createCustomGroup"
+                @export-bundle="exportBundle"
+                @import-bundle="importBundle"
             />
         </template>
 
