@@ -12153,6 +12153,9 @@
   "app.screenshots.bundle.export-filename": {
     "message": "StarryIsle screenshots.zip"
   },
+  "app.screenshots.bundle.import-toolbar": {
+    "message": "Import bundle"
+  },
   "app.screenshots.bundle.import": {
     "message": "Import bundle"
   },

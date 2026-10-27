@@ -233,6 +233,9 @@ async function copyScreenshotPath(screenshot: InstanceScreenshot) {
 
 function bundleTargetInstanceId(): string | null {
     if (props.instanceId) return props.instanceId
+    if (timelineInstanceId.value && timelineInstanceId.value !== 'all') {
+        return timelineInstanceId.value
+    }
     const ids = new Set(selectedScreenshots.value.map((shot) => shot.instance_id))
     if (ids.size === 1) return Array.from(ids)[0] ?? null
     return null
@@ -287,10 +290,16 @@ async function importBundle() {
         return
     }
     if (bulkBusy.value) return
-    const selected = await open({
-        multiple: false,
-        filters: [{ name: formatMessage(messages.bundleFilters), extensions: ['zip'] }],
-    })
+    let selected: string | string[] | null = null
+    try {
+        selected = await open({
+            multiple: false,
+            filters: [{ name: formatMessage(messages.bundleFilters), extensions: ['zip'] }],
+        })
+    } catch (error) {
+        handleError(error)
+        return
+    }
     if (!selected || Array.isArray(selected)) return
     bulkBusy.value = true
     try {
