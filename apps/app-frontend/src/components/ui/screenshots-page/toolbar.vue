@@ -33,6 +33,7 @@ defineProps<{
     showGroupFilter?: boolean
     groupFilterOptions?: ComboboxOption<string>[]
     showImportAction?: boolean
+    onImportBundle?: () => void
 }>()
 
 const emit = defineEmits<{
@@ -163,7 +164,7 @@ const messages = defineMessages({
                 v-if="showImportAction"
                 v-tooltip="formatMessage(messages.importBundle)"
                 type="base"
-                @click="emit('import-bundle')"
+                @click="onImportBundle ? onImportBundle() : emit('import-bundle')"
             >
                 <ImportIcon />
                 <span class="text-[var(--color-text-default)]">{{ formatMessage(messages.importBundle) }}</span>

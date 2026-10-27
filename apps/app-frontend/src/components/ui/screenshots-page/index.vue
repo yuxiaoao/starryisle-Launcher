@@ -238,7 +238,19 @@ function bundleTargetInstanceId(): string | null {
     }
     const ids = new Set(selectedScreenshots.value.map((shot) => shot.instance_id))
     if (ids.size === 1) return Array.from(ids)[0] ?? null
-    return null
+    const counts = new Map<string, number>()
+    for (const shot of screenshots.value) {
+        counts.set(shot.instance_id, (counts.get(shot.instance_id) ?? 0) + 1)
+    }
+    let best: string | null = null
+    let bestCount = 0
+    for (const [id, count] of counts) {
+        if (count > bestCount) {
+            best = id
+            bestCount = count
+        }
+    }
+    return best
 }
 
 function warnBundleInstanceMissing() {
@@ -1887,6 +1899,7 @@ onBeforeUnmount(() => {
                 :group-filter-options="groupFilterOptions"
                 :show-group-filter="viewMode === 'timeline'"
                 :show-import-action="true"
+                :on-import-bundle="importBundle"
                 @new-group="createCustomGroup"
                 @import-bundle="importBundle"
             />
