@@ -68,15 +68,6 @@ const messages = defineMessages({
                 <PlusIcon />
                 {{ formatMessage(messages.newGroup) }}
             </Button>
-            <Button
-                v-if="showImportAction"
-                v-tooltip="formatMessage(messages.importBundle)"
-                type="outlined"
-                @click="emit('import-bundle')"
-            >
-                <ImportIcon />
-                <span>{{ formatMessage(messages.importBundle) }}</span>
-            </Button>
         </div>
         <div class="flex flex-wrap items-center gap-2">
             <Combobox
@@ -168,6 +159,15 @@ const messages = defineMessages({
                     <span>{{ label }}</span>
                 </template>
             </Combobox>
+            <Button
+                v-if="showImportAction"
+                v-tooltip="formatMessage(messages.importBundle)"
+                type="outlined"
+                @click="emit('import-bundle')"
+            >
+                <ImportIcon />
+                <span>{{ formatMessage(messages.importBundle) }}</span>
+            </Button>
         </div>
     </div>
 </template>
