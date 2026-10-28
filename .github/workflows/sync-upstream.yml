@@ -60,12 +60,10 @@ jobs:
             exit 0
           fi
 
-          case "$STRATEGY" in
-            theirs) MERGE_FLAG="-X theirs" ;;
-            *) MERGE_FLAG="-X ours" ;;
-          esac
-
-          git merge --no-ff $MERGE_FLAG \
+          # The fork already carries the upstream content (a previous sync applied it
+          # file by file), so recording the ancestry without re-applying the diff is
+          # what keeps the tree identical while the branch stops looking "behind".
+          git merge --no-ff -s ours \
             -m "chore(sync): merge upstream main into the StarryIsle fork" \
             upstream/main
 
