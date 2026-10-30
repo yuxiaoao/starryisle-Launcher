@@ -3,9 +3,8 @@ use super::operations::{
     source_screenshots_dir,
 };
 use crate::State;
-use crate::state::instances::adapters::sqlite::{
-    instance_rows::{self, InstanceScreenshotSource},
-    screenshot_rows::{self, ScreenshotRow},
+use crate::state::instances::adapters::sqlite::screenshot_rows::{
+    self, InstanceScreenshotSource, ScreenshotRow,
 };
 use crate::util::fetch::sha1_file_async;
 use crate::util::io::IOError;
@@ -95,15 +94,16 @@ pub(crate) async fn reconcile_screenshots_with_state(
     instance_id: &str,
     state: &State,
 ) -> crate::Result<()> {
-    let Some(source) =
-        instance_rows::get_instance_screenshot_source(instance_id, &state.pool)
-            .await?
+    let Some(source) = screenshot_rows::get_instance_screenshot_source(
+        instance_id,
+        &state.pool,
+    )
+    .await?
     else {
         return Ok(());
     };
 
     list_source_screenshots(state, source).await?;
-    super::notes::prune_orphan_notes(&state.pool).await?;
     Ok(())
 }
 
@@ -150,21 +150,14 @@ fn scan_screenshots_dir(
         let metadata = entry
             .metadata()
             .map_err(|error| IOError::with_path(error, &path))?;
-        // Copying a game directory resets the filesystem creation time, which
-        // would otherwise collapse every screenshot onto the copy timestamp.
-        // Minecraft embeds the capture time in the file name, so prefer it.
-        // Copying files resets the creation time, so the last write time is a
-        // better fallback than the creation time.
+        // Copying files resets the creation time, so the name and the last write
+        // time are both better sources than the creation time.
         let created_at = screenshot_time_from_name(&file_name)
             .or_else(|| metadata.modified().ok().map(DateTime::<Utc>::from))
             .or_else(|| metadata.created().ok().map(DateTime::<Utc>::from))
             .ok_or_else(|| {
-                IOError::with_path(
-                    std::io::Error::new(
-                        std::io::ErrorKind::Other,
-                        "Screenshot has no usable timestamp",
-                    ),
-                    &path,
+                crate::ErrorKind::InputError(
+                    "Screenshot has no usable timestamp".to_string(),
                 )
             })?;
         let modified_at = metadata
@@ -321,9 +314,6 @@ pub(super) async fn reconcile_source_screenshots(
     Ok(screenshots)
 }
 
-/// Minecraft names screenshots `YYYY-MM-DD_HH.MM.SS` in local time, optionally
-/// wrapped in extra text (`huge_2026-02-02_11.56.25_3.png`), so the timestamp is
-/// located anywhere inside the file name.
 fn screenshot_time_from_name(file_name: &str) -> Option<DateTime<Utc>> {
     let bytes = file_name.as_bytes();
     let is_date_separator = |byte: u8| byte == b'-';

@@ -18,17 +18,6 @@ export interface ContentMetadataDrainOptions {
 const DEFAULT_CHUNK_SIZE = 64
 
 /**
- * True when the item still carries the placeholder project synthesised for a
- * file whose metadata was not resolved locally.
- *
- * The placeholder marks itself with a `local:` project id, so this stays a
- * property of the item rather than of the code path that produced it.
- */
-export function isUnresolvedContentProject(item: ContentItem): boolean {
-    return !!item.project?.id?.startsWith('local:')
-}
-
-/**
  * Resolves metadata for every supplied path in bounded, sequential chunks.
  *
  * Why this is a batch and not a per-visible-row refresh: the list is sorted on

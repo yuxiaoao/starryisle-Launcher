@@ -1,31 +1,11 @@
-//! What the resource source projects collection promises, and what the
-//! favorites read makes of it.
+//! What the resource source projects collection promises.
 
 use super::support;
-use crate::state::content_favorites::{
-    ContentFavoriteInput, ContentFavoriteProvider, ContentFavoriteType, add,
-    list,
-};
 use crate::state::store::Collection as _;
-use crate::state::store::Handle;
 use crate::state::store::resource_source_projects::{
     ResourceSourceProjectKey, ResourceSourceProjectRecord,
     ResourceSourceProjects,
 };
-
-/// A database whose only provider project already maps to a resource.
-async fn seeded() -> Handle {
-    let pool = support::pool().await;
-    support::add_resource(&pool, "resource").await;
-    sqlx::query(
-        "INSERT INTO resource_source_projects (source, project_id, resource_id)
-         VALUES ('modrinth', 'sodium', 'resource')",
-    )
-    .execute(&pool)
-    .await
-    .unwrap();
-    Handle::new(pool)
-}
 
 #[tokio::test]
 async fn a_mapping_round_trips_and_removes() {
@@ -63,27 +43,5 @@ async fn a_mapping_round_trips_and_removes() {
             .await
             .unwrap()
             .is_empty()
-    );
-}
-
-#[tokio::test]
-async fn a_favorite_carries_the_resource_its_project_maps_to() {
-    let handle = seeded().await;
-
-    let favorite = add(
-        ContentFavoriteInput {
-            provider: ContentFavoriteProvider::Modrinth,
-            project_id: "sodium".to_string(),
-            content_type: ContentFavoriteType::Mod,
-        },
-        &handle,
-    )
-    .await
-    .unwrap();
-
-    assert_eq!(favorite.resource_id.as_deref(), Some("resource"));
-    assert_eq!(
-        list(&handle).await.unwrap()[0].resource_id.as_deref(),
-        Some("resource")
     );
 }

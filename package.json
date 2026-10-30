@@ -93,7 +93,7 @@
       "@jimp/types>zod": ">=4.6.6 <5.0.0",
       "get-uri>basic-ftp": ">=6.2.1 <7.0.0",
       "yaml": ">=2.8.3 <2.9.0",
-      "node-forge": ">=1.4.0 <2.0.0",
+      "node-forge": ">=1.4.2 <2.0.0",
       "lodash": ">=4.18.0 <5.0.0",
       "source-map-js": ">=1.2.2 <2.0.0",
       "browserslist": ">=4.28.7 <5.0.0",
@@ -106,7 +106,8 @@
       "nitropack>esbuild": ">=0.28.2 <0.29.0",
       "srvx": ">=0.11.13 <0.12.0",
       "serialize-javascript": ">=7.0.5 <8.0.0",
-      "postcss-selector-parser": ">=7.1.6 <8.0.0"
+      "postcss-selector-parser": ">=7.1.6 <8.0.0",
+      "qs": "6.16.1"
     },
     "patchedDependencies": {
       "readable-stream@2.3.8": "patches/readable-stream@2.3.8.patch"

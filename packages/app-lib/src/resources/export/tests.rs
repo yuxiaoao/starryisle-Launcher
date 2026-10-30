@@ -463,7 +463,7 @@ impl ResourceProvider for Provider {
                     let artifact = ResourceArtifact { reference: SourceArtifactRef { release: reference.clone(), artifact_id: SourceArtifactId::new("file.jar").unwrap() }, file_name: Some("file.jar".into()), role: ArtifactRole::Primary, available: Some(true), integrity: integrity.clone(), acquisition: ArtifactAcquisition::PublicDownload { urls: vec!["https://cdn.modrinth.com/file.jar".into()] }, dependencies: vec![] };
                     Ok(ProviderValue::Identified(vec![ReleaseDocument { release: ResourceRelease { reference, version: "1".into(), channel: ReleaseChannel::Release, published_at: None, compatibility: ReleaseCompatibility { game_versions: vec![], loaders: vec![] }, artifacts: vec![artifact], equivalent_releases: vec![] }, changelog: None, protocol: None }]))
                 },
-                ProviderQuery::Project { id, .. } => Ok(ProviderValue::Project(ProjectDocument { metadata: SourceProjectMetadata { project: SourceProjectRef { source: self.source.clone(), project_id: id.clone() }, slug: None, title: "Test".into(), summary: String::new(), icon_url: None, types: vec![ResourceType::Mod], authors: vec![], license: None, downloads: None, followers: None, created_at: None, project_published_at: None, updated_at: None, first_published_at: None, latest_published_at: None, categories: vec![], game_versions: vec![], loaders: vec![], gallery: vec![], environments: vec![] }, description: ResourceText { source: self.source.clone(), format: TextFormat::Plain, body: String::new() }, protocol: None })),
+                ProviderQuery::Project { id, .. } => Ok(ProviderValue::Project(ProjectDocument { owner: None, metadata: SourceProjectMetadata { project: SourceProjectRef { source: self.source.clone(), project_id: id.clone() }, slug: None, title: "Test".into(), summary: String::new(), icon_url: None, types: vec![ResourceType::Mod], authors: vec![], license: None, downloads: None, followers: None, created_at: None, project_published_at: None, updated_at: None, first_published_at: None, latest_published_at: None, categories: vec![], game_versions: vec![], loaders: vec![], gallery: vec![], environments: vec![] }, description: ResourceText { source: self.source.clone(), format: TextFormat::Plain, body: String::new() }, protocol: None })),
                 _ => panic!("export must not traverse releases or download: {query:?}"),
             }
         }).collect()
@@ -888,7 +888,16 @@ async fn three_formats_freeze_current_artifacts_paths_and_package_info() {
         assert!(archive.by_name("overrides/config/settings.txt").is_ok());
         assert!(archive.by_name("overrides/mods/file.jar.disabled").is_ok());
         assert!(archive.by_name("overrides/mods/file.jar").is_err());
-        assert_eq!(archive.file_names().filter(|n| *n == "manifest.json" || *n == "modrinth.index.json").count(), 1);
+        assert_eq!(
+            archive
+                .file_names()
+                .filter_map(|name| name.ok())
+                .filter(|n| {
+                    *n == "manifest.json" || *n == "modrinth.index.json"
+                })
+                .count(),
+            1
+        );
     }
     assert_eq!(
         count,
@@ -1283,10 +1292,25 @@ async fn frozen_export_job_survives_session_close_and_preserves_instance_stage()
     let queued = crate::install::runner::export_resource(plan, output.clone())
         .await
         .unwrap();
-    let canceled = crate::install::runner::cancel_job(queued.job_id)
+    let accepted = crate::install::runner::cancel_job(queued.job_id)
         .await
         .unwrap();
+    assert_eq!(accepted.status, InstallJobStatus::Canceling);
     drop(permit);
+    let canceled =
+        tokio::time::timeout(std::time::Duration::from_secs(10), async {
+            loop {
+                let job = crate::install::runner::get_job(queued.job_id)
+                    .await
+                    .unwrap();
+                if job.status.is_finished() {
+                    break job;
+                }
+                tokio::task::yield_now().await;
+            }
+        })
+        .await
+        .expect("accepted export cancellation must finish background cleanup");
     assert_eq!(canceled.status, InstallJobStatus::Canceled);
     assert_eq!(std::fs::read(output).unwrap(), existing);
     let mut pending = self::draft(vec![file("settings.txt")]);
