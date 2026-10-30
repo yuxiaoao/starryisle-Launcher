@@ -366,7 +366,7 @@ const messages = defineMessages({
     title: { id: 'instance.upgrade.customize.title', defaultMessage: 'Upgrade strategy' },
     description: {
         id: 'instance.upgrade.customize.description',
-        defaultMessage: 'Choose how aggressively Axolotl should update content in this instance.',
+        defaultMessage: 'Choose how aggressively StarryIsle should update content in this instance.',
     },
     newestTitle: {
         id: 'instance.upgrade.customize.newest.title',
@@ -390,7 +390,7 @@ const messages = defineMessages({
     customDescription: {
         id: 'instance.upgrade.customize.custom.description',
         defaultMessage:
-            'Fix exact versions for selected content and let Axolotl solve the remaining dependency graph.',
+            'Fix exact versions for selected content and let StarryIsle solve the remaining dependency graph.',
     },
     customConstraintCount: {
         id: 'instance.upgrade.customize.custom.constraint-count',
@@ -467,7 +467,7 @@ const messages = defineMessages({
     searchLimitBody: {
         id: 'instance.upgrade.customize.search-limit.body',
         defaultMessage:
-            "Axolotl couldn't find a solution within the search limit. Try relaxing one of your custom choices.",
+            "StarryIsle couldn't find a solution within the search limit. Try relaxing one of your custom choices.",
     },
     conflictTitle: {
         id: 'instance.upgrade.customize.conflict.title',

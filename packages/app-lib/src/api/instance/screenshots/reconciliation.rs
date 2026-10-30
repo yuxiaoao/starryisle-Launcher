@@ -8,7 +8,7 @@ use crate::state::instances::adapters::sqlite::screenshot_rows::{
 };
 use crate::util::fetch::sha1_file_async;
 use crate::util::io::IOError;
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, Local, NaiveDate, NaiveTime, TimeZone, Utc};
 use futures::stream::{self, StreamExt, TryStreamExt};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
@@ -150,11 +150,16 @@ fn scan_screenshots_dir(
         let metadata = entry
             .metadata()
             .map_err(|error| IOError::with_path(error, &path))?;
-        let created_at = metadata
-            .created()
-            .or_else(|_| metadata.modified())
-            .map(DateTime::<Utc>::from)
-            .map_err(|error| IOError::with_path(error, &path))?;
+        // Copying files resets the creation time, so the name and the last write
+        // time are both better sources than the creation time.
+        let created_at = screenshot_time_from_name(&file_name)
+            .or_else(|| metadata.modified().ok().map(DateTime::<Utc>::from))
+            .or_else(|| metadata.created().ok().map(DateTime::<Utc>::from))
+            .ok_or_else(|| {
+                crate::ErrorKind::InputError(
+                    "Screenshot has no usable timestamp".to_string(),
+                )
+            })?;
         let modified_at = metadata
             .modified()
             .map(DateTime::<Utc>::from)
@@ -307,4 +312,36 @@ pub(super) async fn reconcile_source_screenshots(
         .collect::<Vec<_>>();
     sort_screenshots(&mut screenshots);
     Ok(screenshots)
+}
+
+fn screenshot_time_from_name(file_name: &str) -> Option<DateTime<Utc>> {
+    let bytes = file_name.as_bytes();
+    let is_date_separator = |byte: u8| byte == b'-';
+    let mut index = 0;
+    while index + 19 <= bytes.len() {
+        let window = &bytes[index..index + 19];
+        let date_ok = window[0..4].iter().all(u8::is_ascii_digit)
+            && is_date_separator(window[4])
+            && window[5..7].iter().all(u8::is_ascii_digit)
+            && is_date_separator(window[7])
+            && window[8..10].iter().all(u8::is_ascii_digit)
+            && window[10] == b'_'
+            && window[11..13].iter().all(u8::is_ascii_digit)
+            && window[13] == b'.'
+            && window[14..16].iter().all(u8::is_ascii_digit)
+            && window[16] == b'.'
+            && window[17..19].iter().all(u8::is_ascii_digit);
+
+        if date_ok {
+            let candidate = &file_name[index..index + 19];
+            let date = NaiveDate::parse_from_str(&candidate[0..10], "%Y-%m-%d").ok()?;
+            let time = NaiveTime::parse_from_str(&candidate[11..19], "%H.%M.%S").ok()?;
+            let naive = date.and_time(time);
+            if let Some(local) = Local.from_local_datetime(&naive).single() {
+                return Some(DateTime::<Utc>::from(local));
+            }
+        }
+        index += 1;
+    }
+    None
 }

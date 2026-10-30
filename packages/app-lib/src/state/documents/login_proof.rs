@@ -60,11 +60,18 @@ impl LoginProofDocument {
 pub(crate) async fn read(
     documents: &Documents<'_>,
 ) -> crate::Result<Option<String>> {
-    let document = match documents
-        .stored::<LoginProofDocument>(DOCUMENT, SCHEMA_VERSION)
-        .await
+    let document = match documents.stored::<LoginProofDocument>(DOCUMENT).await
     {
-        Stored::Ready { document, .. } | Stored::Newer { document, .. } => {
+        Stored::Ready {
+            schema_version,
+            document,
+        } => {
+            if schema_version > SCHEMA_VERSION {
+                tracing::debug!(
+                    schema_version,
+                    "Reading a login proof document a newer build wrote"
+                );
+            }
             document
         }
         Stored::Missing | Stored::Unreadable => {
@@ -89,11 +96,10 @@ pub(crate) async fn read(
 
 /// Writes the document the row hands over to, unless one is already in place.
 pub(crate) async fn hand_over_if_missing(documents: &Documents<'_>) -> bool {
-    if documents
-        .stored::<LoginProofDocument>(DOCUMENT, SCHEMA_VERSION)
-        .await
-        .is_present()
-    {
+    if matches!(
+        documents.stored::<LoginProofDocument>(DOCUMENT).await,
+        Stored::Ready { .. }
+    ) {
         return true;
     }
     let mac =
@@ -154,12 +160,18 @@ async fn update(
 ) -> crate::Result<()> {
     let _writing = WRITES.lock().await;
     let mut document = match documents
-        .stored::<LoginProofDocument>(DOCUMENT, SCHEMA_VERSION)
+        .stored::<LoginProofDocument>(DOCUMENT)
         .await
     {
-        // A newer build owns the shape of this document: writing it would
-        // lower it to the keys this build knows.
-        Stored::Newer { .. } => return Ok(()),
+        Stored::Ready { schema_version, .. }
+            if schema_version > SCHEMA_VERSION =>
+        {
+            tracing::debug!(
+                schema_version,
+                "Leaving a login proof document a newer build wrote alone"
+            );
+            return Ok(());
+        }
         Stored::Ready { document, .. } => document,
         Stored::Missing | Stored::Unreadable => LoginProofDocument::default(),
     };

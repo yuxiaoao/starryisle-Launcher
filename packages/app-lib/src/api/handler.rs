@@ -570,7 +570,7 @@ async fn privileged_settings_payload(
     }
     Ok(CommandPayload::UpdateSettings {
         changes,
-        source: format!("axolotl://{sublink}"),
+        source: format!("starryisle://{sublink}"),
     })
 }
 
@@ -581,7 +581,7 @@ fn stop_payload(
     match instance_id {
         Some(instance_id) => Ok(CommandPayload::StopInstance {
             instance_id,
-            source: format!("axolotl://{sublink}"),
+            source: format!("starryisle://{sublink}"),
         }),
         None => Err(crate::ErrorKind::InputError(
             "Stop command requires an instance_id query parameter".to_string(),
@@ -608,7 +608,7 @@ pub async fn parse_command(
     command_string: &str,
 ) -> crate::Result<CommandPayload> {
     tracing::debug!("Parsing command: {}", &command_string);
-    if let Some(sublink) = command_string.strip_prefix("axolotl://") {
+    if let Some(sublink) = command_string.strip_prefix("starryisle://") {
         if !external_scheme_allowed().await {
             emit_warning("External links are disabled in settings").await?;
             return Err(crate::ErrorKind::InputError(
@@ -652,7 +652,7 @@ mod tests {
     async fn parses_launch_query_command() {
         let command =
             parse_command(
-                "axolotl://launch?instance_id=example%20instance&server=example.org%3A25565",
+                "starryisle://launch?instance_id=example%20instance&server=example.org%3A25565",
             )
             .await
             .unwrap();
@@ -666,23 +666,23 @@ mod tests {
     #[tokio::test]
     async fn parses_legacy_aliases() {
         assert!(matches!(
-            parse_command("axolotl://discovery").await.unwrap(),
+            parse_command("starryisle://discovery").await.unwrap(),
             CommandPayload::OpenRoute { path, .. } if path == "/browse/mod"
         ));
         assert!(matches!(
-            parse_command("axolotl://favorites?x=1").await.unwrap(),
+            parse_command("starryisle://favorites?x=1").await.unwrap(),
             CommandPayload::OpenRoute { path, query } if path == "/browse/favorites" && query == Some("x=1".to_string())
         ));
         assert!(matches!(
-            parse_command("axolotl://seed-map?seed=1").await.unwrap(),
+            parse_command("starryisle://seed-map?seed=1").await.unwrap(),
             CommandPayload::OpenRoute { path, query } if path == "/lab/seed-map" && query == Some("seed=1".to_string())
         ));
         assert!(matches!(
-            parse_command("axolotl://mod/sodium").await.unwrap(),
+            parse_command("starryisle://mod/sodium").await.unwrap(),
             CommandPayload::InstallMod { id } if id == "sodium"
         ));
         assert!(matches!(
-            parse_command("axolotl://launch/instance/my-pack?server=example.org").await.unwrap(),
+            parse_command("starryisle://launch/instance/my-pack?server=example.org").await.unwrap(),
             CommandPayload::LaunchInstance { id, server: Some(server), .. }
                 if id == "my-pack" && server == "example.org"
         ));
@@ -691,27 +691,27 @@ mod tests {
     #[tokio::test]
     async fn parses_unified_commands() {
         assert!(matches!(
-            parse_command("axolotl://project/sodium?tab=versions").await.unwrap(),
+            parse_command("starryisle://project/sodium?tab=versions").await.unwrap(),
             CommandPayload::OpenRoute { path, .. } if path == "/project/sodium/versions"
         ));
         assert!(matches!(
-            parse_command("axolotl://browse/mod?q=carpet").await.unwrap(),
+            parse_command("starryisle://browse/mod?q=carpet").await.unwrap(),
             CommandPayload::OpenRoute { path, query } if path == "/browse/mod" && query == Some("q=carpet".to_string())
         ));
         assert!(matches!(
-            parse_command("axolotl://instance/my-pack?tab=logs").await.unwrap(),
+            parse_command("starryisle://instance/my-pack?tab=logs").await.unwrap(),
             CommandPayload::OpenRoute { path, .. } if path == "/instance/my-pack/logs"
         ));
         assert!(matches!(
-            parse_command("axolotl://settings?tab=privacy-data").await.unwrap(),
+            parse_command("starryisle://settings?tab=privacy-data").await.unwrap(),
             CommandPayload::OpenSettings { tab: Some(tab), .. } if tab == "privacy-data"
         ));
         assert!(matches!(
-            parse_command("axolotl://open?path=/library/servers").await.unwrap(),
+            parse_command("starryisle://open?path=/library/servers").await.unwrap(),
             CommandPayload::OpenRoute { path, .. } if path == "/library/servers"
         ));
         assert!(matches!(
-            parse_command("axolotl://install?version=abc123").await.unwrap(),
+            parse_command("starryisle://install?version=abc123").await.unwrap(),
             CommandPayload::InstallVersion { id } if id == "abc123"
         ));
     }

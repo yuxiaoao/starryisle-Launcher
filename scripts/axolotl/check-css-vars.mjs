@@ -72,10 +72,7 @@ allow('runtime-set', [
         'custom-accent-light',
         'apps/app-frontend/src/store/theme.ts setProperty `--custom-accent-light`',
     ],
-    [
-        'custom-accent-dark',
-        'apps/app-frontend/src/store/theme.ts setProperty `--custom-accent-dark`',
-    ],
+    ['custom-accent-dark', 'apps/app-frontend/src/store/theme.ts setProperty `--custom-accent-dark`'],
     [
         'custom-bg-page-alpha-setting',
         'apps/app-frontend/src/store/theme.ts setProperty `--custom-bg-page-alpha-setting`',
@@ -83,10 +80,6 @@ allow('runtime-set', [
     [
         'custom-bg-component-alpha-setting',
         'apps/app-frontend/src/store/theme.ts setProperty `--custom-bg-component-alpha-setting`',
-    ],
-    [
-        'floating-action-bar-clearance',
-        'packages/ui/src/components/base/FloatingActionBar.vue updateFloatingActionBarDocumentState setProperty `--floating-action-bar-clearance` on document.documentElement',
     ],
     [
         'floating-action-bar-left-offset',

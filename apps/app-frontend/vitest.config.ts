@@ -76,8 +76,7 @@ export default defineConfig({
         }),
     ],
     optimizeDeps: {
-        // Mock factories can reveal dependencies after the initial scan. Include
-        // them up front so re-optimization cannot reload an active browser test.
+        // UI mock factories load this dependency after Vite's initial scan.
         include: [
             'deepslate/nbt',
             'deepslate/util',
@@ -87,9 +86,6 @@ export default defineConfig({
             '@tauri-apps/api/app',
             '@tauri-apps/api/path',
             '@tauri-apps/plugin-http',
-            '@tauri-apps/plugin-window-state',
-            '@modrinth/api-client > mitt',
-            'ofetch',
             'vue-i18n',
         ],
     },

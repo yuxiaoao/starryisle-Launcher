@@ -79,15 +79,11 @@ access-jwt*.txt
 # Codex local verification artifacts
 /.codex-*
 
-# Local agent artifacts and caches; keep maintained instructions and Skills tracked.
-# `.agents/plans/` is the single home for agent intermediate and archived
-# artifacts, so a plain `git add` never picks them up.
+# Local agent/scratch caches; keep maintained instructions and Skills tracked.
 /.dev-data/
 /.commandcode/
-/.agents/plans/
 /.agents/tmp/
 /.agents/cache/
-/.agents/plans/
 
 # Oh My Code
 .omc/
@@ -122,14 +118,15 @@ apps/app/resources/blockbench-skin/
 # Vitest visual-regression screenshots
 **/__screenshots__/
 
-# Playwright failure artifacts (traces, error contexts, reports)
-**/test-results/
-**/playwright-report/
-
 #local development script
 start-dev.ps1
 
-# WorkBuddy local workspace data
-.workbuddy-ai/
-
 apps/app/resources/seed-map/
+# --- local build artifacts / secrets (added for the StarryIsle fork) ---
+.gradle/
+**/.gradle/
+*.pfx
+*.cer
+*.orig*
+apps/app/gen/schemas/
+third-party/blockbench/

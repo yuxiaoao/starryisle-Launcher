@@ -108,7 +108,6 @@ import { minecraftLaunchErrorKey } from '@/composables/useMinecraftLaunchError'
 import { setupMojangAuthMonitor, useMojangAuthStatus } from '@/composables/useMojangAuth'
 import { useNetworkStatus } from '@/composables/useNetworkStatus'
 import { AxolotlBrandConfig, config, getOfficialLabrinthBaseUrl } from '@/config'
-import { startMcpUiBridge } from '@/features/mcp/interface'
 import McpConnectionOverlay from '@/features/mcp/McpConnectionOverlay.vue'
 import { startMcpStateSync } from '@/features/mcp/runtime'
 import { trackEvent } from '@/helpers/analytics'
@@ -205,11 +204,26 @@ import { setupAuthProvider } from '@/providers/setup/auth'
 import { setupLoadingStateProvider } from '@/providers/setup/loading-state'
 import { useError } from '@/store/error.js'
 import { useTheming } from '@/store/state'
+import { applyBarTint, HUE_TINT_STORAGE_KEY } from '@/store/theme'
 
 import { AppNotificationManager } from './providers/app-notifications'
 import { AppPopupNotificationManager } from './providers/app-popup-notifications'
 
 const themeStore = useTheming()
+
+try {
+    const storedHue = localStorage.getItem(HUE_TINT_STORAGE_KEY)
+    if (storedHue !== null) themeStore.setHueTint(Number(storedHue))
+} catch {
+    // ignore unavailable storage
+}
+
+applyBarTint(themeStore.hueTint)
+
+watch(
+    () => themeStore.selectedTheme,
+    () => applyBarTint(themeStore.hueTint),
+)
 /** While a dialog is open no shortcut fires, including the one being recorded. */
 const { hasModal } = useModalStack()
 const router = useRouter()
@@ -311,14 +325,6 @@ providePopupNotificationManager(popupNotificationManager)
 const { addPopupNotification } = popupNotificationManager
 
 const appVersion = getVersion()
-const isBetaBuild = ref(false)
-void appVersion
-    .then((version) => {
-        isBetaBuild.value = version.includes('-beta')
-    })
-    .catch((error) => {
-        console.warn('Failed to read the app version for the Beta label', error)
-    })
 const tauriApiClient = new TauriModrinthClient({
     userAgent: async () => AxolotlBrandConfig.userAgent(await appVersion, await getOsType()),
     labrinthBaseUrl: config.labrinthBaseUrl,
@@ -1027,7 +1033,7 @@ const messages = defineMessages({
     runningAsAdmin: {
         id: 'app.warning.running-as-admin',
         defaultMessage:
-            'Axolotl is running as administrator. Drag-and-drop file import is disabled in this mode; please restart the launcher without administrator privileges.',
+            'StarryIsle is running as administrator. Drag-and-drop file import is disabled in this mode; please restart the launcher without administrator privileges.',
     },
     restarting: {
         id: 'app.restarting',
@@ -1035,7 +1041,7 @@ const messages = defineMessages({
     },
     closeLauncherTitle: {
         id: 'app.close-launcher.title',
-        defaultMessage: 'Choose how to close Axolotl Launcher',
+        defaultMessage: 'Choose how to close StarryIsle Launcher',
     },
     closeLauncherDirect: {
         id: 'app.close-launcher.direct',
@@ -1563,13 +1569,8 @@ async function setupApp() {
     await localePreparation
     stateInitialized.value = true
     const stopMcpSync = await startMcpStateSync()
-    const stopMcpUi = await startMcpUiBridge(router)
-    const stopMcp = () => {
-        stopMcpUi()
-        stopMcpSync()
-    }
-    if (appUnmounted) stopMcp()
-    else stopMcpStateSync = stopMcp
+    if (appUnmounted) stopMcpSync()
+    else stopMcpStateSync = stopMcpSync
     if (privacyConsentPending.value) {
         await nextTick()
         privacyConsentModal.value?.show({
@@ -2537,11 +2538,11 @@ const updatePopupMessages = defineMessages({
     },
     meteredBody: {
         id: 'app.update-popup.body.metered',
-        defaultMessage: `Axolotl Launcher v{version} is available now! Since you're on a metered network, we didn't automatically download it.`,
+        defaultMessage: `StarryIsle Launcher v{version} is available now! Since you're on a metered network, we didn't automatically download it.`,
     },
     downloadedBody: {
         id: 'app.update-popup.body.download-complete',
-        defaultMessage: `Axolotl Launcher v{version} has finished downloading. Reload to update now, or automatically when you close Axolotl Launcher.`,
+        defaultMessage: `StarryIsle Launcher v{version} has finished downloading. Reload to update now, or automatically when you close StarryIsle Launcher.`,
     },
     reload: {
         id: 'app.update-popup.reload',
@@ -2979,7 +2980,7 @@ provideAppUpdateDownloadProgress(appUpdateDownload)
         />
         <UnknownPackWarningModal ref="unknownPackWarningModal" />
         <div
-            class="app-grid-navbar bg-surface-bar flex flex-col p-[0.5rem] pt-0 gap-[0.5rem] w-[--left-bar-width] overflow-hidden"
+            class="app-grid-navbar flex flex-col p-[0.5rem] pt-0 gap-[0.5rem] w-[--left-bar-width] overflow-hidden"
         >
             <NavRail>
                 <NavButton
@@ -3134,7 +3135,7 @@ provideAppUpdateDownloadProgress(appUpdateDownload)
         </div>
         <AppTitlebar
             ref="titlebar"
-            class="app-grid-statusbar bg-surface-bar h-[--top-bar-height]"
+            class="app-grid-statusbar h-[--top-bar-height]"
             :is-beta-build="isBetaBuild"
         >
             <div class="flex min-w-0 mr-3">
@@ -3618,7 +3619,7 @@ provideAppUpdateDownloadProgress(appUpdateDownload)
     grid-template-rows: auto 1fr;
     position: relative;
     //z-index: 0;
-    background-color: var(--surface-3);
+    background-color: var(--app-shell-bg, var(--surface-3));
     height: 100vh;
 }
 
@@ -3661,13 +3662,10 @@ provideAppUpdateDownloadProgress(appUpdateDownload)
     background-color: transparent;
 }
 
-.app-grid-layout.has-custom-background,
-.app-grid-layout.has-transparent-background:not(.has-native-decorations) {
-    &:not(.is-maximized) {
-        border-radius: 8px;
-        clip-path: inset(0 round 8px);
-        overflow: hidden;
-    }
+.app-grid-layout:not(.has-native-decorations):not(.is-maximized) {
+    border-radius: 8px;
+    clip-path: inset(0 round 8px);
+    overflow: hidden;
 }
 
 .app-grid-layout.has-custom-background {
@@ -3679,6 +3677,14 @@ provideAppUpdateDownloadProgress(appUpdateDownload)
 
         backdrop-filter: none;
         -webkit-backdrop-filter: none;
+    }
+
+    .app-grid-navbar {
+        background-color: var(--app-nav-bg, var(--surface-3)) !important;
+    }
+
+    .app-grid-statusbar {
+        background-color: var(--app-top-bg, var(--surface-3)) !important;
     }
 }
 
@@ -4072,5 +4078,14 @@ body.modrinth-console-fullscreen-active .app-sidebar {
     .profile-card {
         right: 8rem;
     }
+}
+
+/* Interface hue paints the nav rail and title bar. */
+.app-grid-navbar {
+    background-color: var(--app-nav-bg, var(--surface-bar));
+}
+
+.app-grid-statusbar {
+    background-color: var(--app-top-bg, var(--surface-bar));
 }
 </style>

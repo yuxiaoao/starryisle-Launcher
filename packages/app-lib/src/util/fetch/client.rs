@@ -120,7 +120,6 @@ pub(crate) struct DownloadClients {
     pub(crate) http1_system: reqwest::Client,
     pub(crate) http1_direct: reqwest::Client,
     pub(crate) proxy: crate::util::proxy::ProxyConfig,
-    pub(crate) native_proxy: Arc<hyper_util::client::proxy::matcher::Matcher>,
     pub(crate) ignore_ssl_errors: bool,
     pub(crate) scope: String,
     pub(crate) system_dns: Arc<DownloadDnsResolver>,
@@ -178,7 +177,14 @@ impl DownloadClients {
             } else {
                 Arc::clone(&system_dns)
             });
-            let builder = if http1 { builder.http1_only() } else { builder };
+            let builder = if http1
+                || !direct
+                    && proxy.mode == crate::util::proxy::ProxyMode::Custom
+            {
+                builder.http1_only()
+            } else {
+                builder
+            };
             let builder = if direct {
                 builder.no_proxy()
             } else {
@@ -210,7 +216,6 @@ impl DownloadClients {
             http1_system: build(false, true)?,
             http1_direct: build(true, true)?,
             proxy: proxy.clone(),
-            native_proxy: proxy.native_matcher()?,
             ignore_ssl_errors,
             scope: crate::util::download::proxy_context::fingerprint_with_doh(
                 proxy,
@@ -250,9 +255,6 @@ impl DownloadClients {
             http1_system: HTTP1_NO_REDIRECT_REQWEST_CLIENT.clone(),
             http1_direct: HTTP1_DIRECT_REQWEST_CLIENT.clone(),
             proxy: Default::default(),
-            native_proxy: crate::util::proxy::ProxyConfig::default()
-                .native_matcher()
-                .expect("system proxy matcher should be valid"),
             ignore_ssl_errors: false,
             scope: FETCH_UNCONFIGURED.into(),
             system_dns: Arc::clone(&DOWNLOAD_DNS_RESOLVER),

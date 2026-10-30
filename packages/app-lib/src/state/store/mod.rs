@@ -40,7 +40,6 @@ pub(crate) mod instance_sync_preferences;
 pub(crate) mod java_default_versions;
 pub(crate) mod java_versions;
 pub(crate) mod join_log;
-pub(crate) mod maintenance;
 pub(crate) mod minecraft_device_tokens;
 pub(crate) mod minecraft_users;
 pub(crate) mod modrinth_users;
@@ -80,7 +79,7 @@ pub(crate) mod telemetry_outbox;
 pub(crate) mod translation_cache;
 
 #[cfg(test)]
-pub(crate) mod tests;
+mod tests;
 
 use sqlx::{Sqlite, SqliteConnection, SqlitePool};
 

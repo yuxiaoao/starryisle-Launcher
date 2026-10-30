@@ -170,7 +170,6 @@ async function mountTitlebar(withActionBar = false) {
                 h(
                     AppTitlebar,
                     {
-                        isBetaBuild: true,
                         style: { width: `${width.value}px`, height: '3rem', paddingLeft: '5rem' },
                     },
                     {

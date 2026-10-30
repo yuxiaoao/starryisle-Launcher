@@ -66,7 +66,7 @@
     "message": "Erweitertes Rendering"
   },
   "app.appearance-settings.color-theme.description": {
-    "message": "Wähle dein bevorzugtes Farbschema für die Axolotl Launcher."
+    "message": "Wähle dein bevorzugtes Farbschema für die StarryIsle Launcher."
   },
   "app.appearance-settings.color-theme.title": {
     "message": "Farbschema"
@@ -486,10 +486,10 @@
     "message": "Anmelden"
   },
   "app.skins.sign-in.description": {
-    "message": "Bitte melde dich in deinem Minecraft-Konto an, um die Skin-Verwaltungsfunktionen der Axolotl Launcher zu nutzen."
+    "message": "Bitte melde dich in deinem Minecraft-Konto an, um die Skin-Verwaltungsfunktionen der StarryIsle Launcher zu nutzen."
   },
   "app.skins.sign-in.axolotl-alt": {
-    "message": "Axolotl Launcher"
+    "message": "StarryIsle Launcher"
   },
   "app.skins.sign-in.title": {
     "message": "Bitte anmelden"
@@ -498,10 +498,10 @@
     "message": "Skin-Auswahl"
   },
   "app.update-popup.body.download-complete": {
-    "message": "Axolotl Launcher v{version} wurde heruntergeladen. Lade die App neu um jetzt zu aktualisieren, oder automatisch nach dem schliessen der Axolotl Launcher."
+    "message": "StarryIsle Launcher v{version} wurde heruntergeladen. Lade die App neu um jetzt zu aktualisieren, oder automatisch nach dem schliessen der StarryIsle Launcher."
   },
   "app.update-popup.body.metered": {
-    "message": "Axolotl Launcher v{version} ist jetzt verfügbar! Da du in einem begrenzten Netzwerk bist, haben wir es nicht automatisch heruntergeladen."
+    "message": "StarryIsle Launcher v{version} ist jetzt verfügbar! Da du in einem begrenzten Netzwerk bist, haben wir es nicht automatisch heruntergeladen."
   },
   "app.update-popup.changelog": {
     "message": "Änderungen"

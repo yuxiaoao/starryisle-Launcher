@@ -8,14 +8,9 @@ import McpConnectionStatus from '@/features/mcp/McpConnectionStatus.vue'
 import AxolotlLogo from './AxolotlLogo.vue'
 import Breadcrumbs from './Breadcrumbs.vue'
 
-defineProps<{
-    isBetaBuild?: boolean
-}>()
-
 const router = useRouter()
 const { formatMessage } = useVIntl()
 const messages = defineMessages({
-    betaBuild: { id: 'app.build.beta', defaultMessage: 'Beta' },
     forward: { id: 'app.navigation.forward', defaultMessage: 'Forward' },
 })
 </script>
@@ -24,12 +19,6 @@ const messages = defineMessages({
     <div data-tauri-drag-region class="flex min-w-0 items-center">
         <div data-tauri-drag-region class="flex h-full shrink-0 items-center gap-2 p-3">
             <AxolotlLogo class="h-full w-auto shrink-0 pointer-events-none" />
-            <span
-                v-if="isBetaBuild"
-                class="inline-flex shrink-0 rounded-full bg-blue-100 px-2 py-0.5 text-xs font-semibold leading-none text-blue-700"
-            >
-                {{ formatMessage(messages.betaBuild) }}
-            </span>
         </div>
         <div class="flex shrink-0 items-center gap-1" data-tauri-drag-region-exclude>
             <button

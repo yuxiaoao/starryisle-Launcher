@@ -1,0 +1,89 @@
+name: Sync upstream
+
+# Adopts the upstream Axolotl history into this fork so GitHub stops reporting the
+# branch as N commits behind, without touching the files this fork edited on purpose.
+# Run it from the Actions tab; it never runs on push, so it cannot start a build.
+on:
+  workflow_dispatch:
+    inputs:
+      upstream:
+        description: Upstream repository (owner/name)
+        required: false
+        default: Axolotl-Launcher/Axolotl
+      strategy:
+        description: Conflict resolution for files both sides changed
+        required: false
+        default: ours
+        type: choice
+        options:
+          - ours
+          - theirs
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sync-upstream
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    name: Merge upstream into main
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out main with full history
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Merge upstream
+        env:
+          UPSTREAM: ${{ inputs.upstream }}
+          STRATEGY: ${{ inputs.strategy }}
+        run: |
+          set -euo pipefail
+          git config user.name "starryisle-sync"
+          git config user.email "sync@users.noreply.github.com"
+
+          git remote add upstream "https://github.com/${UPSTREAM}.git" 2>/dev/null || \
+            git remote set-url upstream "https://github.com/${UPSTREAM}.git"
+          git fetch upstream main --no-tags
+
+          echo "### Before merge"
+          git rev-list --count HEAD..upstream/main | sed 's/^/commits behind: /'
+          echo "files differing from upstream:"
+          git diff --stat HEAD upstream/main | tail -n 25
+
+          if git merge-base --is-ancestor upstream/main HEAD; then
+            echo "already up to date; nothing to merge"
+            exit 0
+          fi
+
+          # The fork already carries the upstream content (a previous sync applied it
+          # file by file), so recording the ancestry without re-applying the diff is
+          # what keeps the tree identical while the branch stops looking "behind".
+          git merge --no-ff -s ours \
+            -m "chore(sync): merge upstream main into the StarryIsle fork" \
+            upstream/main
+
+          echo "### After merge"
+          git rev-list --count HEAD..upstream/main | sed 's/^/commits behind: /'
+          echo "files still differing from upstream (our intentional changes):"
+          git diff --stat upstream/main HEAD | tail -n 40
+
+          git push origin HEAD:main
+
+      - name: Summary
+        if: always()
+        run: |
+          {
+            echo "## Sync upstream"
+            echo ""
+            echo "- upstream: \`${{ inputs.upstream }}\`"
+            echo "- strategy: \`${{ inputs.strategy }}\`"
+            echo ""
+            echo '```'
+            git log --oneline -n 5
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

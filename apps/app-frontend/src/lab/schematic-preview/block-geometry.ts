@@ -7,7 +7,7 @@ import {
 } from 'deepslate'
 
 import type { SchematicBlockState } from './backend'
-import { getSchematicSpecialBlockMesh, getSchematicWaterloggedFluidMesh } from './meshing'
+import { getSchematicSpecialBlockMesh } from './meshing'
 
 export type BlockGeometryResources = {
     blockDefinitions: Record<string, unknown>
@@ -50,14 +50,13 @@ export function createBlockGeometry(
             warnings.push(`Skipped unresolved block model ${id}`)
         }
     }
-    const blockProperties = (state: SchematicBlockState) => ({
-        ...(resources.defaultBlockProperties[state.name] ?? {}),
-        ...state.properties,
-    })
     return {
         warnings,
         mesh(state: SchematicBlockState, cull: Cull) {
-            const properties = blockProperties(state)
+            const properties = {
+                ...(resources.defaultBlockProperties[state.name] ?? {}),
+                ...state.properties,
+            }
             const definition = definitions[state.name]
             if (definition) {
                 const mesh = definition.getMesh(
@@ -69,21 +68,7 @@ export function createBlockGeometry(
                 )
                 if (mesh.quads.length) return mesh
             }
-            // Waterlogged fluid is meshed by `water`, so the fallback must not add its own.
-            const fallbackProperties = { ...properties }
-            delete fallbackProperties.waterlogged
-            return getSchematicSpecialBlockMesh(
-                { ...state, properties: fallbackProperties },
-                atlas,
-                cull,
-            )
-        },
-        water(state: SchematicBlockState, cull: Cull) {
-            return getSchematicWaterloggedFluidMesh(
-                { ...state, properties: blockProperties(state) },
-                atlas,
-                cull,
-            )
+            return getSchematicSpecialBlockMesh({ ...state, properties }, atlas, cull)
         },
     }
 }

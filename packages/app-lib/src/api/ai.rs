@@ -296,9 +296,8 @@ const PROVIDERS: &[AiProviderDefinition] = &[
         true,
         ["account_id"]
     ),
-    // Sponsored listing; scripts/axolotl/sync-lobehub-models.mjs syncs its
-    // models from CodeFlow's public pricing API instead of LobeHub. See
-    // SPONSORED_PROVIDERS.
+    // Sponsored listing; kept out of LobeHub syncs by
+    // scripts/axolotl/sync-lobehub-models.mjs. See SPONSORED_PROVIDERS.
     provider!(
         "codeflow",
         "CodeFlow",
@@ -1540,33 +1539,21 @@ fn models_from_document(
     document: &AiDocument,
     provider_id: &str,
 ) -> Vec<AiProviderModel> {
-    let stored = document
+    let mut stored = document
         .models
         .iter()
         .filter(|model| model.provider_id == provider_id)
-        .map(|model| AiProviderModel {
-            id: model.model_id.clone(),
-            name: model.display_name.clone(),
-            enabled: model.enabled,
-            source: model.source.clone(),
+        .map(|model| {
+            let model = AiProviderModel {
+                id: model.model_id.clone(),
+                name: model.display_name.clone(),
+                enabled: model.enabled,
+                source: model.source.clone(),
+            };
+            (model.id.clone(), model)
         })
-        .collect();
-    merge_provider_models(builtin_models(provider_id), stored)
-}
-
-/// Overlays saved rows on the bundled models. A `builtin` row only records a
-/// toggle or rename of a bundled model, so once a catalog sync drops that model
-/// the row is ignored rather than resurfacing a model the provider may no
-/// longer serve. Custom and fetched rows are the user's own and are kept.
-fn merge_provider_models(
-    bundled: &[BuiltinModel],
-    stored: Vec<AiProviderModel>,
-) -> Vec<AiProviderModel> {
-    let mut stored = stored
-        .into_iter()
-        .map(|model| (model.id.clone(), model))
         .collect::<HashMap<_, _>>();
-    let mut models = bundled
+    let mut models = builtin_models(provider_id)
         .iter()
         .map(|builtin| {
             let saved = stored.remove(&builtin.id);
@@ -1584,10 +1571,7 @@ fn merge_provider_models(
             }
         })
         .collect::<Vec<_>>();
-    let mut additional = stored
-        .into_values()
-        .filter(|model| model.source != "builtin")
-        .collect::<Vec<_>>();
+    let mut additional = stored.into_values().collect::<Vec<_>>();
     additional.sort_by(|left, right| {
         left.name
             .cmp(&right.name)
@@ -3867,43 +3851,6 @@ mod tests {
                 .collect::<Vec<_>>(),
             ["codeflow", "fastai"]
         );
-    }
-
-    #[test]
-    fn saved_rows_of_models_dropped_from_the_catalog_are_ignored() {
-        let builtin = [BuiltinModel {
-            id: "kept".to_string(),
-            name: "Kept".to_string(),
-            enabled: true,
-        }];
-        let saved = |id: &str, name: &str, source: &str| AiProviderModel {
-            id: id.to_string(),
-            name: name.to_string(),
-            enabled: false,
-            source: source.to_string(),
-        };
-        let models = merge_provider_models(
-            &builtin,
-            vec![
-                saved("kept", "Renamed", "builtin"),
-                saved("dropped", "Dropped", "builtin"),
-                saved("fetched", "Fetched", "remote"),
-                saved("added", "Added", "custom"),
-            ],
-        );
-        assert_eq!(
-            models
-                .iter()
-                .map(|model| (model.id.as_str(), model.source.as_str()))
-                .collect::<Vec<_>>(),
-            [
-                ("kept", "builtin"),
-                ("added", "custom"),
-                ("fetched", "remote")
-            ]
-        );
-        assert_eq!(models[0].name, "Renamed");
-        assert!(!models[0].enabled);
     }
 
     #[test]

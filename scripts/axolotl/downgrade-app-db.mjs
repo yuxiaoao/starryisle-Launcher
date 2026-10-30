@@ -56,6 +56,8 @@ const CHANNELS = ['release', 'beta']
 // Only recent migrations are listed. Dropping to a threshold before them is
 // refused rather than guessed at; --allow-unmapped accepts the risk explicitly.
 const REVERTIBLE_SCHEMA = {
+    // Screenshot notes live in their own table keyed by instance + file name
+    20261027000000: { tables: ['screenshot_notes'] },
     // settings.default_game_language
     20261103120000: {
         columns: [{ table: 'settings', column: 'default_game_language' }],

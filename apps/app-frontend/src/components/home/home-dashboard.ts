@@ -1,4 +1,4 @@
-export const HOME_DASHBOARD_VERSION = 1 as const
+export const HOME_DASHBOARD_VERSION = 2 as const
 export const HOME_WIDGET_LAYOUTS = ['grid', 'free'] as const
 export const HOME_WIDGET_STANDARD_SIZES = ['1x1', '2x1', '1x2', '2x2'] as const
 export const HOME_WIDGET_SIZES = [...HOME_WIDGET_STANDARD_SIZES, '2x3', '3x1', '3x2'] as const
@@ -32,12 +32,33 @@ export type HomeWidgetKind =
     | 'greeting'
     | 'recent'
     | 'calendar'
+    | 'weather'
     | 'pinned-instances'
     | 'pinned-worlds'
     | 'pinned-servers'
     | 'instance'
     | 'world'
     | 'server'
+
+/** A city the weather widget can be pointed at. Coordinates come from Open-Meteo. */
+export type HomeWeatherCity = {
+    id: string
+    name: string
+    region?: string
+    latitude: number
+    longitude: number
+}
+
+export const HOME_WEATHER_DEFAULT_CITY: HomeWeatherCity = {
+    id: 'hangzhou',
+    name: '杭州',
+    region: '浙江省',
+    latitude: 30.2741,
+    longitude: 120.1551,
+}
+
+/** How often the weather card refetches while it stays open. */
+export const HOME_WEATHER_REFRESH_MS = 15 * 60 * 1000
 
 export type HomeWidgetTarget = {
     instanceId: string
@@ -63,6 +84,7 @@ export type HomeWidgetOptions = {
     greetingFont?: HomeGreetingFont
     greetingFontSize?: number
     greetingOverrides?: Record<string, HomeGreetingOverride>
+    weatherCity?: HomeWeatherCity
 }
 
 export type HomeWidgetPosition = {
@@ -101,6 +123,7 @@ export const HOME_WIDGET_SIZE_OPTIONS: Record<HomeWidgetKind, readonly HomeWidge
     greeting: ['2x1'],
     recent: ['2x1', '2x2', '2x3', '3x1', '3x2'],
     calendar: ['1x2'],
+    weather: ['2x1', '1x2', '2x2'],
     'pinned-instances': HOME_WIDGET_STANDARD_SIZES,
     'pinned-worlds': HOME_WIDGET_STANDARD_SIZES,
     'pinned-servers': HOME_WIDGET_STANDARD_SIZES,
@@ -113,6 +136,7 @@ export const HOME_WIDGET_DEFAULT_SIZE: Record<HomeWidgetKind, HomeWidgetSize> = 
     greeting: '2x1',
     recent: '2x2',
     calendar: '1x2',
+    weather: '2x1',
     'pinned-instances': '2x2',
     'pinned-worlds': '1x2',
     'pinned-servers': '1x2',
@@ -145,6 +169,7 @@ function createPlacement(
         kind,
         size,
         ...(kind === 'recent' ? { options: { recentLimit: HOME_RECENT_DEFAULT_LIMIT } } : {}),
+        ...(kind === 'weather' ? { options: { weatherCity: { ...HOME_WEATHER_DEFAULT_CITY } } } : {}),
         ...(kind === 'greeting'
             ? {
                   options: {
@@ -162,11 +187,14 @@ export function createDefaultHomeDashboard(includeRecent = true): HomeDashboardC
         version: HOME_DASHBOARD_VERSION,
         layout: 'grid',
         widgets: [
+            // Row 1-2: greeting occupies the first two columns, the pinned-worlds
+            // card sits in the third column and spans both rows. The weather card
+            // is placed last so it lands directly under the pinned worlds.
             createPlacement('greeting'),
-            createPlacement('calendar'),
-            ...(includeRecent ? [createPlacement('recent')] : []),
-            createPlacement('pinned-worlds'),
-            createPlacement('pinned-servers', '2x2'),
+            createPlacement('pinned-worlds', '1x2'),
+            createPlacement('pinned-servers', '2x1'),
+            ...(includeRecent ? [createPlacement('recent', '2x1')] : []),
+            createPlacement('weather', '1x2'),
             createPlacement('pinned-instances', '2x1'),
         ],
     }
@@ -238,7 +266,30 @@ function normalizeOptions(kind: HomeWidgetKind, value: unknown): HomeWidgetOptio
         }
     }
 
+    if (kind === 'weather') {
+        const city = isRecord(value) ? normalizeWeatherCity(value.weatherCity) : null
+        return { weatherCity: city ?? { ...HOME_WEATHER_DEFAULT_CITY } }
+    }
+
     return undefined
+}
+
+function normalizeWeatherCity(value: unknown): HomeWeatherCity | null {
+    if (!isRecord(value)) return null
+    const name = typeof value.name === 'string' ? value.name.trim().slice(0, 80) : ''
+    const latitude = Number(value.latitude)
+    const longitude = Number(value.longitude)
+    if (!name || !Number.isFinite(latitude) || !Number.isFinite(longitude)) return null
+    if (Math.abs(latitude) > 90 || Math.abs(longitude) > 180) return null
+    return {
+        id: typeof value.id === 'string' ? value.id : `${latitude},${longitude}`,
+        name,
+        ...(typeof value.region === 'string' && value.region.trim()
+            ? { region: value.region.trim().slice(0, 80) }
+            : {}),
+        latitude,
+        longitude,
+    }
 }
 
 function normalizeGreetingOverride(value: unknown): HomeGreetingOverride | null {
@@ -301,6 +352,7 @@ export function normalizeHomeDashboard(value: unknown): HomeDashboardConfig | nu
     const widgets = value.widgets.flatMap((candidate): HomeWidgetPlacement[] => {
         if (!isRecord(candidate) || typeof candidate.kind !== 'string') return []
         if (!HOME_WIDGET_KINDS.has(candidate.kind as HomeWidgetKind)) return []
+        if (candidate.kind === 'calendar') return []
 
         const kind = candidate.kind as HomeWidgetKind
         const target = normalizeTarget(candidate.target)
@@ -399,6 +451,21 @@ export function setHomeRecentLimit(
         config.widgets.map((widget) =>
             widget.id === id && widget.kind === 'recent'
                 ? { ...widget, options: { ...widget.options, recentLimit } }
+                : widget,
+        ),
+    )
+}
+
+export function setHomeWeatherCity(
+    config: HomeDashboardConfig,
+    id: string,
+    city: HomeWeatherCity,
+): HomeDashboardConfig {
+    return replaceHomeDashboardWidgets(
+        config,
+        config.widgets.map((widget) =>
+            widget.id === id && widget.kind === 'weather'
+                ? { ...widget, options: { ...widget.options, weatherCity: city } }
                 : widget,
         ),
     )

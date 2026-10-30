@@ -4566,7 +4566,7 @@
     "message": "缓存"
   },
   "drop.symlink_method.stats_cache_tooltip": {
-    "message": "Axolotl 缓存"
+    "message": "StarryIsle 缓存"
   },
   "drop.symlink_method.stats_local": {
     "message": "复用"
@@ -4807,5 +4807,38 @@
   },
   "version.uploaded-by": {
     "message": "上传者"
+  },
+  "drop.symlink_method.title": {
+    "message": "选择导入方式"
+  },
+  "drop.symlink_method.copy_title": {
+    "message": "复制文件"
+  },
+  "drop.symlink_method.copy_desc": {
+    "message": "复制到 StarryIsle 目录"
+  },
+  "drop.symlink_method.symlink_title": {
+    "message": "符号链接"
+  },
+  "drop.symlink_method.symlink_desc": {
+    "message": "引用原始位置"
+  },
+  "drop.symlink_method.requires_admin": {
+    "message": "创建链接时将请求一次管理员授权（UAC）"
+  },
+  "drop.symlink_method.unsupported_warning": {
+    "message": "此系统不支持符号链接"
+  },
+  "drop.symlink_method.game-dir.isolated": {
+    "message": "版本隔离"
+  },
+  "drop.symlink_method.game-dir.label": {
+    "message": "游戏目录"
+  },
+  "drop.symlink_method.game-dir.not-isolated": {
+    "message": "版本共享（.minecraft/）"
+  },
+  "drop.symlink_method.method": {
+    "message": "导入方式"
   }
 }

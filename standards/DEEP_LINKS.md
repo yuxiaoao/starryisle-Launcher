@@ -1,9 +1,9 @@
-# axolotl:// URL Scheme 规范
+# starryisle:// URL Scheme 规范
 
 ## 结构总览
 
 ```
-axolotl://<命名空间>[/<动作>/<标识>][?<参数>]
+starryisle://<命名空间>[/<动作>/<标识>][?<参数>]
 ```
 
 - 命名空间小写；标识保持原样（URL 编码）；参数 UTF-8 编码
@@ -11,7 +11,7 @@ axolotl://<命名空间>[/<动作>/<标识>][?<参数>]
 - **副作用类**走 `launch` / `install` / `join`（需用户确认）
 - **特权写操作**走 `settings/set` / `stop`（双闸开关 + 启用时 10 秒强制阅读授权，之后直接执行，见 §6）
 - **纯导航**走各命名空间或通用 `open`（仅白名单路径）
-- 关闭“允许外部链接”开关后，所有 axolotl:// 仅提示不执行
+- 关闭“允许外部链接”开关后，所有 starryisle:// 仅提示不执行
 
 ---
 
@@ -19,16 +19,16 @@ axolotl://<命名空间>[/<动作>/<标识>][?<参数>]
 
 | 链接 | 说明 | 必填 | 可选 |
 |---|---|---|---|
-| `axolotl://launch?instance_id=<id>` | 启动实例 | `instance_id` | `server`、`singleplayer_world`（二选一） |
-| `axolotl://join?instance_id=<id>&server=<addr>` | 启动并进服/进存档 | `instance_id` + (`server` 或 `singleplayer_world`) | |
-| `axolotl://install?project=<id>` | 安装内容（默认 mod） | `project` | `kind=modpack/server`、`version`（精确版本） |
-| `axolotl://install?version=<版本ID>` | 直接安装指定版本 | `version` | |
+| `starryisle://launch?instance_id=<id>` | 启动实例 | `instance_id` | `server`、`singleplayer_world`（二选一） |
+| `starryisle://join?instance_id=<id>&server=<addr>` | 启动并进服/进存档 | `instance_id` + (`server` 或 `singleplayer_world`) | |
+| `starryisle://install?project=<id>` | 安装内容（默认 mod） | `project` | `kind=modpack/server`、`version`（精确版本） |
+| `starryisle://install?version=<版本ID>` | 直接安装指定版本 | `version` | |
 
 > **旧别名（行为完全一致，仅为兼容）：**  
-> `axolotl://mod/<id>` → `install?project=<id>&kind=mod`  
-> `axolotl://modpack/<id>` → `install?project=<id>&kind=modpack`  
-> `axolotl://server/<id>` → `install?project=<id>&kind=server`  
-> `axolotl://version/<vid>` → `install?version=<vid>`
+> `starryisle://mod/<id>` → `install?project=<id>&kind=mod`  
+> `starryisle://modpack/<id>` → `install?project=<id>&kind=modpack`  
+> `starryisle://server/<id>` → `install?project=<id>&kind=server`  
+> `starryisle://version/<vid>` → `install?version=<vid>`
 
 ---
 
@@ -36,22 +36,22 @@ axolotl://<命名空间>[/<动作>/<标识>][?<参数>]
 
 | 链接 | 落点 | 参数 |
 |---|---|---|
-| `axolotl://home` | 首页 | — |
-| `axolotl://browse/<type>` | 发现页 | `type=mod/modpack/resourcepack/datapack/shader/plugin/server`；query 透传筛选 |
-| `axolotl://favorites` | 收藏页（带 query 也一致，如 `favorites?q=x`） | — |
-| `axolotl://project/<id>` | 项目页 | `tab=versions/gallery/changelog`、`version=<vid>` |
-| `axolotl://library[/<子页>]` | 库 | 子页：`downloaded/modpacks/servers/custom` |
-| `axolotl://instance/<id>[/<子页>]` | 实例详情 | 子页：`mods/files/files.studio/logs/worlds/screenshots/upgrade` |
-| `axolotl://downloads` | 下载页 | `job=<任务ID>` 聚焦任务 |
-| `axolotl://create` | 创建页 | `pack=<项目ID>`、`name=<名称>` |
-| `axolotl://skins` / `axolotl://worlds` / `axolotl://screenshots` | 聚合页 | `screenshots` 可加 `instance=<id>` 过滤 |
-| `axolotl://multiplayer/servers[/<id>]` | 服务器列表/详情 | — |
-| `axolotl://multiplayer/rooms` | 房间页 | `invite=<口令>` 仅预填 |
-| `axolotl://lab` / `axolotl://lab/<tool>` | Lab / 工具 | tool: `skin-editor/gradient-text/recipe-generator/schematic-preview/mod-translation` |
-| `axolotl://lab/seed-map` | 种子地图 | 全参数透传（旧别名 `seed-map?...` 兼容） |
-| `axolotl://settings` | 设置页 | `tab=<分类>`（query 或 `settings/<tab>` 路径二选一）、`entry=<搜索条目ID>` 定位 |
-| `axolotl://help/drop` | 投放帮助页 | — |
-| `axolotl://open?path=<路由>` | 通用跳转 | `path` 必须在白名单内（见下） |
+| `starryisle://home` | 首页 | — |
+| `starryisle://browse/<type>` | 发现页 | `type=mod/modpack/resourcepack/datapack/shader/plugin/server`；query 透传筛选 |
+| `starryisle://favorites` | 收藏页（带 query 也一致，如 `favorites?q=x`） | — |
+| `starryisle://project/<id>` | 项目页 | `tab=versions/gallery/changelog`、`version=<vid>` |
+| `starryisle://library[/<子页>]` | 库 | 子页：`downloaded/modpacks/servers/custom` |
+| `starryisle://instance/<id>[/<子页>]` | 实例详情 | 子页：`mods/files/files.studio/logs/worlds/screenshots/upgrade` |
+| `starryisle://downloads` | 下载页 | `job=<任务ID>` 聚焦任务 |
+| `starryisle://create` | 创建页 | `pack=<项目ID>`、`name=<名称>` |
+| `starryisle://skins` / `starryisle://worlds` / `starryisle://screenshots` | 聚合页 | `screenshots` 可加 `instance=<id>` 过滤 |
+| `starryisle://multiplayer/servers[/<id>]` | 服务器列表/详情 | — |
+| `starryisle://multiplayer/rooms` | 房间页 | `invite=<口令>` 仅预填 |
+| `starryisle://lab` / `starryisle://lab/<tool>` | Lab / 工具 | tool: `skin-editor/gradient-text/recipe-generator/schematic-preview/mod-translation` |
+| `starryisle://lab/seed-map` | 种子地图 | 全参数透传（旧别名 `seed-map?...` 兼容） |
+| `starryisle://settings` | 设置页 | `tab=<分类>`（query 或 `settings/<tab>` 路径二选一）、`entry=<搜索条目ID>` 定位 |
+| `starryisle://help/drop` | 投放帮助页 | — |
+| `starryisle://open?path=<路由>` | 通用跳转 | `path` 必须在白名单内（见下） |
 
 **设置 tab 取值**：`interface, home-navigation, shortcut-settings, language-translation, ai, launch-defaults, instance-sync, java-performance, content-downloads, network-multiplayer, storage-backups, privacy-data, updates, about, logs`  
 **entry**：传搜索条目 id（如 `privacy-external-scheme`）用于滚动定位。
@@ -80,7 +80,7 @@ axolotl://<命名空间>[/<动作>/<标识>][?<参数>]
 - `install`/`launch`/`join` 必须走确认弹窗/启动流程，不跳过校验
 - 离线时浏览类（browse/project）自动回落 `/library`
 - 文件/Studio 等页只导航不自动连接/执行
-- 关闭“允许外部链接”开关后，所有 axolotl:// 仅弹警告不执行
+- 关闭“允许外部链接”开关后，所有 starryisle:// 仅弹警告不执行
 - 特权动作（`settings/set`、`stop`）需“允许外部链接”与“允许特权链接操作”双开关同时开启；执行直接生效、不再逐次确认（授权在开关启用时一次性完成）
 - 特权写操作只允许白名单键，未知键、非法值整单拒绝并提示
 - `file://` `javascript:` 等伪协议直接拒绝
@@ -97,8 +97,8 @@ axolotl://<命名空间>[/<动作>/<标识>][?<参数>]
 - 特权载荷：`CommandPayload::UpdateSettings` / `StopInstance`（`event/mod.rs`），后端只解析校验、不直接写
 - 特权键表：`apps/app-frontend/src/helpers/deep-link-settings.ts`（与 `handler.rs` 白名单同步）
 - 启用授权弹窗：`apps/app-frontend/src/components/ui/modal/PrivilegedConsentModal.vue`（开启开关时红色最高警告 + 10 秒倒计时锁死按钮（显示“启用(N)”）+ 勾选已了解风险；取消则开关保持关闭）
-- 种子地图分享：`LabSeedMap.vue` 生成 `axolotl://lab/seed-map?...`
-- 桌面快捷方式：`shortcuts/mod.rs` 生成 `axolotl://launch?instance_id=...`
+- 种子地图分享：`LabSeedMap.vue` 生成 `starryisle://lab/seed-map?...`
+- 桌面快捷方式：`shortcuts/mod.rs` 生成 `starryisle://launch?instance_id=...`
 
 ---
 
@@ -106,8 +106,8 @@ axolotl://<命名空间>[/<动作>/<标识>][?<参数>]
 
 | 链接 | 说明 | 必填 | 可选 |
 |---|---|---|---|
-| `axolotl://settings/set?<key>=<value>[&...]` | 修改设置（白名单键） | 至少一组键值 | 一次可传多键；重复键拒绝 |
-| `axolotl://stop?instance_id=<id>` | 停止实例正在运行的游戏进程 | `instance_id` | 也支持路径式 `axolotl://stop/<id>` |
+| `starryisle://settings/set?<key>=<value>[&...]` | 修改设置（白名单键） | 至少一组键值 | 一次可传多键；重复键拒绝 |
+| `starryisle://stop?instance_id=<id>` | 停止实例正在运行的游戏进程 | `instance_id` | 也支持路径式 `starryisle://stop/<id>` |
 
 ### 门禁（启用开关时强制阅读授权）
 
@@ -159,4 +159,4 @@ axolotl://<命名空间>[/<动作>/<标识>][?<参数>]
 | `project` | 项目 ID 或 slug | 项目页地址栏 `/project/<id>`；Modrinth 网页 `https://modrinth.com/<类型>/<slug>` 的 slug；CurseForge 用 `curseforge:<数字ID>`；程序侧 `get_project(id)` |
 | `version` | 版本 ID | 项目页版本列表点开某版本后地址栏 `/project/<id>/version/<versionId>`；Modrinth 网页 `https://modrinth.com/<类型>/<slug>/version/<versionId>` 尾段；程序侧 `get_version(id)` |
 
-> `axolotl://install?version=` 与 `axolotl://project/<id>?version=` 都接收版本 ID。
+> `starryisle://install?version=` 与 `starryisle://project/<id>?version=` 都接收版本 ID。

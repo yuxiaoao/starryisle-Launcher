@@ -603,7 +603,6 @@ fn main() {
                     .commands(&[
                         "get_available_capes",
                         "get_available_skins",
-                        "lookup_player_skin",
                         "add_and_equip_custom_skin",
                         "equip_skin",
                         "remove_custom_skin",
@@ -796,6 +795,10 @@ fn main() {
                         "instance_import_screenshot_groups",
                         "instance_delete_screenshots",
                         "instance_export_screenshots",
+                        "instance_export_screenshots_bundle",
+                        "instance_import_screenshots_bundle",
+                        "instance_set_screenshot_note",
+                        "instance_list_screenshot_notes",
                         "instance_move_screenshots",
                         "instance_open_screenshot",
                         "instance_get_synced_options",
@@ -923,8 +926,6 @@ fn main() {
                         "mcp_configure",
                         "mcp_respond",
                         "mcp_disconnect",
-                        "mcp_ui_claim",
-                        "mcp_ui_respond",
                     ])
                     .default_permission(
                         DefaultPermissionRule::AllowAllCommands,

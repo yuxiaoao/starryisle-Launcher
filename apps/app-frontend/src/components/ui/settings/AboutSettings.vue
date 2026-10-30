@@ -14,10 +14,8 @@ import {
 import { Avatar, Button, defineMessages, useVIntl } from '@modrinth/ui'
 import { getVersion } from '@tauri-apps/api/app'
 import {
-    defineAsyncComponent,
     inject,
     nextTick,
-    onErrorCaptured,
     onMounted,
     onScopeDispose,
     ref,
@@ -35,22 +33,6 @@ import { type AboutMemberExperience, getAboutMemberExperience } from './about-me
 import QqChannelIcon from './QqChannelIcon.vue'
 import SettingsSection from './SettingsSection.vue'
 import TeamMemberAvatar from './TeamMemberAvatar.vue'
-
-// Load the scene independently so the About content can render immediately.
-const AboutScene = defineAsyncComponent({
-    loader: () => import('../AboutScene.vue'),
-    suspensible: false,
-    onError(error, retry, fail) {
-        // one retry, then leave the scene slot empty instead of tearing down Settings
-        if ((error as { __aboutSceneRetried?: boolean }).__aboutSceneRetried) {
-            fail()
-            return
-        }
-        ;(error as { __aboutSceneRetried?: boolean }).__aboutSceneRetried = true
-        retry()
-    },
-})
-const aboutSceneFailed = ref(false)
 
 const { formatMessage } = useVIntl()
 const version = ref('')
@@ -77,12 +59,6 @@ onMounted(() => {
         .catch(() => {
             // keep empty version string; do not fail the settings category
         })
-})
-
-// Keep a failing 3D scene from bubbling into Settings Suspense / the shell.
-onErrorCaptured(() => {
-    aboutSceneFailed.value = true
-    return false
 })
 
 async function copyQqGroupNumber() {
@@ -269,12 +245,12 @@ const messages = defineMessages({
     attribution: {
         id: 'app.settings.about.attribution',
         defaultMessage:
-            'Axolotl Launcher is a modified version of the open-source Modrinth codebase.',
+            'StarryIsle Launcher is a modified version of the open-source Modrinth codebase.',
     },
     notAffiliated: {
         id: 'app.settings.about.not-affiliated',
         defaultMessage:
-            'Modrinth is a trademark of Rinth, Inc. Axolotl Launcher is not affiliated with or endorsed by Rinth, Inc.',
+            'Modrinth is a trademark of Rinth, Inc. StarryIsle Launcher is not affiliated with or endorsed by Rinth, Inc.',
     },
     originalSource: {
         id: 'app.settings.about.original-source',
@@ -334,6 +310,7 @@ const projectLinks = [
         <section id="settings-target-about-product" tabindex="-1" class="about-panel">
             <div class="flex flex-col items-center gap-4">
                 <div
+                    v-if="activeMemberExperience"
                     ref="experienceHost"
                     class="relative m-0 w-full overflow-hidden h-64 rounded-xl"
                     style="
@@ -341,7 +318,6 @@ const projectLinks = [
                         -webkit-mask-image: linear-gradient(to bottom, black 97%, transparent 100%);
                     "
                 >
-                    <AboutScene v-if="!aboutSceneFailed" />
                     <component
                         :is="activeMemberExperience?.component"
                         v-if="activeMemberExperience"
