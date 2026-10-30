@@ -1,7 +1,8 @@
 import type { ContentItem } from '@modrinth/ui'
 import { expect, it, vi } from 'vitest'
 
-import { drainContentMetadata, isUnresolvedContentProject } from './content-metadata-refresh'
+import { isUnresolvedContentProject } from './content-identity'
+import { drainContentMetadata } from './content-metadata-refresh'
 
 const mkItem = (overrides: Partial<ContentItem> & { file_path: string }): ContentItem =>
     ({

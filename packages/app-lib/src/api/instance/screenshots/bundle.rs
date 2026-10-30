@@ -74,7 +74,7 @@ async fn screenshots_source(
     instance_id: &str,
     state: &State,
 ) -> crate::Result<(PathBuf, String)> {
-    let source = crate::state::instances::adapters::sqlite::instance_rows::
+    let source = crate::state::instances::adapters::sqlite::screenshot_rows::
         get_instance_screenshot_source(instance_id, &state.pool)
         .await?
         .ok_or_else(|| crate::ErrorKind::InputError("Unknown instance".to_string()))?;
@@ -234,7 +234,10 @@ pub async fn import_instance_bundle(
 
             for index in 0..archive.len() {
                 let mut entry = archive.by_index(index).map_err(std::io::Error::from)?;
-                let Some(relative) = safe_relative_path(entry.name()) else {
+                let Ok(raw_name) = entry.name() else {
+                    continue;
+                };
+                let Some(relative) = safe_relative_path(&raw_name) else {
                     continue;
                 };
                 let Ok(name) = relative.strip_prefix(SHOTS_PREFIX) else {

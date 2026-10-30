@@ -3,6 +3,10 @@ use crate::state::{DirectoryInfo, ModrinthProjectId, ModrinthVersionId};
 use sqlx::sqlite::{SqliteConnectOptions, SqlitePoolOptions};
 use std::sync::Arc;
 
+use crate::state::instances::adapters::sqlite::{
+    content_entries, files, pack_members,
+};
+
 #[tokio::test]
 async fn pack_overrides_keep_membership_across_reconciliation() {
     use crate::api::curseforge::{
@@ -12,7 +16,7 @@ async fn pack_overrides_keep_membership_across_reconciliation() {
 
     let (_temp, state, original, _, _) = fixture().await;
     let mut tx = state.pool.begin().await.unwrap();
-    crate::state::instances::adapters::sqlite::instance_rows::upsert_instance_link(
+    crate::state::instances::adapters::sqlite::links::upsert_instance_link(
         "instance",
         &crate::state::InstanceLink::CurseForgeModpack {
             project_id: "1".into(),
@@ -103,7 +107,7 @@ async fn content_operation_repairs_legacy_pack_entries_without_members() {
         entries[0].ownership,
         ResourceOwnership::PackManaged { .. }
     ));
-    let member = content_rows::get_pack_members("set", &state.pool)
+    let member = pack_members::get_pack_members("set", &state.pool)
         .await
         .unwrap()
         .remove(0);
@@ -141,8 +145,8 @@ async fn legacy_pack_path_collisions_keep_all_members_and_stable_revisions() {
         sqlx::query("UPDATE instance_content_entries SET ownership_kind = 'pack_managed' WHERE id = ?")
             .bind(original.entry_id.as_str()).execute(&state.pool).await.unwrap();
         let missing_path = original.relative_path.trim_end_matches(".disabled");
-        let file = content_rows::upsert_instance_file_from_parts(
-            content_rows::UpsertInstanceFile {
+        let file = files::upsert_instance_file_from_parts(
+            files::UpsertInstanceFile {
                 instance_id: "instance",
                 relative_path: missing_path,
                 file_name: "prefix-old.zip",
@@ -157,8 +161,8 @@ async fn legacy_pack_path_collisions_keep_all_members_and_stable_revisions() {
         )
         .await
         .unwrap();
-        let missing = content_rows::upsert_content_entry_from_parts(
-            content_rows::UpsertContentEntry {
+        let missing = content_entries::upsert_content_entry_from_parts(
+            content_entries::UpsertContentEntry {
                 instance_id: "instance",
                 content_set_id: "set",
                 file_id: Some(&file.id),
@@ -186,7 +190,7 @@ async fn legacy_pack_path_collisions_keep_all_members_and_stable_revisions() {
         super::installed::refresh_install_snapshot(&state, "instance", &cancel)
             .await
             .unwrap();
-        let members = content_rows::get_pack_members("set", &state.pool)
+        let members = pack_members::get_pack_members("set", &state.pool)
             .await
             .unwrap();
         assert_eq!(members.len(), 2);
@@ -233,7 +237,7 @@ async fn legacy_pack_path_collisions_keep_all_members_and_stable_revisions() {
                 ResourceOwnership::PackManaged { .. }
             )));
             let current: std::collections::HashMap<_, _> =
-                content_rows::get_pack_members("set", &state.pool)
+                pack_members::get_pack_members("set", &state.pool)
                     .await
                     .unwrap()
                     .into_iter()
@@ -267,8 +271,8 @@ async fn install_snapshot_reuses_hashes_and_only_rehashes_changed_files() {
     .await;
     result.unwrap();
     assert_eq!(
-        scans, 0,
-        "an unchanged tracked file must not be rehashed even with a cold hash cache"
+        scans, 1,
+        "a legacy tracked file establishes its attribute baseline once"
     );
     std::fs::write(root.join(&original.relative_path), b"changed and longer")
         .unwrap();
@@ -303,10 +307,7 @@ async fn install_snapshot_reuses_hashes_and_only_rehashes_changed_files() {
     ))
     .await;
     result.unwrap();
-    assert_eq!(
-        scans, 1,
-        "explicit verification still reads unchanged bytes"
-    );
+    assert_eq!(scans, 0, "a remote refresh reuses unchanged local bytes");
     state.pool.close().await;
 }
 
@@ -323,7 +324,7 @@ async fn installed_identity_reuses_verified_bytes_across_analysis_retries_and_ca
         .join("local-identity-test.db");
     let cache = cache::ResourceCache::open(cache_path.clone()).await;
     let (first, scans) = track_scans(installed_file_identity(
-        &root, &original, &cache, true, &cancel,
+        &state, "instance", &root, &original, &cache, true, &cancel,
     ))
     .await;
     let first = first.unwrap();
@@ -334,7 +335,7 @@ async fn installed_identity_reuses_verified_bytes_across_analysis_retries_and_ca
         &first.integrity
     ));
     let (again, scans) = track_scans(installed_file_identity(
-        &root, &original, &cache, true, &cancel,
+        &state, "instance", &root, &original, &cache, true, &cancel,
     ))
     .await;
     assert_eq!(again.unwrap().fingerprint, first.fingerprint);
@@ -345,7 +346,7 @@ async fn installed_identity_reuses_verified_bytes_across_analysis_retries_and_ca
     cache.close().await;
     let cache = cache::ResourceCache::open(cache_path).await;
     let (again, scans) = track_scans(installed_file_identity(
-        &root, &original, &cache, true, &cancel,
+        &state, "instance", &root, &original, &cache, true, &cancel,
     ))
     .await;
     assert_eq!(again.unwrap().integrity, first.integrity);
@@ -361,35 +362,44 @@ async fn installed_identity_reuses_verified_bytes_across_analysis_retries_and_ca
             value: sha1_smol::Sha1::from(bytes).hexdigest(),
         }],
     };
+    super::installed::refresh_install_snapshot(&state, "instance", &cancel)
+        .await
+        .unwrap();
     let (result, scans) = track_scans(installed_file_identity(
-        &root, &changed, &cache, true, &cancel,
+        &state, "instance", &root, &changed, &cache, true, &cancel,
     ))
     .await;
     assert!(identity::exact_integrity(
         &changed.integrity,
         &result.unwrap().integrity
     ));
-    assert_eq!(scans, 1, "a changed scanner SHA-1 invalidates the evidence");
+    assert_eq!(scans, 0, "recognition reuses the scanner byte evidence");
     let (result, scans) = track_scans(installed_file_identity(
-        &root, &changed, &cache, false, &cancel,
+        &state, "instance", &root, &changed, &cache, false, &cancel,
     ))
     .await;
     result.unwrap();
     assert_eq!(scans, 1, "explicit checks still verify current bytes");
 
     cache.clear().await.unwrap();
+    super::installed::refresh_install_snapshot(&state, "instance", &cancel)
+        .await
+        .unwrap();
     let (result, scans) = track_scans(installed_file_identity(
-        &root, &changed, &cache, true, &cancel,
+        &state, "instance", &root, &changed, &cache, true, &cancel,
     ))
     .await;
     result.unwrap();
     assert_eq!(
-        scans, 1,
-        "clearing resource caches clears local byte evidence too"
+        scans, 0,
+        "clearing remote caches preserves durable local byte evidence"
     );
     cancel.cancel();
     assert!(matches!(
-        installed_file_identity(&root, &changed, &cache, true, &cancel).await,
+        installed_file_identity(
+            &state, "instance", &root, &changed, &cache, true, &cancel
+        )
+        .await,
         Err(ResourceError::Canceled)
     ));
     cache.close().await;
@@ -411,10 +421,11 @@ async fn local_identity_cache_rejects_stale_writes_and_same_size_content_changes
     )
     .await;
     let generation = cache.generation().await;
-    let first =
-        installed_file_identity(&root, &original, &cache, true, &cancel)
-            .await
-            .unwrap();
+    let first = installed_file_identity(
+        &state, "instance", &root, &original, &cache, true, &cancel,
+    )
+    .await
+    .unwrap();
     cache.clear().await.unwrap();
     cache.store_local_identity(&first, generation).await;
     assert!(cache.local_identity(&original.integrity).await.is_none());
@@ -426,19 +437,24 @@ async fn local_identity_cache_rejects_stale_writes_and_same_size_content_changes
         algorithm: HashAlgorithm::Sha1,
         value: sha1_smol::Sha1::from(&bytes).hexdigest(),
     }];
+    super::installed::refresh_install_snapshot(&state, "instance", &cancel)
+        .await
+        .unwrap();
     let (result, scans) = track_scans(installed_file_identity(
-        &root, &changed, &cache, true, &cancel,
+        &state, "instance", &root, &changed, &cache, true, &cancel,
     ))
     .await;
     assert!(identity::exact_integrity(
         &changed.integrity,
         &result.unwrap().integrity
     ));
-    assert_eq!(scans, 1);
+    assert_eq!(scans, 0);
     assert!(
-        installed_file_identity(&root, &original, &cache, false, &cancel)
-            .await
-            .is_err(),
+        installed_file_identity(
+            &state, "instance", &root, &original, &cache, false, &cancel
+        )
+        .await
+        .is_err(),
         "an out-of-date snapshot cannot bless different bytes"
     );
     assert!(cache.local_identity(&original.integrity).await.is_none());
@@ -1187,11 +1203,9 @@ async fn externally_replaced_file_does_not_reuse_local_metadata_or_icon() {
             version_id: None,
         })
         .get_entry();
-    let mut tx = state.pool.begin().await.unwrap();
-    crate::state::CachedEntry::upsert_many(&[cache], &mut *tx)
+    crate::state::CachedEntry::upsert_many(&[cache], state.cache_pool())
         .await
         .unwrap();
-    tx.commit().await.unwrap();
     crate::state::sync_content_files("instance", &state)
         .await
         .unwrap();
@@ -1498,7 +1512,7 @@ fn artifact(
     }
 }
 
-async fn fixture() -> (
+pub(crate) async fn fixture() -> (
     tempfile::TempDir,
     std::sync::Arc<crate::State>,
     InstalledResource,
@@ -1531,8 +1545,8 @@ async fn fixture() -> (
     let old = artifact(SourceId::modrinth(), "root0000", "old", b"old bytes");
     let current_path = "resourcepacks/prefix-old.zip.disabled";
     std::fs::write(root.join(current_path), b"old bytes").unwrap();
-    let file = content_rows::upsert_instance_file_from_parts(
-        content_rows::UpsertInstanceFile {
+    let file = files::upsert_instance_file_from_parts(
+        files::UpsertInstanceFile {
             instance_id: "instance",
             relative_path: current_path,
             file_name: "prefix-old.zip.disabled",
@@ -1547,8 +1561,8 @@ async fn fixture() -> (
     )
     .await
     .unwrap();
-    let entry = content_rows::upsert_content_entry_from_parts(
-        content_rows::UpsertContentEntry {
+    let entry = content_entries::upsert_content_entry_from_parts(
+        content_entries::UpsertContentEntry {
             instance_id: "instance",
             content_set_id: "set",
             file_id: Some(&file.id),
@@ -1568,7 +1582,7 @@ async fn fixture() -> (
         project_id: ModrinthProjectId::new("root0000").unwrap(),
         version_id: Some(ModrinthVersionId::new("old").unwrap()),
     };
-    content_rows::upsert_content_provider_ref(
+    content_entries::upsert_content_provider_ref(
         &entry.id, &reference, true, &pool,
     )
     .await
@@ -1854,6 +1868,10 @@ async fn exact_cross_source_replace_and_rollback_preserve_entry_disabled_path_an
     let mut target =
         artifact(SourceId::curseforge(), "123", "456", b"new bytes");
     use sha2::Digest;
+
+    use crate::state::instances::adapters::sqlite::{
+        content_entries, files, pack_members,
+    };
     target.integrity.hashes = vec![ContentHash {
         algorithm: HashAlgorithm::Sha512,
         value: format!("{:x}", sha2::Sha512::digest(b"new bytes")),
@@ -1881,6 +1899,7 @@ async fn exact_cross_source_replace_and_rollback_preserve_entry_disabled_path_an
     assert!(!changed.enabled);
     assert_eq!(changed.artifact, Some(target.reference));
     let mut snapshot = vec![crate::state::InstanceContentSnapshotItem {
+        resource_update: None,
         artifact_ref: None,
         compatibility: None,
         resource_id: None,
@@ -2156,7 +2175,7 @@ async fn exact_cross_source_replace_and_rollback_preserve_entry_disabled_path_an
         std::fs::read(root.join(&original.relative_path)).unwrap(),
         b"old bytes"
     );
-    let entry = content_rows::get_content_entry_by_id(
+    let entry = content_entries::get_content_entry_by_id(
         original.entry_id.as_str(),
         &state.pool,
     )
@@ -2892,7 +2911,11 @@ async fn local_pack_without_unlink_history_stays_managed_without_a_warning() {
         },
     ] {
         let mut tx = state.pool.begin().await.unwrap();
-        crate::state::instances::adapters::sqlite::instance_rows::upsert_instance_link("instance", &link, &mut tx).await.unwrap();
+        crate::state::instances::adapters::sqlite::links::upsert_instance_link(
+            "instance", &link, &mut tx,
+        )
+        .await
+        .unwrap();
         tx.commit().await.unwrap();
         for _ in 0..2 {
             let snapshot =
@@ -3114,7 +3137,19 @@ async fn rollback_after_unlink_does_not_restore_pack_ownership_or_missing_member
         0
     );
     let mut tx = state.pool.begin().await.unwrap();
-    crate::state::instances::adapters::sqlite::instance_rows::upsert_instance_link("instance", &crate::state::InstanceLink::ImportedModpack { project_id: None, version_id: None, name: Some("Local".into()), version_number: None, filename: None }, &mut tx).await.unwrap();
+    crate::state::instances::adapters::sqlite::links::upsert_instance_link(
+        "instance",
+        &crate::state::InstanceLink::ImportedModpack {
+            project_id: None,
+            version_id: None,
+            name: Some("Local".into()),
+            version_number: None,
+            filename: None,
+        },
+        &mut tx,
+    )
+    .await
+    .unwrap();
     tx.commit().await.unwrap();
     assert_eq!(
         sqlx::query_scalar::<_, i64>(
@@ -3275,8 +3310,8 @@ async fn a_satisfied_filename_dependency_is_rechecked_before_any_file_is_replace
     let local =
         artifact(SourceId::modrinth(), "local000", "localver", b"local bytes");
     std::fs::write(root.join("mods/local.jar"), b"local bytes").unwrap();
-    let file = content_rows::upsert_instance_file_from_parts(
-        content_rows::UpsertInstanceFile {
+    let file = files::upsert_instance_file_from_parts(
+        files::UpsertInstanceFile {
             instance_id: "instance",
             relative_path: "mods/local.jar",
             file_name: "local.jar",
@@ -3291,8 +3326,8 @@ async fn a_satisfied_filename_dependency_is_rechecked_before_any_file_is_replace
     )
     .await
     .unwrap();
-    let entry = content_rows::upsert_content_entry_from_parts(
-        content_rows::UpsertContentEntry {
+    let entry = content_entries::upsert_content_entry_from_parts(
+        content_entries::UpsertContentEntry {
             instance_id: "instance",
             content_set_id: "set",
             file_id: Some(&file.id),

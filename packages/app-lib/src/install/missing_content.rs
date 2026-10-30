@@ -745,7 +745,6 @@ pub async fn retry_missing_modpack_file(
             ),
         &target,
         &state.download_semaphore,
-        &state.pool,
         None,
     )
     .await;

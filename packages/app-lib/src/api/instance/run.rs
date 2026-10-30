@@ -327,7 +327,6 @@ async fn run_credentials(
                         "server_id": &server_id,
                     }),
                     &state.api_semaphore,
-                    &state.pool,
                 )
                 .await;
 
@@ -502,7 +501,6 @@ pub async fn try_update_playtime_by_instance_id(
             &playtime_url,
             serde_json::to_value(hashmap)?,
             &state.api_semaphore,
-            &state.pool,
         )
         .await
     } else {

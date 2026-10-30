@@ -98,6 +98,7 @@ mod legacy_converter;
 pub mod attached_world_data;
 pub(crate) mod content_store;
 pub(crate) mod content_types;
+pub(crate) mod documents;
 pub mod instance_groups;
 pub(crate) mod store;
 
@@ -195,8 +196,11 @@ pub struct State {
 
     /// Gate pausing maintenance loops that only serve the launcher UI.
     pub(crate) maintenance_gate: MaintenanceGate,
-    /// Handles for the long-running maintenance loops, aborted on shutdown.
-    pub(crate) background_tasks: Mutex<Vec<tokio::task::JoinHandle<()>>>,
+    /// Abort handles of the long-running maintenance loops, used on shutdown.
+    pub(crate) background_tasks: Mutex<Vec<tokio::task::AbortHandle>>,
+    /// Tracks the same loops so shutdown can wait for them; the tracker never
+    /// aborts anything itself, so it sits beside the abort handles.
+    pub(crate) background_tracker: tokio_util::task::TaskTracker,
 
     // NOTE: we explicitly must NOT store the app identifier in the state object,
     // because creating the state object is fallible (e.g. database missing),
@@ -219,7 +223,13 @@ pub struct State {
     /// What the collections of [`store`] are read and written through.
     pub(crate) data: store::Handle,
 
+    /// The rebuildable records, in a database of their own. Disabled, not
+    /// fatal, when it cannot be opened.
+    pub(crate) derived: store::derived_db::DerivedDb,
+
     resource_service: OnceCell<Arc<crate::resources::ResourceService>>,
+    pub(crate) file_fingerprints: crate::resources::fingerprints::FileFingerprints,
+    pub(crate) content_refresh: crate::resources::refresh::RefreshCoordinator,
 
     /// CurseForge API key set in the launcher. Takes precedence over the key
     /// from the environment or the build, which stays the fallback until the
@@ -238,6 +248,15 @@ pub struct State {
 }
 
 impl State {
+    #[cfg(test)]
+    pub(crate) fn set_resource_service_for_test(
+        &self,
+        service: Arc<crate::resources::ResourceService>,
+    ) {
+        self.resource_service
+            .set(service)
+            .unwrap_or_else(|_| panic!("resource service already initialized"));
+    }
     pub async fn maintain_database_backups(&self) -> crate::Result<()> {
         db_backup::maintain_app_db_backups(
             self.pool.connect_options().get_filename(),
@@ -252,6 +271,17 @@ impl State {
             crate::ErrorKind::OtherError("Database connections did not close before shutdown; next startup will run a full integrity check".into())
         })?;
         db_backup::mark_clean_shutdown(&database).await
+    }
+
+    /// Where the cache table lives: the derived database, which is a memory
+    /// database while the file is unavailable, so callers always have a pool.
+    pub(crate) fn cache_pool(&self) -> &SqlitePool {
+        self.derived.pool()
+    }
+
+    /// The same database, as the handle its collections are read through.
+    pub(crate) fn cache_handle(&self) -> store::Handle {
+        self.derived.handle()
     }
 
     pub async fn resources(
@@ -683,30 +713,27 @@ impl State {
             );
         }
 
-        let config_sync_task = tokio::task::spawn({
+        state.spawn_background({
             let state = Arc::clone(state);
             async move {
                 instances::config_sync::run(state).await;
             }
         });
-        state.background_tasks.lock().push(config_sync_task);
 
-        let concurrency_task = tokio::spawn({
+        state.spawn_background({
             let state = Arc::clone(state);
             async move {
                 state.run_auto_concurrency_controller().await;
             }
         });
-        state.background_tasks.lock().push(concurrency_task);
 
         crate::telemetry::start(Arc::clone(state));
 
-        let preload_task = tokio::spawn(async move {
+        state.spawn_background(async move {
             crate::google_ip::preload().await;
         });
-        state.background_tasks.lock().push(preload_task);
 
-        let maintenance_task = tokio::spawn({
+        state.spawn_background({
             let state = Arc::clone(state);
             async move {
                 crate::util::fetch::cleanup_stale_partial_downloads(vec![
@@ -735,7 +762,6 @@ impl State {
                 // Axolotl does not connect to Modrinth's private friends socket.
             }
         });
-        state.background_tasks.lock().push(maintenance_task);
 
         Ok(())
     }
@@ -788,8 +814,7 @@ impl State {
                         MAX_WAIT
                     );
                     return Err(crate::ErrorKind::StateNotInitialized(format!(
-                        "The launcher state was not initialized within {:?}. Something must call State::init before commands are served; commands cannot run against an uninitialized state.",
-                        MAX_WAIT
+                        "The launcher state was not initialized within {MAX_WAIT:?}. Something must call State::init before commands are served; commands cannot run against an uninitialized state."
                     ))
                     .into());
                 }
@@ -1194,9 +1219,28 @@ impl State {
         self.maintenance_gate.set_paused(false);
     }
 
+    /// Runs a long-lived maintenance loop that shutdown aborts. A loop
+    /// registered after shutdown began is aborted at once, so none outlives it.
+    pub(crate) fn spawn_background(
+        &self,
+        task: impl std::future::Future<Output = ()> + Send + 'static,
+    ) {
+        let handle = self.background_tracker.spawn(task);
+        let mut tasks = self.background_tasks.lock();
+        // Shutdown closes the tracker before it drains this list, so a
+        // registration either lands before the drain or sees the close.
+        if self.background_tracker.is_closed() {
+            handle.abort();
+        } else {
+            tasks.push(handle.abort_handle());
+        }
+    }
+
     /// Aborts the maintenance loops and closes the Discord IPC connection;
     /// intended for the app-exit path.
     pub async fn shutdown(&self) {
+        self.content_refresh.shutdown().await;
+        self.background_tracker.close();
         for task in self.background_tasks.lock().drain(..) {
             task.abort();
         }
@@ -1223,11 +1267,31 @@ impl State {
     async fn initialize_state(
         app_identifier: String,
     ) -> crate::Result<Arc<Self>> {
+        // The directory the rows live in names the entries that hold their
+        // secrets, so it is settled before the first secret is read or written.
+        // It is the one `DirectoryInfo` resolves to, which is not yet built
+        // here: nothing may reach the store ahead of it.
+        let settings_dir = DirectoryInfo::initial_settings_dir_path(
+            &app_identifier,
+        )
+        .ok_or(crate::ErrorKind::FSError(
+            "Could not find valid settings dir".to_string(),
+        ))?;
+        store::secrets::identify(&settings_dir);
+
         tracing::info!("Connecting to app database");
         let pool = db::connect(&app_identifier).await?;
         let data = store::Handle::new(pool.clone());
 
-        legacy_converter::migrate_legacy_data(&data, &pool).await?;
+        let legacy =
+            legacy_converter::migrate_legacy_data(&data, &pool).await?;
+
+        if let Err(error) = store::secrets::externalize(&data).await {
+            tracing::warn!(
+                %error,
+                "Failed to move the account secrets into the system credential store"
+            );
+        }
 
         tracing::info!("Fetching app settings");
         let mut settings = Settings::get(&data).await?;
@@ -1269,6 +1333,31 @@ impl State {
 
         let directories =
             DirectoryInfo::init(settings.custom_dir, &app_identifier).await?;
+
+        documents::hand_over(&pool, &directories.settings_dir).await;
+
+        if !legacy.java_versions.is_empty() {
+            let documents = documents::Documents::at(
+                directories.settings_dir.join(documents::DIR_NAME),
+                &pool,
+            );
+            if let Err(error) =
+                JavaVersion::save_all(&documents, &legacy.java_versions).await
+            {
+                tracing::warn!(
+                    %error,
+                    "Failed to record the imported Java runtimes"
+                );
+            }
+        }
+
+        let derived = store::derived_db::DerivedDb::open(
+            directories.caches_dir().join(store::derived_db::FILE_NAME),
+        )
+        .await;
+        CachedEntry::store_best_effort(&legacy.cached_entries, derived.pool())
+            .await;
+        forget_removed_instances(&pool, &derived).await;
 
         let discord_rpc = DiscordGuard::init()?;
 
@@ -1330,12 +1419,16 @@ impl State {
             process_manager,
             maintenance_gate: MaintenanceGate::new(),
             background_tasks: Mutex::new(Vec::new()),
+            background_tracker: tokio_util::task::TaskTracker::new(),
             friends_socket,
             restart_after_pending_update: AtomicBool::new(false),
             instance_locks: Arc::new(InstanceLockManager::default()),
             data,
+            derived,
             pool,
             resource_service: OnceCell::new(),
+            file_fingerprints: Default::default(),
+            content_refresh: Default::default(),
             curseforge_api_key: RwLock::new(curseforge_api_key),
             curseforge_api_key_update: AsyncMutex::new(()),
             configured_http_client: RwLock::new(configured_http_client),
@@ -1405,6 +1498,70 @@ impl State {
     }
 }
 
+/// Drops the derived rows whose instance is gone. They left the database that
+/// owns `instances`, so no foreign key removes them: the deletion path does,
+/// and this pass at startup catches what a deletion that never finished left
+/// behind. It reads the two derived tables once and asks about the instances
+/// they name, so a database with no left-over rows costs two reads.
+async fn forget_removed_instances(
+    pool: &SqlitePool,
+    derived: &store::derived_db::DerivedDb,
+) {
+    let mut instance_ids =
+        match store::content_refresh_pack::ContentRefreshPacks::instance_ids(
+            derived,
+        )
+        .await
+        {
+            Ok(instance_ids) => instance_ids,
+            Err(error) => {
+                tracing::warn!(
+                    %error,
+                    "Failed to read the instances the saved pack metadata names"
+                );
+                return;
+            }
+        };
+    match store::content_refresh_scan_failures::ContentRefreshScanFailures::instance_ids(
+        derived,
+    )
+    .await
+    {
+        Ok(failures) => instance_ids.extend(failures),
+        Err(error) => {
+            tracing::warn!(
+                %error,
+                "Failed to read the instances the scan failures name"
+            );
+        }
+    }
+    instance_ids.sort();
+    instance_ids.dedup();
+    for instance_id in instance_ids {
+        match instances::adapters::sqlite::instance_rows::get_instance_path_by_id(
+            &instance_id,
+            pool,
+        )
+        .await
+        {
+            Ok(Some(_)) => continue,
+            Ok(None) => tracing::debug!(
+                instance_id,
+                "Dropping the derived records of a removed instance"
+            ),
+            Err(error) => {
+                tracing::warn!(
+                    %error,
+                    instance_id,
+                    "Failed to check whether a derived record's instance exists"
+                );
+                continue;
+            }
+        }
+        instances::commands::forget_derived_rows(&instance_id, derived).await;
+    }
+}
+
 #[cfg(test)]
 pub(crate) async fn test_state(
     directories: DirectoryInfo,
@@ -1419,6 +1576,10 @@ pub(crate) async fn test_state(
         settings.ignore_ssl_errors,
         settings.doh_enabled,
     )?;
+    let derived = store::derived_db::DerivedDb::open(
+        directories.caches_dir().join(store::derived_db::FILE_NAME),
+    )
+    .await;
 
     Ok(Arc::new(State {
         directories,
@@ -1454,12 +1615,16 @@ pub(crate) async fn test_state(
         process_manager: ProcessManager::new(),
         maintenance_gate: MaintenanceGate::new(),
         background_tasks: Mutex::new(Vec::new()),
+        background_tracker: tokio_util::task::TaskTracker::new(),
         friends_socket: FriendsSocket::new(),
         restart_after_pending_update: AtomicBool::new(false),
         instance_locks: Arc::new(InstanceLockManager::default()),
         data: store::Handle::new(pool.clone()),
+        derived,
         pool,
         resource_service: OnceCell::new(),
+        file_fingerprints: Default::default(),
+        content_refresh: Default::default(),
         curseforge_api_key: RwLock::new(curseforge_api_key),
         curseforge_api_key_update: AsyncMutex::new(()),
         configured_http_client: RwLock::new(configured_http_client),
@@ -1850,5 +2015,114 @@ mod uninitialized_state_tests {
                 );
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod shutdown_tests {
+    use super::*;
+    use std::future::Future;
+
+    async fn fixture() -> (tempfile::TempDir, Arc<State>) {
+        let temp = tempfile::tempdir().unwrap();
+        let directories = DirectoryInfo {
+            settings_dir: temp.path().into(),
+            config_dir: temp.path().into(),
+            app_identifier: "shutdown-test".into(),
+        };
+        let pool = sqlx::sqlite::SqlitePoolOptions::new()
+            .max_connections(2)
+            .connect_with(
+                sqlx::sqlite::SqliteConnectOptions::new()
+                    .filename(temp.path().join("state.db"))
+                    .create_if_missing(true)
+                    .foreign_keys(true),
+            )
+            .await
+            .unwrap();
+        sqlx::migrate!().run(&pool).await.unwrap();
+        let state = test_state(directories, pool).await.unwrap();
+        (temp, state)
+    }
+
+    fn register(
+        state: &State,
+        task: impl Future<Output = ()> + Send + 'static,
+    ) {
+        state.spawn_background(task);
+    }
+
+    /// Sets its flag when the task owning it is dropped, i.e. aborted.
+    struct DropFlag(Arc<AtomicBool>);
+
+    impl Drop for DropFlag {
+        fn drop(&mut self) {
+            self.0.store(true, Ordering::SeqCst);
+        }
+    }
+
+    fn pending_task(
+        flag: &Arc<AtomicBool>,
+    ) -> impl Future<Output = ()> + use<> {
+        let guard = DropFlag(flag.clone());
+        async move {
+            let _guard = guard;
+            std::future::pending::<()>().await;
+        }
+    }
+
+    async fn all_dropped(flags: &[Arc<AtomicBool>]) -> bool {
+        tokio::time::timeout(Duration::from_secs(2), async {
+            while !flags.iter().all(|flag| flag.load(Ordering::SeqCst)) {
+                tokio::task::yield_now().await;
+            }
+        })
+        .await
+        .is_ok()
+    }
+
+    #[tokio::test]
+    async fn shutdown_aborts_every_background_task() {
+        let (_temp, state) = fixture().await;
+        let flags: Vec<_> =
+            (0..3).map(|_| Arc::new(AtomicBool::new(false))).collect();
+        for flag in &flags {
+            register(&state, pending_task(flag));
+        }
+        state.shutdown().await;
+        assert!(all_dropped(&flags).await, "every task must be aborted");
+        assert!(state.background_tasks.lock().is_empty());
+    }
+
+    #[tokio::test]
+    async fn shutdown_does_not_wait_for_background_tasks() {
+        let (_temp, state) = fixture().await;
+        let flag = Arc::new(AtomicBool::new(false));
+        register(&state, pending_task(&flag));
+        tokio::time::timeout(Duration::from_secs(2), state.shutdown())
+            .await
+            .expect("shutdown returns while a task never finishes");
+        assert!(all_dropped(&[flag]).await);
+    }
+
+    #[tokio::test]
+    async fn loops_registered_after_shutdown_do_not_survive_it() {
+        let (_temp, state) = fixture().await;
+        state.shutdown().await;
+        let flag = Arc::new(AtomicBool::new(false));
+        register(&state, pending_task(&flag));
+        assert!(all_dropped(&[flag]).await, "a late loop is aborted at once");
+        assert!(state.background_tasks.lock().is_empty());
+    }
+
+    #[tokio::test]
+    async fn repeated_shutdown_is_harmless() {
+        let (_temp, state) = fixture().await;
+        let flag = Arc::new(AtomicBool::new(false));
+        register(&state, pending_task(&flag));
+        state.shutdown().await;
+        state.shutdown().await;
+        assert!(all_dropped(&[flag]).await);
+        assert!(state.background_tasks.lock().is_empty());
     }
 }

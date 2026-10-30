@@ -39,7 +39,6 @@ impl ModrinthCredentials {
     pub(crate) async fn get_and_refresh(
         handle: &Handle,
         semaphore: &FetchSemaphore,
-        exec: impl sqlx::Executor<'_, Database = sqlx::Sqlite> + Copy,
     ) -> crate::Result<Option<Self>> {
         let creds = Self::get_active(handle).await?;
 
@@ -60,7 +59,6 @@ impl ModrinthCredentials {
                     None,
                     Some("/v2/session/refresh"),
                     semaphore,
-                    exec,
                 )
                 .await
                 .ok()
@@ -118,7 +116,7 @@ impl ModrinthCredentials {
         CachedEntry::get_user_many(
             &user_ids.iter().map(|x| &**x).collect::<Vec<_>>(),
             Some(CacheBehaviour::Bypass),
-            &state.pool,
+            state.cache_pool(),
             &state.fetch_semaphore,
         )
         .await?;
@@ -134,7 +132,6 @@ pub const fn get_login_url() -> &'static str {
 pub async fn finish_login_flow(
     code: &str,
     semaphore: &FetchSemaphore,
-    exec: impl sqlx::Executor<'_, Database = sqlx::Sqlite>,
 ) -> crate::Result<ModrinthCredentials> {
     // The authorization code actually is the access token, since labrinth doesn't
     // issue separate authorization codes. Therefore, this is equivalent to an
@@ -142,7 +139,7 @@ pub async fn finish_login_flow(
     // needed. TODO not do this for the reasons outlined at
     // https://oauth.net/2/grant-types/implicit/
 
-    let info = fetch_info(code, semaphore, exec).await?;
+    let info = fetch_info(code, semaphore).await?;
 
     Ok(ModrinthCredentials {
         session: code.to_string(),
@@ -155,7 +152,6 @@ pub async fn finish_login_flow(
 async fn fetch_info(
     token: &str,
     semaphore: &FetchSemaphore,
-    exec: impl sqlx::Executor<'_, Database = sqlx::Sqlite>,
 ) -> crate::Result<crate::state::cache::User> {
     let result = fetch_advanced(
         Method::GET,
@@ -167,7 +163,6 @@ async fn fetch_info(
         None,
         Some("/v2/user"),
         semaphore,
-        exec,
     )
     .await?;
     let value = serde_json::from_slice(&result)?;
