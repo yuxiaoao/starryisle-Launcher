@@ -66,8 +66,7 @@ jobs:
           git apply --index /tmp/starryisle.patch
 
           git commit -m "feat: StarryIsle changes on top of upstream main" \
-            -m "Branding, the screenshot timeline with notes, bundle export/import and the
-own updater endpoint, rebased onto upstream so the fork stays one commit thick."
+            -m "Branding, the screenshot timeline with notes, bundle export/import and the own updater endpoint, rebased onto upstream so the fork stays one commit thick."
 
           echo "### Tree comparison against the previous main"
           if git diff --quiet "origin/main" HEAD; then
