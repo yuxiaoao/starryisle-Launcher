@@ -56,7 +56,8 @@ const CHANNELS = ['release', 'beta']
 // Only recent migrations are listed. Dropping to a threshold before them is
 // refused rather than guessed at; --allow-unmapped accepts the risk explicitly.
 const REVERTIBLE_SCHEMA = {
-    20261103130000: { columns: [{ table: 'install_jobs', column: 'level' }] },
+    // Screenshot notes live in their own table keyed by instance + file name
+    20261027000000: { tables: ['screenshot_notes'] },
     // settings.default_game_language
     20261103120000: {
         columns: [{ table: 'settings', column: 'default_game_language' }],
@@ -764,8 +765,9 @@ function main() {
     const state = planDowngrade(db, args.to)
     note(`database: ${db}`)
 
-    if (state.applied.length === 0 && state.failed.length === 0) {
-        note(`nothing to do: no migration at or after ${args.to}`)
+    if (state.applied.length === 0) {
+        note(`nothing to do: no applied migration at or after ${args.to}`)
+        if (state.failed.length > 0) reportPlan(state)
         return
     }
 
@@ -826,15 +828,9 @@ function main() {
                     if (present) writable.exec(`ALTER TABLE ${table} DROP COLUMN ${column}`)
                 }
             }
-            // Failed records block sqlx with `MigrateError::Dirty` before it
-            // even compares versions, so the warning that promises to remove
-            // them must actually remove them.
-            const versions = [...state.applied, ...state.failed]
-            if (versions.length > 0) {
-                writable
-                    .prepare(`DELETE FROM _sqlx_migrations WHERE version IN (${versions.join(', ')})`)
-                    .run()
-            }
+            writable
+                .prepare(`DELETE FROM _sqlx_migrations WHERE version IN (${state.applied.join(', ')})`)
+                .run()
             writable.exec('COMMIT')
         } catch (error) {
             writable.exec('ROLLBACK')

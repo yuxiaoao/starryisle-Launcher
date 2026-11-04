@@ -409,6 +409,7 @@ import {
     SpinnerIcon,
     StopCircleIcon,
     TerminalSquareIcon,
+    TagCategoryTrophyIcon,
     UpdatedIcon,
     UserPlusIcon,
     XIcon,
@@ -529,6 +530,7 @@ const messages = defineMessages({
     worldsTab: { id: 'app.instance.tabs.worlds', defaultMessage: 'Worlds' },
     screenshotsTab: { id: 'app.instance.tabs.screenshots', defaultMessage: 'Screenshots' },
     logsTab: { id: 'app.instance.tabs.logs', defaultMessage: 'Logs' },
+    advancementsTab: { id: 'app.instance.tabs.advancements', defaultMessage: 'Advancements' },
     offlineInstalledOnly: {
         id: 'app.instance.offline-installed-only',
         defaultMessage: 'Offline mode can only launch fully downloaded instances.',
@@ -793,6 +795,11 @@ const tabs = computed(() => [
         label: formatMessage(messages.worldsTab),
         href: `${basePath.value}/worlds`,
         icon: GlobeIcon,
+    },
+    {
+        label: formatMessage(messages.advancementsTab),
+        href: `${basePath.value}/advancements`,
+        icon: TagCategoryTrophyIcon,
     },
     {
         label: formatMessage(messages.logsTab),

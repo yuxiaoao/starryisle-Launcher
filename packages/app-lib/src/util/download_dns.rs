@@ -157,7 +157,7 @@ impl Default for DownloadDnsResolver {
             doh_enabled: false,
             doh_endpoints: Arc::new(vec![Arc::from(BUILTIN_DOH_SERVERS[0])]),
             doh_clients: Arc::new(vec![
-                crate::util::http::client_builder()
+                reqwest::Client::builder()
                     .no_proxy()
                     .timeout(DOH_REQUEST_TIMEOUT)
                     .connect_timeout(DOH_CONNECT_TIMEOUT)
@@ -202,10 +202,8 @@ impl DownloadDnsResolver {
         let mut doh_clients = Vec::with_capacity(endpoints.len());
         for _ in &endpoints {
             let builder = match proxy {
-                Some(proxy) => {
-                    proxy.apply(crate::util::http::client_builder())?
-                }
-                None => crate::util::http::client_builder().no_proxy(),
+                Some(proxy) => proxy.apply(reqwest::Client::builder())?,
+                None => reqwest::Client::builder().no_proxy(),
             };
             doh_clients.push(
                 builder
@@ -240,20 +238,15 @@ impl DownloadDnsResolver {
     ) -> Result<(), &'static str> {
         let host = normalize_host(host)?;
         let resolver_host = normalize_host(resolver_host)?;
-        // sched-order: theseus::util::download_dns::DownloadDnsResolver.host_overrides
         let mut overrides = self.host_overrides.lock();
         if host == resolver_host {
             overrides.remove(&host);
         } else {
             overrides.insert(host.clone(), resolver_host);
         }
-        // sched-order-release: theseus::util::download_dns::DownloadDnsResolver.host_overrides
         drop(overrides);
-        // sched-order: theseus::util::download_dns::DownloadDnsResolver.last_resolved temporary
         self.last_resolved.lock().remove(&host);
-        // sched-order: theseus::util::download_dns::DownloadDnsResolver.last_failed temporary
         self.last_failed.lock().remove(&host);
-        // sched-order: theseus::util::download_dns::DownloadDnsResolver.candidate_snapshots temporary
         self.candidate_snapshots.lock().remove(&host);
         Ok(())
     }
@@ -261,13 +254,9 @@ impl DownloadDnsResolver {
     #[allow(dead_code)]
     pub fn clear_host_override(&self, host: &str) -> Result<(), &'static str> {
         let host = normalize_host(host)?;
-        // sched-order: theseus::util::download_dns::DownloadDnsResolver.host_overrides temporary
         self.host_overrides.lock().remove(&host);
-        // sched-order: theseus::util::download_dns::DownloadDnsResolver.last_resolved temporary
         self.last_resolved.lock().remove(&host);
-        // sched-order: theseus::util::download_dns::DownloadDnsResolver.last_failed temporary
         self.last_failed.lock().remove(&host);
-        // sched-order: theseus::util::download_dns::DownloadDnsResolver.candidate_snapshots temporary
         self.candidate_snapshots.lock().remove(&host);
         Ok(())
     }
@@ -289,17 +278,14 @@ impl DownloadDnsResolver {
     }
 
     pub fn record_host_success(&self, host: &str, address: IpAddr) {
-        // sched-order: theseus::util::download_dns::DownloadDnsResolver.last_resolved
         let mut cached = self.last_resolved.lock();
         if let Some(entry) = cached
             .get_mut(host)
             .filter(|entry| entry.addresses.contains(&address))
         {
             entry.consecutive_connection_failures = 0;
-            // sched-order-release: theseus::util::download_dns::DownloadDnsResolver.last_resolved
             drop(cached);
             self.record_result(address, 0.5);
-            // sched-order: theseus::util::download_dns::DownloadDnsResolver.successful_addresses
             let mut successful = self.successful_addresses.lock();
             let addresses = successful.entry(host.to_string()).or_default();
             addresses.retain(|_, timestamp| {
@@ -624,7 +610,6 @@ impl DownloadDnsResolver {
                 return Ok(answers);
             }
             let host_lock = {
-                // sched-order: theseus::util::download_dns::DownloadDnsResolver.candidate_hosts
                 let mut hosts = self.candidate_hosts.lock();
                 if hosts.len() >= MAX_METADATA_HOSTS {
                     hosts.retain(|_, lock| Arc::strong_count(lock) > 1);
@@ -670,7 +655,6 @@ impl DownloadDnsResolver {
                 let now = Instant::now();
                 // System lookup has no authoritative TTL. Reuse the age of
                 // the existing cache rather than refreshing it on every call.
-                // sched-order: theseus::util::download_dns::DownloadDnsResolver.last_resolved temporary
                 let expires_at = self
                     .last_resolved
                     .lock()
@@ -697,7 +681,6 @@ impl DownloadDnsResolver {
                 return Ok(vec![answer]);
             }
 
-            // sched-order: theseus::util::download_dns::DownloadDnsResolver.dns_answers temporary
             let mut answers = self
                 .dns_answers
                 .lock()
@@ -885,22 +868,6 @@ impl DownloadDnsResolver {
         self.test_addresses
             .lock()
             .insert(host.to_string(), addresses);
-    }
-
-    /// The port a test fixture listens on, when the test address set for
-    /// `host` names one. Loopback fixtures bind an ephemeral port while the
-    /// routed URL carries the scheme default, so a connect path that falls
-    /// back to the URL's port would reach 443 and never the fixture.
-    #[cfg(test)]
-    pub(crate) fn test_port(&self, host: &str) -> Option<u16> {
-        let host = normalize_host(host).ok()?;
-        let resolution_host = self.resolution_host(&host);
-        self.test_addresses
-            .lock()
-            .get(&resolution_host)
-            .and_then(|addresses| addresses.first())
-            .map(SocketAddr::port)
-            .filter(|port| *port != 0)
     }
 
     #[cfg(test)]
@@ -1165,19 +1132,11 @@ impl Resolve for DownloadDnsResolver {
         let host = name.as_str().to_string();
         let resolver = self.clone();
         Box::pin(async move {
-            // reqwest pairs each resolved address with the URL's port, so the
-            // port here is a placeholder for production. Tests point a host at
-            // a loopback fixture on an ephemeral port and cannot use 443, so
-            // hand back the port the test address was set with.
-            #[cfg(test)]
-            let test_port = resolver.test_port(&host);
-            #[cfg(not(test))]
-            let test_port = None;
             let addresses = resolver
                 .refresh(&host)
                 .await?
                 .into_iter()
-                .map(|address| SocketAddr::new(address, test_port.unwrap_or(0)))
+                .map(|address| SocketAddr::new(address, 0))
                 .collect::<Vec<_>>();
             Ok(Box::new(addresses.into_iter()) as Addrs)
         })
@@ -1219,10 +1178,7 @@ mod tests {
         resolver.doh_endpoints =
             Arc::new(vec![Arc::from(format!("http://{address}/dns-query"))]);
         resolver.doh_clients = Arc::new(vec![
-            crate::util::http::client_builder()
-                .no_proxy()
-                .build()
-                .unwrap(),
+            reqwest::Client::builder().no_proxy().build().unwrap(),
         ]);
         let addresses = tokio::time::timeout(
             DNS_LOOKUP_TIMEOUT,
@@ -1246,13 +1202,10 @@ mod tests {
         resolver.doh_endpoints =
             Arc::new(vec![Arc::from(format!("http://{address}/dns-query"))]);
         resolver.doh_clients = Arc::new(vec![
-            crate::util::http::client_builder()
-                .no_proxy()
-                .build()
-                .unwrap(),
+            reqwest::Client::builder().no_proxy().build().unwrap(),
         ]);
         let (port, server) = spawn_ipv4_server().await;
-        let response = crate::util::http::client_builder()
+        let response = reqwest::Client::builder()
             .no_proxy()
             .connect_timeout(DNS_LOOKUP_TIMEOUT)
             .dns_resolver(Arc::new(resolver))
@@ -1287,10 +1240,7 @@ mod tests {
             let mut resolver = DownloadDnsResolver::with_doh(true).unwrap();
             resolver.doh_endpoints = Arc::new(vec![endpoint.clone()]);
             resolver.doh_clients = Arc::new(vec![
-                crate::util::http::client_builder()
-                    .no_proxy()
-                    .build()
-                    .unwrap(),
+                reqwest::Client::builder().no_proxy().build().unwrap(),
             ]);
             resolver.remember_answer(
                 "localhost",
@@ -1346,10 +1296,7 @@ mod tests {
             listener.local_addr().unwrap()
         ))]);
         resolver.doh_clients = Arc::new(vec![
-            crate::util::http::client_builder()
-                .no_proxy()
-                .build()
-                .unwrap(),
+            reqwest::Client::builder().no_proxy().build().unwrap(),
         ]);
         let addresses = tokio::time::timeout(
             DNS_LOOKUP_TIMEOUT,
@@ -1546,7 +1493,7 @@ mod tests {
         host: &str,
         port: u16,
     ) -> String {
-        crate::util::http::client_builder()
+        reqwest::Client::builder()
             .no_proxy()
             .connect_timeout(Duration::from_secs(2))
             .dns_resolver(Arc::new(resolver))
@@ -1746,7 +1693,7 @@ mod tests {
         let listener = tokio::net::TcpListener::bind(address).await.unwrap();
         let refused = listener.local_addr().unwrap();
         drop(listener);
-        let error = crate::util::http::client_builder()
+        let error = reqwest::Client::builder()
             .no_proxy()
             .resolve("redirect-target.test", refused)
             .timeout(Duration::from_secs(2))

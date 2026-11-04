@@ -243,7 +243,7 @@ fn inspect_archive<R: Read + Seek>(
             format!("{nested_path}!{name}")
         };
         inspect_archive(
-            Cursor::new(bytes.as_slice()),
+            Cursor::new(bytes),
             &path,
             depth + 1,
             budget,

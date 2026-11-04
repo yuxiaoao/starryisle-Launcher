@@ -210,7 +210,6 @@ test('CI result rejects skipped selected jobs and cancelled runs before establis
         frontend: { result: 'success' },
         resources: { result: 'success' },
         desktop: { result: 'success' },
-        coverage: { result: 'success' },
         website: { result: 'skipped' },
     }
     assert.doesNotThrow(() => validateCiResults(jobs))
@@ -218,10 +217,6 @@ test('CI result rejects skipped selected jobs and cancelled runs before establis
         assert.throws(
             () => validateCiResults({ ...jobs, desktop: { result } }),
             /desktop: expected success/,
-        )
-        assert.throws(
-            () => validateCiResults({ ...jobs, coverage: { result } }),
-            /coverage: expected success/,
         )
     }
     assert.throws(

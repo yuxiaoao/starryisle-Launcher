@@ -144,9 +144,9 @@ pub async fn cancel_import_plan(request_id: &str) -> crate::Result<()> {
 async fn run_import_plan(
     request: &ImportPlanRequest,
     cancellation: &CancellationToken,
-) -> crate::Result<Option<ImportPlanSnapshot>> {
+) -> crate::Result<()> {
     if cancellation.is_cancelled() {
-        return Ok(None);
+        return Ok(());
     }
 
     let source = resolve_source(request)?;
@@ -209,7 +209,7 @@ async fn run_import_plan(
     ))
     .await?;
     if cancellation.is_cancelled() {
-        return Ok(None);
+        return Ok(());
     }
 
     emit_import_plan(&snapshot_for(
@@ -227,7 +227,7 @@ async fn run_import_plan(
     ))
     .await?;
     if cancellation.is_cancelled() {
-        return Ok(None);
+        return Ok(());
     }
 
     let result = match scan_import_plan(
@@ -243,7 +243,7 @@ async fn run_import_plan(
         Ok(result) => result,
         Err(error) => {
             if cancellation.is_cancelled() {
-                return Ok(None);
+                return Ok(());
             }
             let snapshot = snapshot_for(
                 request,
@@ -264,7 +264,7 @@ async fn run_import_plan(
     };
 
     if cancellation.is_cancelled() {
-        return Ok(None);
+        return Ok(());
     }
 
     for counts in &result.category_progress {
@@ -283,11 +283,11 @@ async fn run_import_plan(
         ))
         .await?;
         if cancellation.is_cancelled() {
-            return Ok(None);
+            return Ok(());
         }
     }
 
-    let snapshot = snapshot_for(
+    emit_import_plan(&snapshot_for(
         request,
         ImportPlanStage::Done,
         &import_path,
@@ -299,24 +299,10 @@ async fn run_import_plan(
         result.counts,
         result.migrate,
         None,
-    );
-    emit_import_plan(&snapshot).await?;
+    ))
+    .await?;
 
-    Ok(Some(snapshot))
-}
-
-/// Analyze an import source and return the final snapshot to non-UI callers.
-/// Progress events keep the supplied request ID, as in the interactive flow.
-pub async fn inspect_import_plan(
-    request: &ImportPlanRequest,
-    cancellation: &CancellationToken,
-) -> crate::Result<ImportPlanSnapshot> {
-    run_import_plan(request, cancellation)
-        .await?
-        .ok_or_else(|| {
-            crate::ErrorKind::InputError("Import analysis was cancelled".into())
-                .into()
-        })
+    Ok(())
 }
 
 #[derive(Debug, Clone, Copy, Default)]

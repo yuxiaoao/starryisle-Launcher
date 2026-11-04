@@ -44,10 +44,6 @@ export const storageMessages = defineMessages({
         id: 'app.settings.storage.cacheClearFailed',
         defaultMessage: 'Could not clear the cache. Please try again.',
     },
-    unknownError: {
-        id: 'app.settings.storage.unknownError',
-        defaultMessage: 'Unknown error',
-    },
     clearingCache: {
         id: 'app.settings.storage.clearingCache',
         defaultMessage: 'Clearing cache\u2026',
@@ -232,7 +228,7 @@ export const storageMessages = defineMessages({
     externalHelp: {
         id: 'app.settings.storage.externalHelp',
         defaultMessage:
-            'These directories are managed outside Axolotl and are excluded from the launcher total. Overlapping directories are listed once.',
+            'These directories are managed outside StarryIsle and are excluded from the launcher total. Overlapping directories are listed once.',
     },
     analyzeMeta: { id: 'app.settings.storage.analyzeMeta', defaultMessage: 'Check unused files' },
     analyzingMeta: {

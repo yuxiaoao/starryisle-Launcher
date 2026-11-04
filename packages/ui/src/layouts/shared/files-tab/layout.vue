@@ -153,6 +153,7 @@
                     v-else
                     ref="fileEditorRef"
                     :file="ctx.editingFile.value"
+                    :editor-component="editorComponent"
                     @close="handleEditorClose"
                 />
             </div>
@@ -217,7 +218,8 @@ import {
     SaveIcon,
     TrashIcon,
 } from '@modrinth/assets'
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import type { Component } from 'vue'
+import { computed, onMounted, onUnmounted, ref, shallowRef, watch } from 'vue'
 
 import Button from '#ui/components/base/buttons/Button.vue'
 import FloatingActionBar from '#ui/components/base/FloatingActionBar.vue'
@@ -296,6 +298,16 @@ defineProps<{
 
 const { addNotification } = injectNotificationManager()
 const ctx = injectFileManager()
+
+const editorComponent = shallowRef<Component | null>(null)
+import('vue3-ace-editor')
+    .then(async (mod) => {
+        await Promise.all([import('#ui/utils/ace-theme'), import('#ui/utils/ace-mode-log.ts')])
+        editorComponent.value = mod.VAceEditor
+    })
+    .catch((error) => {
+        console.error('Failed to load the code editor:', error)
+    })
 
 const baseId = `files-${Math.random().toString(36).slice(2, 9)}`
 

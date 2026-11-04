@@ -300,8 +300,9 @@ async fn write_row(
     }
 
     // The store is written first, so a row only says a token was moved once the
-    // token is there. A row left as it was beside newer tokens still reads: it
-    // says the tokens are somewhere, not which ones.
+    // token is there. What the store held before comes back if the row below
+    // cannot be written, which would otherwise leave the two disagreeing about
+    // which secret is the account's.
     let mut undo = Undo::default();
     let marks = keep_tokens(
         account_id,
@@ -447,6 +448,7 @@ async fn keep_tokens(
             continue;
         }
 
+        undo.watch(&key).await;
         if !secrets::keep(key, token).await {
             for (_, column) in TOKENS {
                 undo.drop(&token_key(account_id, column), false).await?;
@@ -601,29 +603,30 @@ fn to_account_type(account_type: &str) -> Option<AccountType> {
     })
 }
 
-/// All tokens of every account that is not offline, whether or not this
+/// The token pairs of every account that is not offline, whether or not this
 /// build can read the row as an account: a token it cannot attribute is still a
 /// secret that has to be hidden.
-pub(crate) async fn tokens_for_redaction(
+pub(crate) async fn token_pairs(
     handle: &super::Handle,
-) -> crate::Result<Vec<String>> {
+) -> crate::Result<Vec<(String, String)>> {
     let mut connection = handle.connection().await?;
     let rows = sqlx::query(
-        "SELECT account_id, access_token, refresh_token, yggdrasil_client_token,
-                secrets_externalized
+        "SELECT account_id, access_token, refresh_token, secrets_externalized
          FROM minecraft_users
          WHERE account_type <> 'offline'",
     )
     .fetch_all(&mut *connection)
     .await?;
 
-    let mut credentials = Vec::with_capacity(rows.len() * TOKENS.len());
+    let mut pairs = Vec::with_capacity(rows.len());
     for row in rows {
         let account_id: String = row.try_get("account_id")?;
-        credentials.extend(tokens(&mut connection, &account_id, &row).await?);
+        let [access_token, refresh_token, _] =
+            tokens(&mut connection, &account_id, &row).await?;
+        pairs.push((access_token, refresh_token));
     }
 
-    Ok(credentials)
+    Ok(pairs)
 }
 
 /// Moves the tokens these rows still carry into the credential store, and clears

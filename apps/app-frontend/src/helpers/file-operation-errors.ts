@@ -1,7 +1,5 @@
 import { defineMessage, type useVIntl } from '@modrinth/ui'
 
-import { errorMessage } from './error-text'
-
 const fileInUseMessage = defineMessage({
     id: 'app.files.error.in-use',
     defaultMessage:
@@ -13,11 +11,13 @@ export function fileOperationError(
     os: string,
     formatMessage: ReturnType<typeof useVIntl>['formatMessage'],
 ): string | null {
-    // A bare string is matched directly; anything else has to carry a message,
-    // and this returns null rather than a fallback because the caller only asks
-    // whether the failure is a locked file.
-    const message = typeof error === 'string' ? error : errorMessage(error)
-    if (message === null) return null
+    const message =
+        typeof error === 'string'
+            ? error
+            : error && typeof error === 'object' && 'message' in error
+              ? error.message
+              : null
+    if (typeof message !== 'string') return null
 
     const hasLockDetails = /\bFile locked by:\s*\n\s*PID \d+ - /i.test(message)
     const hasWindowsLockCode =

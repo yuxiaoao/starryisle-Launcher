@@ -565,14 +565,8 @@ pub async fn resource_revise_plan<R: tauri::Runtime>(
 pub async fn resource_queue_plan(
     plan_id: PlanId,
     revision: u32,
-    resource_names: Option<std::collections::HashMap<String, String>>,
 ) -> Result<theseus::install::InstallJobSnapshot> {
-    Ok(theseus::resources::plans::queue_with_resource_names(
-        plan_id,
-        revision,
-        resource_names.unwrap_or_default(),
-    )
-    .await?)
+    Ok(theseus::resources::plans::queue(plan_id, revision).await?)
 }
 
 #[tauri::command]

@@ -60,6 +60,15 @@ export const instanceRoutes: RouteRecordRaw[] = [
                 ],
             },
             {
+                path: 'advancements',
+                name: 'InstanceAdvancements',
+                component: () => import('@/pages/instance/Advancements.vue'),
+                meta: {
+                    useRootContext: true,
+                    breadcrumb: [{ name: 'Advancements' }],
+                },
+            },
+            {
                 path: 'worlds',
                 name: 'InstanceWorlds',
                 component: () => import('@/pages/instance/Worlds.vue'),

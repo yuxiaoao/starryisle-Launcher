@@ -16,68 +16,6 @@ use super::fixtures;
 use super::fixtures::*;
 
 #[tokio::test]
-async fn sparse_checkpoint_updates_only_flushed_contiguous_completed_ranges() {
-    use crate::util::download::range_journal::RangeJournal;
-    let directory = tempfile::tempdir().unwrap();
-    let part = directory.path().join("checkpoint.part");
-    let half = 4 * 1024 * 1024;
-    let size = 2 * half;
-    tokio::fs::write(&part, vec![7; size as usize])
-        .await
-        .unwrap();
-    let integrity =
-        Integrity::sha1("validated-after-completion").with_size(size);
-    let journal = RangeJournal::new(&part, &integrity, size, 2);
-    journal.persist().await.unwrap();
-    let first = DownloadRange::new(0, 0, half - 1);
-    first.accept_chunk(half as usize);
-    assert!(first.finish());
-    let active = DownloadRange::new(1, half, half + half / 2 - 1);
-    active.accept_chunk((half / 2) as usize);
-    let tail = DownloadRange::new(2, half + half / 2, size - 1);
-    tail.accept_chunk((half / 2) as usize);
-    assert!(tail.finish());
-    let ranges = vec![first, active, tail];
-    checkpoint_completed_ranges(&journal, &part, &ranges)
-        .await
-        .unwrap();
-    // Dropping an interrupted scheduler must neither truncate sparse output
-    // nor trust an active writer's received bytes as persisted data.
-    drop(SegmentCleanupGuard::new(&part).preserve_sparse());
-    assert_eq!(tokio::fs::metadata(&part).await.unwrap().len(), size);
-    let restored = RangeJournal::load(&part, &integrity, size)
-        .await
-        .unwrap()
-        .unwrap();
-    assert_eq!(
-        restored
-            .ranges()
-            .await
-            .iter()
-            .map(|r| r.written)
-            .collect::<Vec<_>>(),
-        vec![half, 0]
-    );
-    assert!(ranges[1].finish());
-    checkpoint_completed_ranges(&journal, &part, &ranges)
-        .await
-        .unwrap();
-    let restored = RangeJournal::load(&part, &integrity, size)
-        .await
-        .unwrap()
-        .unwrap();
-    assert_eq!(
-        restored
-            .ranges()
-            .await
-            .iter()
-            .map(|r| r.written)
-            .collect::<Vec<_>>(),
-        vec![half, half]
-    );
-}
-
-#[tokio::test]
 async fn segmented_download_uses_parallel_validated_ranges() {
     let _guard = fixtures::RANGE_SPLITTING_TEST_LOCK.lock().await;
     RANGE_SPLITTING_PROTOCOL_FAILURES.lock().clear();
@@ -109,7 +47,7 @@ async fn segmented_download_uses_parallel_validated_ranges() {
         .with_integrity(Integrity::sha1(hash).with_size(size as u64));
     let directory = tempfile::tempdir().unwrap();
     let part_path = directory.path().join("fixture.part");
-    let client = crate::util::http::client_builder()
+    let client = reqwest::Client::builder()
         .no_proxy()
         .redirect(reqwest::redirect::Policy::none())
         .build()
@@ -205,7 +143,7 @@ async fn mirror_ranges_start_concurrently_and_retries_reuse_redirect() {
         .with_integrity(Integrity::sha1(hash).with_size(size as u64));
     let directory = tempfile::tempdir().unwrap();
     let part_path = directory.path().join("redirect.part");
-    let client = crate::util::http::client_builder()
+    let client = reqwest::Client::builder()
         .no_proxy()
         .redirect(reqwest::redirect::Policy::none())
         .build()
@@ -268,7 +206,7 @@ async fn temporary_range_failure_resumes_without_disabling_segments() {
         .with_integrity(Integrity::sha1(hash).with_size(size as u64));
     let directory = tempfile::tempdir().unwrap();
     let part_path = directory.path().join("retry.part");
-    let client = crate::util::http::client_builder()
+    let client = reqwest::Client::builder()
         .no_proxy()
         .redirect(reqwest::redirect::Policy::none())
         .build()
@@ -324,7 +262,7 @@ async fn invalid_content_range_disables_range_splitting_after_repeats() {
     };
     let directory = tempfile::tempdir().unwrap();
     let part_path = directory.path().join("fixture.part");
-    let client = crate::util::http::client_builder()
+    let client = reqwest::Client::builder()
         .no_proxy()
         .redirect(reqwest::redirect::Policy::none())
         .build()

@@ -52,10 +52,6 @@ mod installer_settings;
 
 mod process;
 pub use self::process::*;
-#[cfg(test)]
-pub(crate) use self::process::{
-    LOG_RING_BUFFER_BYTE_CAPACITY, filled_log_ring_buffer,
-};
 
 pub(crate) async fn instance_has_running_process(
     instance_id: &str,
@@ -186,8 +182,6 @@ pub struct State {
     download_sample_throttles: AtomicU64,
     pub(crate) install_job_semaphore: Semaphore,
     pub(crate) install_db_semaphore: Semaphore,
-    #[cfg(test)]
-    install_db_permit_timeout: AtomicU64,
     pub(crate) install_admission_locks: DashMap<String, Arc<AsyncMutex<()>>>,
     pub(crate) install_execution_locks: DashMap<String, Arc<AsyncMutex<()>>>,
     pub(crate) install_job_cancellations: DashMap<Uuid, CancellationToken>,
@@ -718,8 +712,6 @@ impl State {
                 "Error reconciling persisted CurseForge waiting install jobs: {e}"
             );
         }
-        crate::scheduler::reconcile::at_startup(state).await;
-        crate::scheduler::quota::check_at_startup();
 
         state.spawn_background({
             let state = Arc::clone(state);
@@ -1010,9 +1002,6 @@ impl State {
         self: &Arc<Self>,
         settings: &Settings,
     ) {
-        crate::util::download::telemetry::set_enabled(
-            settings.advanced_download_info_enabled(),
-        );
         self.minecraft_metadata_source
             .store(settings.minecraft_metadata_source as u8, Ordering::Relaxed);
         self.minecraft_file_source
@@ -1289,11 +1278,6 @@ impl State {
             "Could not find valid settings dir".to_string(),
         ))?;
         store::secrets::identify(&settings_dir);
-        // The settings are composed from the documents in this directory from
-        // here on, and the read below sizes the semaphores and the client the
-        // launcher starts with: a root named after it would leave the launch
-        // running on the rows.
-        documents::settings::identify(&settings_dir);
 
         tracing::info!("Connecting to app database");
         let pool = db::connect(&app_identifier).await?;
@@ -1317,9 +1301,6 @@ impl State {
             &app_identifier,
         )
         .await?;
-        crate::util::download::telemetry::set_enabled(
-            settings.advanced_download_info_enabled(),
-        );
         let download_concurrency =
             settings.effective_max_concurrent_downloads();
         let fetch_semaphore =
@@ -1355,25 +1336,11 @@ impl State {
 
         documents::hand_over(&pool, &directories.settings_dir).await;
 
-        let documents = documents::Documents::at(
-            directories.settings_dir.join(documents::DIR_NAME),
-            &pool,
-        )
-        .with_config_root(documents::config_root());
-        // A deployment changes a value by changing its own document, so a local
-        // copy that repeats the old one has to go: it would shadow the change
-        // forever. This is the one place that drops them, because a read must
-        // never write to disk.
-        if let Err(error) =
-            documents::settings::prune_redundant(&documents).await
-        {
-            tracing::warn!(
-                %error,
-                "Failed to drop the settings entries a provided value covers"
-            );
-        }
-
         if !legacy.java_versions.is_empty() {
+            let documents = documents::Documents::at(
+                directories.settings_dir.join(documents::DIR_NAME),
+                &pool,
+            );
             if let Err(error) =
                 JavaVersion::save_all(&documents, &legacy.java_versions).await
             {
@@ -1446,8 +1413,6 @@ impl State {
             install_admission_locks: DashMap::new(),
             install_execution_locks: DashMap::new(),
             install_db_semaphore: Semaphore::new(1),
-            #[cfg(test)]
-            install_db_permit_timeout: AtomicU64::new(20_000),
             install_job_cancellations: DashMap::new(),
             install_job_operation_locks: DashMap::new(),
             discord_rpc,
@@ -1507,36 +1472,22 @@ impl State {
     pub(crate) async fn acquire_install_db_permit(
         &self,
     ) -> crate::Result<tokio::sync::SemaphorePermit<'_>> {
-        #[cfg(test)]
-        let timeout = Duration::from_millis(
-            self.install_db_permit_timeout.load(Ordering::Relaxed),
-        );
-        #[cfg(not(test))]
-        let timeout = Duration::from_secs(20);
-        let permit =
-            tokio::time::timeout(timeout, self.install_db_semaphore.acquire())
-                .await
-                .map_err(|_| {
-                    crate::ErrorKind::InputError(
-                        "Timed out waiting for the install database writer"
-                            .to_string(),
-                    )
-                })?
-                .map_err(|_| {
-                    crate::ErrorKind::OtherError(
-                        "install database semaphore closed".to_string(),
-                    )
-                })?;
+        let permit = tokio::time::timeout(
+            Duration::from_secs(20),
+            self.install_db_semaphore.acquire(),
+        )
+        .await
+        .map_err(|_| {
+            crate::ErrorKind::InputError(
+                "Timed out waiting for the install database writer".to_string(),
+            )
+        })?
+        .map_err(|_| {
+            crate::ErrorKind::OtherError(
+                "install database semaphore closed".to_string(),
+            )
+        })?;
         Ok(permit)
-    }
-
-    #[cfg(test)]
-    pub(crate) fn set_install_db_permit_timeout_for_test(
-        &self,
-        timeout: Duration,
-    ) {
-        self.install_db_permit_timeout
-            .store(timeout.as_millis().max(1) as u64, Ordering::Relaxed);
     }
 
     pub(crate) async fn lock_instance_content_exclusive(
@@ -1658,8 +1609,6 @@ pub(crate) async fn test_state(
         install_admission_locks: DashMap::new(),
         install_execution_locks: DashMap::new(),
         install_db_semaphore: Semaphore::new(1),
-        #[cfg(test)]
-        install_db_permit_timeout: AtomicU64::new(20_000),
         install_job_cancellations: DashMap::new(),
         install_job_operation_locks: DashMap::new(),
         discord_rpc: DiscordGuard::init()?,

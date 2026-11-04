@@ -14,12 +14,10 @@ const props = withDefaults(
         pinned: boolean
         playing?: boolean
         layout?: InstanceCardLayout
-        showGameDirectory?: boolean
     }>(),
     {
         playing: false,
         layout: 'row',
-        showGameDirectory: false,
     },
 )
 
@@ -50,7 +48,6 @@ const menuOptions = computed(() => [
             :flat="true"
             :playing="playing"
             :first="layout === 'spotlight'"
-            :show-game-directory="showGameDirectory"
         />
         <div class="home-instance-menu" @click.stop>
             <OverflowMenu

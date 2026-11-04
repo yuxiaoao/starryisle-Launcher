@@ -72,7 +72,6 @@ it('material previews resolve blockstate models and texture variables', () => {
             'minecraft:block/dirt': [0.5, 0.5, 0.75, 0.75] as [number, number, number, number],
         },
         missingTextureUv: [0, 0, 0.1, 0.1] as [number, number, number, number],
-        bubbleUv: [0, 0.52, 0.004, 0.522] as [number, number, number, number],
     }
 
     expect(resolveSchematicMaterialTexture('minecraft:grass_block', resources)).toEqual(sideUv)
@@ -86,7 +85,6 @@ it('material previews fall back to conventional texture names', () => {
         defaultBlockProperties: {},
         textureUvs: { 'example:block/polished_tile': uv },
         missingTextureUv: [0, 0, 0.1, 0.1] as [number, number, number, number],
-        bubbleUv: [0, 0.52, 0.004, 0.522] as [number, number, number, number],
     }
 
     expect(resolveSchematicMaterialTexture('example:polished_tile', resources)).toEqual(uv)

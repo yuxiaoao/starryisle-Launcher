@@ -1,10 +1,6 @@
 import { invoke } from '@tauri-apps/api/core'
 
-import type { SchematicSource } from '@/helpers/schematics'
-
 export type SchematicPreviewSource =
-    | { kind: 'remote'; source: SchematicSource; projectId: string; fileName: string }
-    | { kind: 'shimu'; postId: number; fileName: string }
     | { kind: 'external'; path: string }
     | { kind: 'instance'; instanceId: string; relativePath: string }
     | { kind: 'instance_file'; instanceId: string; relativePath: string }
@@ -63,7 +59,7 @@ export type SchematicPreviewManifest = {
 export type InstanceSchematicFile = {
     relativePath: string
     fileName: string
-    format: 'litematic' | 'schem' | 'schematic' | 'nbt'
+    format: 'litematic' | 'schem'
     size: number
     modifiedAt?: number
 }

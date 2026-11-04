@@ -54,7 +54,7 @@ const values = {
     uninstaller_icon: path.join(root, 'apps/app/icons/icon.ico'),
     main_binary_name: 'AxolotlUninstallFixture',
     main_binary_path: path.join(out, 'AxolotlUninstallFixture.exe'),
-    bundle_id: 'red.ghs.axolotl.uninstall-fixture',
+    bundle_id: 'com.starryisle.launcher.uninstall-fixture',
     out_file: path.join(out, 'setup.exe'),
     arch: 'x64',
     additional_plugins_path: path.join(nsis, 'Plugins/x86-unicode/additional'),

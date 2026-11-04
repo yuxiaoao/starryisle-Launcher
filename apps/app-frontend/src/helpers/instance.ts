@@ -492,12 +492,10 @@ export interface InstanceContentSnapshot {
 export async function get_content_snapshot(
     instanceId: string,
     deferEnrichment = false,
-    refreshFiles = false,
 ): Promise<InstanceContentSnapshot> {
     return await invoke('plugin:instance|instance_get_content_snapshot', {
         instanceId,
         deferEnrichment,
-        refreshFiles,
     })
 }
 

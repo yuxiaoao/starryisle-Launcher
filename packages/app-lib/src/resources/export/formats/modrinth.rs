@@ -41,7 +41,9 @@ pub(super) fn index(
                 return Err(invalid("CurseForge reference in an index export"));
             }
             ExportFileAction::Download {
-                snapshot, artifact, ..
+                snapshot,
+                artifact,
+                environment,
             } => {
                 if !crate::resources::identity::exact_integrity(
                     &snapshot.integrity,
@@ -84,13 +86,30 @@ pub(super) fn index(
                             invalid("export reference has no current hash")
                         })
                 };
-                // No `env`: installers skip files marked client-unsupported,
-                // and Modrinth marks singleplayer-capable server mods that way.
-                files.push(json!({
+                let mut file = json!({
                     "path": snapshot.relative_path,
                     "hashes": {"sha1": hash(HashAlgorithm::Sha1)?, "sha512": hash(HashAlgorithm::Sha512)?},
                     "downloads": urls, "fileSize": snapshot.integrity.size.ok_or_else(|| invalid("export size missing"))?,
-                }));
+                });
+                let mut env = serde_json::Map::new();
+                for (key, value) in [
+                    ("client", environment.client),
+                    ("server", environment.server),
+                ] {
+                    let value = match value {
+                        ArtifactEnvironmentRequirement::Required => "required",
+                        ArtifactEnvironmentRequirement::Optional => "optional",
+                        ArtifactEnvironmentRequirement::Unsupported => {
+                            "unsupported"
+                        }
+                        ArtifactEnvironmentRequirement::Unknown => continue,
+                    };
+                    env.insert(key.into(), json!(value));
+                }
+                if !env.is_empty() {
+                    file["env"] = json!(env);
+                }
+                files.push(file);
             }
         }
     }

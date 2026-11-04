@@ -138,9 +138,9 @@ async function toggleFollowSystem() {
                 <div class="onboarding-welcome-logo">
                     <AxolotlLogo icon-only />
                 </div>
-                <div class="onboarding-welcome-wordmark" aria-label="Axolotl Launcher">
-                    <span class="onboarding-welcome-wordmark-core" data-wordmark="Axolotl">
-                        Axolotl
+                <div class="onboarding-welcome-wordmark" aria-label="StarryIsle Launcher">
+                    <span class="onboarding-welcome-wordmark-core" data-wordmark="StarryIsle">
+                        StarryIsle
                     </span>
                     <span class="onboarding-welcome-wordmark-suffix" data-wordmark="Launcher">
                         Launcher

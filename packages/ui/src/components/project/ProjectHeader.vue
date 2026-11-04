@@ -26,7 +26,7 @@
         </template>
         <template #title-suffix>
             <ProjectStatusBadge
-                v-if="project.status && (member || project.status !== 'approved')"
+                v-if="member || project.status !== 'approved'"
                 :status="project.status"
             />
         </template>
@@ -57,7 +57,6 @@
                 </template>
                 <template v-else>
                     <div
-                        v-if="project.downloads !== undefined"
                         v-tooltip="
                             capitalizeString(
                                 formatMessage(commonMessages.projectDownloads, {
@@ -71,7 +70,7 @@
                         {{ formatCompactNumber(project.downloads) }}
                     </div>
                     <div
-                        v-if="showFollowers && project.followers !== undefined"
+                        v-if="showFollowers"
                         v-tooltip="
                             capitalizeString(
                                 formatMessage(commonMessages.projectFollowers, {
@@ -128,10 +127,7 @@ const { formatCompactNumber } = useCompactNumber()
 
 const props = withDefaults(
     defineProps<{
-        project: Pick<Project, 'title' | 'description' | 'categories'> &
-            Partial<Pick<Project, 'icon_url' | 'status' | 'downloads' | 'followers'>> & {
-                project_type: string
-            }
+        project: Project
         member?: boolean
         projectV3?: Labrinth.Projects.v3.Project | null
         ping?: number

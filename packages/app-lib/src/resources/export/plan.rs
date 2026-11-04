@@ -96,6 +96,43 @@ pub fn validate_choices(
     Ok(())
 }
 
+fn environment(
+    draft: &ExportDraft,
+    file: &ExportResolvedFile,
+) -> ArtifactEnvironment {
+    let protocol = file
+        .resolutions
+        .iter()
+        .filter_map(|r| match r {
+            ExportSourceResolution::Matched { source, artifacts }
+                if source == &SourceId::modrinth() =>
+            {
+                artifacts.first()
+            }
+            _ => None,
+        })
+        .find_map(|a| {
+            draft
+                .projects
+                .get(&a.reference.release.project)?
+                .protocol
+                .as_ref()
+        });
+    let side = |key| match protocol
+        .and_then(|p| p.get(key))
+        .and_then(|v| v.as_str())
+    {
+        Some("required") => ArtifactEnvironmentRequirement::Required,
+        Some("optional") => ArtifactEnvironmentRequirement::Optional,
+        Some("unsupported") => ArtifactEnvironmentRequirement::Unsupported,
+        _ => ArtifactEnvironmentRequirement::Unknown,
+    };
+    ArtifactEnvironment {
+        client: side("client_side"),
+        server: side("server_side"),
+    }
+}
+
 fn cf_path(draft: &ExportDraft, artifact: &ResourceArtifact) -> Option<String> {
     let project = draft.projects.get(&artifact.reference.release.project)?;
     let folder = match project.metadata.types.as_slice() {
@@ -218,10 +255,7 @@ pub fn build(
             Some(artifact) => ExportFileAction::Download {
                 snapshot: file.snapshot.clone(),
                 artifact,
-                environment: ArtifactEnvironment {
-                    client: ArtifactEnvironmentRequirement::Unknown,
-                    server: ArtifactEnvironmentRequirement::Unknown,
-                },
+                environment: environment(draft, file),
             },
             None => embed(),
         });

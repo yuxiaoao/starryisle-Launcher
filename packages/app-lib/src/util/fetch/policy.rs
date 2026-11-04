@@ -4,7 +4,6 @@ use super::model::{DownloadRoute, ProxyPolicy, ResourceClass};
 #[cfg(test)]
 use super::routes::route;
 use super::routes::{effective_route_authority, route_host};
-use crate::scheduler::order::instrument;
 use crate::util::download::constants::{
     API_KEY_HEADER, FETCH_AUTHORIZATION, FETCH_COOKIE, FETCH_GITHUB_COM,
     FETCH_MELOONG_COM, FETCH_MOMOT_RS, FETCH_OPTIFINE_NET,
@@ -271,7 +270,7 @@ pub(crate) fn record_route_health_failure(
 }
 
 pub(crate) static RANGE_SPLITTING_PROTOCOL_FAILURES: LazyLock<
-    Mutex<HashMap<String, (u32, Instant)>>,
+    Mutex<HashMap<String, u32>>,
 > = LazyLock::new(|| Mutex::new(HashMap::new()));
 
 pub(crate) static RANGE_SPLITTING_SUPPORTED: LazyLock<Mutex<HashSet<String>>> =
@@ -305,15 +304,16 @@ pub(crate) fn range_splitting_allowed(route: &DownloadRoute) -> bool {
         RANGE_SPLITTING_PROTOCOL_FAILURES
             .lock()
             .get(&authority)
-            .is_none_or(|(count, failed_at)| {
-                *count < RANGE_SPLITTING_DISABLE_THRESHOLD
-                    || failed_at.elapsed() >= time::Duration::from_secs(30)
-            })
+            .copied()
+            .unwrap_or(0)
+            < RANGE_SPLITTING_DISABLE_THRESHOLD
     })
 }
 
-/// Repeated protocol failures cool down this server's ranges temporarily.
-/// File metadata and content failures must stay scoped to their own URL.
+/// Records a range protocol failure for the route's server. A single failure
+/// is treated as a transient blip, but once a server repeatedly mishandles
+/// range requests, range splitting is disabled for it for this session so
+/// later downloads skip the doomed segmented probe.
 pub(crate) fn disable_range_splitting(route: &DownloadRoute) {
     let Some(authority) = range_splitting_authority(route) else {
         return;
@@ -322,41 +322,25 @@ pub(crate) fn disable_range_splitting(route: &DownloadRoute) {
         &authority,
         route.proxy,
     );
-    let now = Instant::now();
-    let _order_failures = instrument::hold(
-        "theseus::util::fetch::policy::RANGE_SPLITTING_PROTOCOL_FAILURES",
-    );
-    // sched-order: theseus::util::fetch::policy::RANGE_SPLITTING_PROTOCOL_FAILURES
     let mut failures = RANGE_SPLITTING_PROTOCOL_FAILURES.lock();
-    let (count, failed_at) =
-        failures.entry(authority.clone()).or_insert((0, now));
-    if now.duration_since(*failed_at) >= time::Duration::from_secs(30) {
-        *count = 0;
-    }
-    *count = count.saturating_add(1);
-    *failed_at = now;
+    let count = failures.entry(authority.clone()).or_insert(0);
+    *count += 1;
     if *count == RANGE_SPLITTING_DISABLE_THRESHOLD {
-        instrument::touch(
-            "theseus::util::fetch::policy::RANGE_SPLITTING_SUPPORTED",
-        );
-        // sched-order: theseus::util::fetch::policy::RANGE_SPLITTING_SUPPORTED temporary
         RANGE_SPLITTING_SUPPORTED.lock().remove(&authority);
         tracing::info!(
             authority,
-            "Cooling down range splitting for a server after repeated protocol failures"
+            "Disabling range splitting for a server after repeated range protocol failures"
         );
     }
 }
 
 pub(crate) fn record_range_splitting_success(route: &DownloadRoute) {
     if let Some(authority) = range_splitting_authority(route) {
-        let authority = crate::util::download::proxy_context::authority_key(
-            &authority,
-            route.proxy,
+        RANGE_SPLITTING_SUPPORTED.lock().insert(
+            crate::util::download::proxy_context::authority_key(
+                &authority,
+                route.proxy,
+            ),
         );
-        // sched-order: theseus::util::fetch::policy::RANGE_SPLITTING_PROTOCOL_FAILURES temporary
-        RANGE_SPLITTING_PROTOCOL_FAILURES.lock().remove(&authority);
-        // sched-order: theseus::util::fetch::policy::RANGE_SPLITTING_SUPPORTED temporary
-        RANGE_SPLITTING_SUPPORTED.lock().insert(authority);
     }
 }

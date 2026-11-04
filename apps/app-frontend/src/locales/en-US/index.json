@@ -1,200 +1,4 @@
 {
-  "app.schematics.source.reden": { "message": "Reden" },
-  "app.schematics.source.buildschematics": { "message": "BuildSchematics" },
-  "app.schematics.failed-sources": { "message": "{sources} could not be loaded." },
-  "app.schematics.sort.default": { "message": "Source order" },
-  "app.schematics.sort.name": { "message": "Name" },
-  "app.schematics.login-required-sources": {
-    "message": "{count, plural, one {# source requires <login-link>sign-in</login-link>} other {# sources require <login-link>sign-in</login-link>}}"
-  },
-  "app.schematics.open-source": { "message": "View on source website" },
-  "app.schematics.instances-error": {
-    "message": "Could not load your instances."
-  },
-  "app.browse.schematics-project-type": {
-    "message": "Schematics"
-  },
-  "app.schematics.source": {
-    "message": "Shimu Space"
-  },
-  "app.schematics.login-title": {
-    "message": "Connect Shimu Space"
-  },
-  "app.schematics.login-description": {
-    "message": "Sign in to browse free schematics from Shimu Space and install them into your Minecraft instances."
-  },
-  "app.schematics.login": {
-    "message": "Sign in to Shimu Space"
-  },
-  "app.schematics.waiting": {
-    "message": "Complete authorization in your browser"
-  },
-  "app.schematics.expired": {
-    "message": "Reconnect Shimu Space"
-  },
-  "app.schematics.load-error": {
-    "message": "Could not load schematics."
-  },
-  "app.schematics.account-error": {
-    "message": "Could not read your Shimu Space account."
-  },
-  "app.schematics.empty-title": {
-    "message": "No schematics found"
-  },
-  "app.schematics.empty-description": {
-    "message": "Try another page or a different search."
-  },
-  "app.schematics.loading": {
-    "message": "Loading schematics…"
-  },
-  "app.schematics.retry": {
-    "message": "Retry"
-  },
-  "app.schematics.search": {
-    "message": "Search schematics"
-  },
-  "app.schematics.sort.hot": { "message": "Popular" },
-  "app.schematics.sort.featured": { "message": "Featured" },
-  "app.schematics.author-summary": {
-    "message": "{author} · {summary}"
-  },
-  "app.schematics.select-instance": {
-    "message": "Choose an instance"
-  },
-  "app.schematics.install": {
-    "message": "Install"
-  },
-  "app.schematics.installing": {
-    "message": "Installing…"
-  },
-  "app.schematics.preview": { "message": "Preview" },
-  "app.schematics.files": { "message": "Files" },
-  "app.schematics.creator": { "message": "Creator" },
-  "app.schematics.source-heading": { "message": "Source" },
-  "app.schematics.preview-source": { "message": "Shimu Space · {fileName}" },
-  "app.schematics.installed": {
-    "message": "Installed"
-  },
-  "app.schematics.install-success": {
-    "message": "Schematic installed"
-  },
-  "app.schematics.install-failed": {
-    "message": "Could not install this schematic. Please try again."
-  },
-  "app.schematics.file-exists": {
-    "message": "A file with this name already exists in the instance. Choose another instance or rename the existing file."
-  },
-  "app.schematics.login-failed": {
-    "message": "Could not complete the connection. Please try again."
-  },
-  "app.third-party.connected-notification": {
-    "message": "Connected to Shimu Space"
-  },
-  "app.third-party.description": {
-    "message": "Connect external accounts for use in the launcher."
-  },
-  "app.third-party.shimu": {
-    "message": "Shimu Space"
-  },
-  "app.third-party.shimu-purpose": {
-    "message": "Connect your Shimu Space account."
-  },
-  "app.third-party.identity": {
-    "message": "{nickname} · {username}"
-  },
-  "app.third-party.connected": {
-    "message": "Connected"
-  },
-  "app.third-party.disconnected": {
-    "message": "Not connected"
-  },
-  "app.third-party.expired": {
-    "message": "Sign in again"
-  },
-  "app.third-party.waiting": {
-    "message": "Waiting for authorization"
-  },
-  "app.third-party.exchanging": {
-    "message": "Completing connection"
-  },
-  "app.third-party.connect": {
-    "message": "Connect"
-  },
-  "app.third-party.reconnect": {
-    "message": "Reconnect"
-  },
-  "app.third-party.cancel": {
-    "message": "Cancel"
-  },
-  "app.third-party.more": {
-    "message": "Shimu Space account options"
-  },
-  "app.third-party.check": {
-    "message": "Check connection"
-  },
-  "app.third-party.disconnect": {
-    "message": "Disconnect"
-  },
-  "app.third-party.disconnect-title": {
-    "message": "Disconnect Shimu Space?"
-  },
-  "app.third-party.disconnect-description": {
-    "message": "This removes the account credential from this launcher. To revoke the authorization at Shimu Space, manage it on their website."
-  },
-  "app.third-party.denied": {
-    "message": "Authorization was declined. You can connect again."
-  },
-  "app.third-party.timed-out": {
-    "message": "Authorization timed out. Connect again to continue."
-  },
-  "app.third-party.failed": {
-    "message": "Could not complete the connection. Please try again."
-  },
-  "app.third-party.load-failed": {
-    "message": "Could not read the account status."
-  },
-  "app.third-party.check-failed": {
-    "message": "Could not check the connection. Please try again."
-  },
-  "app.third-party.action-failed": {
-    "message": "The account operation failed. Please try again."
-  },
-  "app.third-party.retry": {
-    "message": "Retry"
-  },
-  "app.third-party.unavailable": {
-    "message": "Account connection is unavailable in this build."
-  },
-  "app.third-party.permissions": {
-    "message": "Authorization: read your profile and posts, and download resources. Authorization expires after 3 days; you will need to sign in again."
-  },
-  "app.third-party.browser": {
-    "message": "Complete the authorization in your browser."
-  },
-  "app.third-party.search": {
-    "message": "Shimu mcimg OAuth account authorization sign in connect"
-  },
-  "app.settings.tabs.third-party-accounts": {
-    "message": "Third-party accounts"
-  },
-  "app.downloads.task.install-content": {
-    "message": "Install content"
-  },
-  "app.downloads.task.install-content-named": {
-    "message": "Install content: {name}"
-  },
-  "app.downloads.task.install-content-batch": {
-    "message": "Install content: {name} ({count} items)"
-  },
-  "app.downloads.task.change-content": {
-    "message": "Change content"
-  },
-  "app.downloads.task.change-content-named": {
-    "message": "Change content: {name}"
-  },
-  "app.downloads.task.change-content-batch": {
-    "message": "Change content: {name} ({count} items)"
-  },
   "app.account.modrinth-account": {
     "message": "Modrinth account"
   },
@@ -751,10 +555,10 @@
     "message": "Hide to tray"
   },
   "app.appearance-settings.close-behavior.title": {
-    "message": "Choose how to close Axolotl Launcher"
+    "message": "Choose how to close StarryIsle Launcher"
   },
   "app.appearance-settings.color-theme.description": {
-    "message": "Select your preferred color theme for Axolotl Launcher."
+    "message": "Select your preferred color theme for StarryIsle Launcher."
   },
   "app.appearance-settings.color-theme.title": {
     "message": "Color theme"
@@ -911,6 +715,30 @@
   },
   "app.appearance-settings.home-widget-background-opacity.title": {
     "message": "Home widget background opacity"
+  },
+  "app.appearance-settings.hue-tint.dark-theme": {
+    "message": "Dark theme"
+  },
+  "app.appearance-settings.hue-tint.description": {
+    "message": "Re-tints the launcher surfaces without touching icons."
+  },
+  "app.appearance-settings.hue-tint.enable": {
+    "message": "Enable interface hue"
+  },
+  "app.appearance-settings.hue-tint.enable-description": {
+    "message": "Tints the nav rail, title bar and window frame with the selected hue."
+  },
+  "app.appearance-settings.hue-tint.hex": {
+    "message": "Hex"
+  },
+  "app.appearance-settings.hue-tint.light-theme": {
+    "message": "Light theme"
+  },
+  "app.appearance-settings.hue-tint.reset": {
+    "message": "Reset"
+  },
+  "app.appearance-settings.hue-tint.title": {
+    "message": "Interface hue"
   },
   "app.appearance-settings.lightweight-mode.description": {
     "message": "Closes the launcher webview after Minecraft starts to reduce memory use. Restore it from the system tray."
@@ -1167,12 +995,6 @@
   "app.browse.preparing-selected": {
     "message": "Preparing {completed}/{total}"
   },
-  "app.browse.reviewing-selected": {
-    "message": "Reviewing content changes…"
-  },
-  "app.browse.queueing-selected": {
-    "message": "Adding to download queue…"
-  },
   "app.browse.project-type.datapacks": {
     "message": "Data Packs"
   },
@@ -1224,9 +1046,6 @@
   "app.browse.source.planet-minecraft": {
     "message": "Planet Minecraft"
   },
-  "app.build.beta": {
-    "message": "Beta"
-  },
   "app.close-launcher.direct": {
     "message": "Close directly"
   },
@@ -1234,7 +1053,7 @@
     "message": "Remember my choice"
   },
   "app.close-launcher.title": {
-    "message": "Choose how to close Axolotl Launcher"
+    "message": "Choose how to close StarryIsle Launcher"
   },
   "app.close-launcher.tray": {
     "message": "Hide to tray"
@@ -2251,7 +2070,7 @@
     "message": "Debug information"
   },
   "app.error.directory-description": {
-    "message": "Axolotl Launcher cannot migrate to the selected directory. Contact support for help or cancel the directory change."
+    "message": "StarryIsle Launcher cannot migrate to the selected directory. Contact support for help or cancel the directory change."
   },
   "app.error.directory-title": {
     "message": "Could not change app directory"
@@ -2269,7 +2088,7 @@
     "message": "The connection to Microsoft, Xbox, or Minecraft services was rejected. These services may be blocked by your hosts file. See our support article for steps to fix the issue."
   },
   "app.error.loader-description": {
-    "message": "Axolotl Launcher could not find a loader version for this instance."
+    "message": "StarryIsle Launcher could not find a loader version for this instance."
   },
   "app.error.loader-fix": {
     "message": "Repair the instance using the button below."
@@ -2287,7 +2106,7 @@
     "message": "Sign in to Minecraft"
   },
   "app.error.network-description": {
-    "message": "Axolotl Launcher had trouble connecting to Microsoft services. This is often caused by a poor connection. Try again, and use our support article if the issue persists."
+    "message": "StarryIsle Launcher had trouble connecting to Microsoft services. This is often caused by a poor connection. Try again, and use our support article if the issue persists."
   },
   "app.error.network-issues": {
     "message": "Network issues"
@@ -2308,7 +2127,7 @@
     "message": "Using PC Game Pass, coming from Bedrock, or just bought the game?"
   },
   "app.error.permissions-description": {
-    "message": "Axolotl Launcher cannot write to the selected directory. Adjust its permissions and try again, or cancel the directory change."
+    "message": "StarryIsle Launcher cannot write to the selected directory. Adjust its permissions and try again, or cancel the directory change."
   },
   "app.error.permissions-title": {
     "message": "Change directory permissions"
@@ -2326,7 +2145,7 @@
     "message": "Not enough space"
   },
   "app.error.state-database-newer-description": {
-    "message": "The database was last opened by a newer version of Axolotl, which upgraded it to a format this version cannot read. Your instances and settings are still there."
+    "message": "The database was last opened by a newer version of StarryIsle, which upgraded it to a format this version cannot read. Your instances and settings are still there."
   },
   "app.error.state-database-newer-fix-downgrade": {
     "message": "If you are trying out a build rather than using the launcher normally, revert the database with scripts/axolotl/downgrade-app-db.mjs instead."
@@ -2335,10 +2154,10 @@
     "message": "To start the launcher again, either:"
   },
   "app.error.state-database-newer-fix-update": {
-    "message": "Reinstall the newer version of Axolotl - it opens this database as it is."
+    "message": "Reinstall the newer version of StarryIsle - it opens this database as it is."
   },
   "app.error.state-description": {
-    "message": "Axolotl Launcher failed to load correctly. A file may be corrupted or an essential file may be missing."
+    "message": "StarryIsle Launcher failed to load correctly. A file may be corrupted or an essential file may be missing."
   },
   "app.error.state-fix-internet": {
     "message": "Check your internet connection, then restart the app."
@@ -2350,7 +2169,7 @@
     "message": "Download and install the app again."
   },
   "app.error.state-title": {
-    "message": "Error initializing Axolotl Launcher"
+    "message": "Error initializing StarryIsle Launcher"
   },
   "app.error.support-article": {
     "message": "Support article"
@@ -2826,6 +2645,9 @@
   "app.home.insights.title": {
     "message": "Play insights"
   },
+  "app.home.insights.total": {
+    "message": "Total: {duration}"
+  },
   "app.home.insights.week-top": {
     "message": "Most played: {name}"
   },
@@ -2979,6 +2801,132 @@
   "app.home.shortcut.server.players-online": {
     "message": "{count} online"
   },
+  "app.home.weather.change-city": {
+    "message": "Change city"
+  },
+  "app.home.weather.condition.dense-drizzle": {
+    "message": "Dense drizzle"
+  },
+  "app.home.weather.condition.drizzle": {
+    "message": "Drizzle"
+  },
+  "app.home.weather.condition.fog": {
+    "message": "Fog"
+  },
+  "app.home.weather.condition.freezing-drizzle": {
+    "message": "Freezing drizzle"
+  },
+  "app.home.weather.condition.freezing-rain": {
+    "message": "Freezing rain"
+  },
+  "app.home.weather.condition.heavy-rain": {
+    "message": "Heavy rain"
+  },
+  "app.home.weather.condition.heavy-snow": {
+    "message": "Heavy snow"
+  },
+  "app.home.weather.condition.light-drizzle": {
+    "message": "Light drizzle"
+  },
+  "app.home.weather.condition.light-freezing-drizzle": {
+    "message": "Light freezing drizzle"
+  },
+  "app.home.weather.condition.light-freezing-rain": {
+    "message": "Light freezing rain"
+  },
+  "app.home.weather.condition.light-rain": {
+    "message": "Light rain"
+  },
+  "app.home.weather.condition.light-showers": {
+    "message": "Light showers"
+  },
+  "app.home.weather.condition.light-snow": {
+    "message": "Light snow"
+  },
+  "app.home.weather.condition.light-snow-showers": {
+    "message": "Light snow showers"
+  },
+  "app.home.weather.condition.mostly-clear": {
+    "message": "Mostly clear"
+  },
+  "app.home.weather.condition.overcast": {
+    "message": "Overcast"
+  },
+  "app.home.weather.condition.partly-cloudy": {
+    "message": "Partly cloudy"
+  },
+  "app.home.weather.condition.rain": {
+    "message": "Rain"
+  },
+  "app.home.weather.condition.rime-fog": {
+    "message": "Depositing rime fog"
+  },
+  "app.home.weather.condition.severe-thunderstorm-hail": {
+    "message": "Severe thunderstorm with hail"
+  },
+  "app.home.weather.condition.showers": {
+    "message": "Showers"
+  },
+  "app.home.weather.condition.snow": {
+    "message": "Snow"
+  },
+  "app.home.weather.condition.snow-grains": {
+    "message": "Snow grains"
+  },
+  "app.home.weather.condition.snow-showers": {
+    "message": "Snow showers"
+  },
+  "app.home.weather.condition.sunny": {
+    "message": "Clear"
+  },
+  "app.home.weather.condition.thunderstorm": {
+    "message": "Thunderstorm"
+  },
+  "app.home.weather.condition.thunderstorm-hail": {
+    "message": "Thunderstorm with hail"
+  },
+  "app.home.weather.condition.violent-showers": {
+    "message": "Violent showers"
+  },
+  "app.home.weather.feels-like": {
+    "message": "Feels like"
+  },
+  "app.home.weather.high": {
+    "message": "High"
+  },
+  "app.home.weather.humidity": {
+    "message": "Humidity"
+  },
+  "app.home.weather.load-failed": {
+    "message": "Weather is unavailable. Try again later."
+  },
+  "app.home.weather.loading": {
+    "message": "Loading weather…"
+  },
+  "app.home.weather.low": {
+    "message": "Low"
+  },
+  "app.home.weather.no-results": {
+    "message": "No matching city"
+  },
+  "app.home.weather.refresh": {
+    "message": "Refresh"
+  },
+  "app.home.weather.search-placeholder": {
+    "message": "Search for a city"
+  },
+  "app.home.weather.searching": {
+    "message": "Searching…"
+  },
+  "app.home.weather.title": {
+    "message": "Weather"
+  },
+  "app.home.weather.updated-at": {
+    "message": "Updated {time}"
+  },
+  "app.home.weather.wind": {
+    "message": "Wind"
+  },
   "app.home.widgets.add": {
     "message": "Add widget"
   },
@@ -3114,6 +3062,12 @@
   "app.home.widgets.unavailable": {
     "message": "Content unavailable"
   },
+  "app.home.widgets.weather": {
+    "message": "Weather"
+  },
+  "app.home.widgets.weather-description": {
+    "message": "Current conditions for a city you pick. Uses Open-Meteo."
+  },
   "app.home.widgets.world": {
     "message": "Single world"
   },
@@ -3216,6 +3170,57 @@
   "app.instance-item.view-instance": {
     "message": "View instance"
   },
+  "app.instance.advancements.catalog-missing": {
+    "message": "Start the game once so the advancement list can be read from your files."
+  },
+  "app.instance.advancements.category.adventure": {
+    "message": "Adventure"
+  },
+  "app.instance.advancements.category.end": {
+    "message": "The End"
+  },
+  "app.instance.advancements.category.husbandry": {
+    "message": "Husbandry"
+  },
+  "app.instance.advancements.category.nether": {
+    "message": "Nether"
+  },
+  "app.instance.advancements.category.story": {
+    "message": "Story"
+  },
+  "app.instance.advancements.completed-on": {
+    "message": "Unlocked {date}"
+  },
+  "app.instance.advancements.empty": {
+    "message": "No single-player worlds yet. Start a world and its progress will show up here."
+  },
+  "app.instance.advancements.heading": {
+    "message": "Advancements"
+  },
+  "app.instance.advancements.hidden": {
+    "message": "Hidden advancement"
+  },
+  "app.instance.advancements.hidden-hint": {
+    "message": "Keep playing to discover this one."
+  },
+  "app.instance.advancements.last-played": {
+    "message": "Last played {when}"
+  },
+  "app.instance.advancements.loading": {
+    "message": "Reading worlds…"
+  },
+  "app.instance.advancements.no-player": {
+    "message": "No player progress in this world"
+  },
+  "app.instance.advancements.player": {
+    "message": "Player"
+  },
+  "app.instance.advancements.refresh": {
+    "message": "Refresh"
+  },
+  "app.instance.advancements.unknown-player": {
+    "message": "Unknown player ({id})"
+  },
   "app.instance.back": {
     "message": "Back to instance"
   },
@@ -3248,9 +3253,6 @@
   },
   "app.instance.content.check-failures": {
     "message": "{count, plural, one {# check failed} other {# checks failed}}"
-  },
-  "app.instance.content.processing": {
-    "message": "Updating instance files… Content will refresh when this finishes."
   },
   "app.instance.content.checking": {
     "message": "Refreshing… {current}/{total}"
@@ -3858,12 +3860,6 @@
   "app.instance.mods.update-added-content.description": {
     "message": "Updates only content added after the modpack was installed. Modpack files are not changed."
   },
-  "app.instance.mods.update-nothing-to-apply.body": {
-    "message": "No newer compatible version was found for the selected content, so no files were changed."
-  },
-  "app.instance.mods.update-nothing-to-apply.title": {
-    "message": "Nothing to update"
-  },
   "app.instance.never-played": {
     "message": "Never played"
   },
@@ -3896,6 +3892,9 @@
   },
   "app.instance.stopping": {
     "message": "Stopping..."
+  },
+  "app.instance.tabs.advancements": {
+    "message": "Advancements"
   },
   "app.instance.tabs.content": {
     "message": "Content"
@@ -4041,12 +4040,6 @@
   "app.instances.edit-groups": {
     "message": "Edit groups"
   },
-  "app.instances.game-directory.managed": {
-    "message": "Axolotl data directory"
-  },
-  "app.instances.game-directory.managed-short": {
-    "message": "Axolotl"
-  },
   "app.instances.group-by": {
     "message": "Group by"
   },
@@ -4070,9 +4063,6 @@
   },
   "app.instances.group.expand": {
     "message": "Expand group"
-  },
-  "app.instances.group.game-directory": {
-    "message": "Game directory"
   },
   "app.instances.group.game-version": {
     "message": "Game version"
@@ -5755,7 +5745,7 @@
     "message": "Redstone"
   },
   "app.lab.recipe-generator.copyright.disclaimer-body": {
-    "message": "Minecraft assets are Copyright Mojang Studios / Microsoft and are used only to identify compatible content. Axolotl Launcher is not affiliated with or endorsed by Mojang Studios or Microsoft."
+    "message": "Minecraft assets are Copyright Mojang Studios / Microsoft and are used only to identify compatible content. StarryIsle Launcher is not affiliated with or endorsed by Mojang Studios or Microsoft."
   },
   "app.lab.recipe-generator.copyright.disclaimer-heading": {
     "message": "Unofficial tool"
@@ -6229,7 +6219,7 @@
     "message": "Collapse folder {name}"
   },
   "app.lab.schematic-preview.instance-picker.empty": {
-    "message": "No schematic files were found in this instance."
+    "message": "No .litematic or .schem files were found in this instance."
   },
   "app.lab.schematic-preview.instance-picker.expand-folder": {
     "message": "Expand folder {name}"
@@ -6853,13 +6843,13 @@
     "message": "Copy /tp"
   },
   "app.lab.seed-map.copyright.disclaimer-body": {
-    "message": "Minecraft is a trademark of Mojang Synergies AB. Axolotl Launcher is not affiliated with or endorsed by Mojang or MinecraftSearch."
+    "message": "Minecraft is a trademark of Mojang Synergies AB. StarryIsle Launcher is not affiliated with or endorsed by Mojang or MinecraftSearch."
   },
   "app.lab.seed-map.copyright.disclaimer-heading": {
     "message": "Unofficial tool"
   },
   "app.lab.seed-map.copyright.engine-body": {
-    "message": "Map predictions are computed locally with xpple/cubiomes, based on cubiomes by Cubitect (MIT License), together with the Axolotl native integration."
+    "message": "Map predictions are computed locally with xpple/cubiomes, based on cubiomes by Cubitect (MIT License), together with the StarryIsle native integration."
   },
   "app.lab.seed-map.copyright.engine-heading": {
     "message": "Local map engine"
@@ -7989,29 +7979,8 @@
   "app.lab.seed-map.zoom-to-show": {
     "message": "Zoom in to show {layer}"
   },
-  "app.lab.skin-editor.auto-save.error": {
-    "message": "Auto-save failed"
-  },
-  "app.lab.skin-editor.auto-save.off": {
-    "message": "Auto-save off"
-  },
-  "app.lab.skin-editor.auto-save.saved": {
-    "message": "Draft saved {time}"
-  },
-  "app.lab.skin-editor.auto-save.saving": {
-    "message": "Saving draft…"
-  },
-  "app.lab.skin-editor.auto-save.unsaved": {
-    "message": "Unsaved changes"
-  },
-  "app.lab.skin-editor.auto-save.up-to-date": {
-    "message": "Up to date"
-  },
   "app.lab.skin-editor.description": {
     "message": "Create and edit Minecraft player skins locally."
-  },
-  "app.lab.skin-editor.discard-draft-failed": {
-    "message": "The recovery draft could not be discarded. Stay on this page and try again."
   },
   "app.lab.skin-editor.export-skin": {
     "message": "Minecraft skin PNG"
@@ -8025,71 +7994,11 @@
   "app.lab.skin-editor.loading": {
     "message": "Loading skin editor"
   },
-  "app.lab.skin-editor.recovery.body": {
-    "message": "A recovery draft was saved on {date}."
-  },
-  "app.lab.skin-editor.recovery.continue": {
-    "message": "Continue"
-  },
-  "app.lab.skin-editor.recovery.start-new": {
-    "message": "Start new"
-  },
-  "app.lab.skin-editor.recovery.title": {
-    "message": "Continue last skin?"
-  },
   "app.lab.skin-editor.retry": {
     "message": "Try again"
   },
-  "app.lab.skin-editor.save": {
-    "message": "Save PNG"
-  },
-  "app.lab.skin-editor.settings.auto-save": {
-    "message": "Automatically save a recovery draft"
-  },
-  "app.lab.skin-editor.settings.auto-save-description": {
-    "message": "Recovery drafts stay on this device and are separate from exported PNG files."
-  },
-  "app.lab.skin-editor.settings.cancel": {
-    "message": "Cancel"
-  },
-  "app.lab.skin-editor.settings.interval": {
-    "message": "Save interval (seconds)"
-  },
-  "app.lab.skin-editor.settings.interval-description": {
-    "message": "Use a value between 5 and 600 seconds."
-  },
-  "app.lab.skin-editor.settings.save": {
-    "message": "Save settings"
-  },
-  "app.lab.skin-editor.settings.title": {
-    "message": "Editor settings"
-  },
-  "app.lab.skin-editor.settings.tooltip": {
-    "message": "Skin editor settings"
-  },
-  "app.lab.skin-editor.settings.warn-before-leave": {
-    "message": "Warn before leaving with unsaved changes"
-  },
-  "app.lab.skin-editor.settings.warn-before-leave-description": {
-    "message": "When auto-save is off, this warning is always enabled to protect your work."
-  },
   "app.lab.skin-editor.title": {
     "message": "Skin editor"
-  },
-  "app.lab.skin-editor.unsaved.body": {
-    "message": "Save your skin before leaving, or discard the current changes."
-  },
-  "app.lab.skin-editor.unsaved.discard": {
-    "message": "Discard"
-  },
-  "app.lab.skin-editor.unsaved.save": {
-    "message": "Save PNG"
-  },
-  "app.lab.skin-editor.unsaved.stay": {
-    "message": "Stay"
-  },
-  "app.lab.skin-editor.unsaved.title": {
-    "message": "Unsaved skin"
   },
   "app.lab.title": {
     "message": "Lab"
@@ -8725,7 +8634,7 @@
     "message": "Possible issue: OpenJ9 is not compatible with this instance"
   },
   "app.minecraft-crash.diagnosis.out-of-memory.action": {
-    "message": "You can try increasing the instance memory allocation, or removing memory-heavy Mods and resource packs. If the log reports that the system is out of physical RAM or swap space, lower the allocation or close other programs instead."
+    "message": "You can try increasing the instance memory allocation, or removing memory-heavy Mods and resource packs."
   },
   "app.minecraft-crash.diagnosis.out-of-memory.title": {
     "message": "Possible issue: Minecraft ran out of memory"
@@ -9010,7 +8919,7 @@
     "message": "Minecraft opened a different LAN port. Restart the tunnel before sharing it."
   },
   "app.multiplayer.hongshi.port-hint": {
-    "message": "Open a world to LAN. Axolotl will detect the port automatically; external games can use a manual port."
+    "message": "Open a world to LAN. StarryIsle will detect the port automatically; external games can use a manual port."
   },
   "app.multiplayer.hongshi.public-address": {
     "message": "Public address"
@@ -9227,6 +9136,9 @@
   },
   "app.navigation.skin-selector": {
     "message": "Skin selector"
+  },
+  "app.navigation.stats": {
+    "message": "Statistics"
   },
   "app.navigation.worlds": {
     "message": "Worlds"
@@ -9502,7 +9414,7 @@
     "message": "Choose where analysis runs"
   },
   "app.onboarding.mascot-alt": {
-    "message": "Axolotl guide"
+    "message": "StarryIsle guide"
   },
   "app.onboarding.offline-account.description": {
     "message": "Open Playing as in the sidebar to add an offline Minecraft account. You may need to sign in with an official Minecraft account on this device first."
@@ -9562,10 +9474,10 @@
     "message": "Translate Modrinth project titles, summaries, and descriptions while you browse. Keep the original, show both, or make the translation the main character."
   },
   "app.onboarding.translation.title": {
-    "message": "Translation, the Axolotl way"
+    "message": "Translation, the StarryIsle way"
   },
   "app.onboarding.updates.description": {
-    "message": "Choose when Axolotl checks for updates and whether it installs them for you."
+    "message": "Choose when StarryIsle checks for updates and whether it installs them for you."
   },
   "app.onboarding.updates.title": {
     "message": "Stay in the loop"
@@ -9598,7 +9510,7 @@
     "message": "Shows your current launcher or game activity in Discord when Discord is running."
   },
   "app.privacy-consent.intro": {
-    "message": "Choose what Axolotl may send or display. Nothing is sent until you confirm these choices."
+    "message": "Choose what StarryIsle may send or display. Nothing is sent until you confirm these choices."
   },
   "app.privacy-consent.privacy-policy": {
     "message": "Read the privacy policy"
@@ -10242,15 +10154,6 @@
   "app.resources.operation.apply": {
     "message": "Queue changes"
   },
-  "app.resources.operation.force-install": {
-    "message": "Force install without dependencies"
-  },
-  "app.resources.operation.force-install-tooltip": {
-    "message": "{reason} Try installing only the selected content without dependencies."
-  },
-  "app.resources.operation.force-install-compatibility-tooltip": {
-    "message": "{reason} Try installing only the selected content without dependencies and accept its Minecraft or loader compatibility mismatches."
-  },
   "app.resources.operation.artifact": {
     "message": "{source} · release {release} · {file}"
   },
@@ -10488,6 +10391,30 @@
   "app.restarting": {
     "message": "Restarting..."
   },
+  "app.screenshots.bundle.export": {
+    "message": "Export bundle"
+  },
+  "app.screenshots.bundle.export-filename": {
+    "message": "StarryIsle screenshots.zip"
+  },
+  "app.screenshots.bundle.export-success": {
+    "message": "Exported {count} screenshots and {notes} notes"
+  },
+  "app.screenshots.bundle.filters": {
+    "message": "StarryIsle bundle"
+  },
+  "app.screenshots.bundle.import": {
+    "message": "Import bundle"
+  },
+  "app.screenshots.bundle.import-success": {
+    "message": "Imported {count} screenshots and {notes} notes"
+  },
+  "app.screenshots.bundle.import-toolbar": {
+    "message": "Import bundle"
+  },
+  "app.screenshots.bundle.need-instance": {
+    "message": "Select screenshots from a single instance first"
+  },
   "app.screenshots.copied": {
     "message": "Copied"
   },
@@ -10517,6 +10444,33 @@
   },
   "app.screenshots.error-heading": {
     "message": "Failed to load screenshots"
+  },
+  "app.screenshots.filter.all-instances": {
+    "message": "All instances"
+  },
+  "app.screenshots.filter.group": {
+    "message": "Filter by group"
+  },
+  "app.screenshots.filter.group-all": {
+    "message": "All groups"
+  },
+  "app.screenshots.filter.group-ungrouped": {
+    "message": "Ungrouped"
+  },
+  "app.screenshots.filter.instance": {
+    "message": "Filter by instance"
+  },
+  "app.screenshots.filter.range-all": {
+    "message": "All time"
+  },
+  "app.screenshots.filter.range-month": {
+    "message": "Last 30 days"
+  },
+  "app.screenshots.filter.range-today": {
+    "message": "Today"
+  },
+  "app.screenshots.filter.range-week": {
+    "message": "Last 7 days"
   },
   "app.screenshots.go-to-instance": {
     "message": "Go to instance"
@@ -10566,6 +10520,9 @@
   "app.screenshots.group.this-week": {
     "message": "This week"
   },
+  "app.screenshots.group.timeline": {
+    "message": "Timeline"
+  },
   "app.screenshots.group.today": {
     "message": "Today"
   },
@@ -10578,6 +10535,21 @@
   "app.screenshots.heading": {
     "message": "Screenshots"
   },
+  "app.screenshots.menu.add-to-group": {
+    "message": "Add to group"
+  },
+  "app.screenshots.menu.copy-path": {
+    "message": "Copy file path"
+  },
+  "app.screenshots.menu.delete": {
+    "message": "Delete"
+  },
+  "app.screenshots.menu.edit-note": {
+    "message": "Edit note"
+  },
+  "app.screenshots.menu.remove-from-group": {
+    "message": "Remove from group"
+  },
   "app.screenshots.more-actions": {
     "message": "More actions"
   },
@@ -10586,6 +10558,9 @@
   },
   "app.screenshots.no-results-heading": {
     "message": "No matching screenshots"
+  },
+  "app.screenshots.note.placeholder": {
+    "message": "Add a note…"
   },
   "app.screenshots.preview.instance-and-date": {
     "message": "{instance} · {date}"
@@ -10649,6 +10624,21 @@
   },
   "app.screenshots.sort.oldest": {
     "message": "Oldest"
+  },
+  "app.screenshots.timeline.day": {
+    "message": "{date} · {count}"
+  },
+  "app.screenshots.timeline.empty": {
+    "message": "Nothing to show yet"
+  },
+  "app.screenshots.view": {
+    "message": "View"
+  },
+  "app.screenshots.view.grid": {
+    "message": "Grid"
+  },
+  "app.screenshots.view.timeline": {
+    "message": "Timeline"
   },
   "app.server.add": {
     "message": "Add"
@@ -10813,7 +10803,7 @@
     "message": "Preparing server..."
   },
   "app.servers.modpack.unsupported-loader-description": {
-    "message": "This modpack uses {loader}, but Axolotl can only start modpack servers with vanilla, Fabric, or Quilt. Support for {loader} is coming soon."
+    "message": "This modpack uses {loader}, but StarryIsle can only start modpack servers with vanilla, Fabric, or Quilt. Support for {loader} is coming soon."
   },
   "app.servers.modpack.unsupported-loader-title": {
     "message": "{loader} servers are not supported yet"
@@ -11311,7 +11301,7 @@
     "message": "Help support continued development"
   },
   "app.settings.about.attribution": {
-    "message": "Axolotl Launcher is a modified version of the open-source Modrinth codebase."
+    "message": "StarryIsle Launcher is a modified version of the open-source Modrinth codebase."
   },
   "app.settings.about.community-support": {
     "message": "Project & community"
@@ -11404,13 +11394,13 @@
     "message": "The tide is falling — keep your axolotls underwater!"
   },
   "app.settings.about.game.title": {
-    "message": "Axolotl merge"
+    "message": "StarryIsle merge"
   },
   "app.settings.about.license-attribution": {
     "message": "License & attribution"
   },
   "app.settings.about.not-affiliated": {
-    "message": "Modrinth is a trademark of Rinth, Inc. Axolotl Launcher is not affiliated with or endorsed by Rinth, Inc."
+    "message": "Modrinth is a trademark of Rinth, Inc. StarryIsle Launcher is not affiliated with or endorsed by Rinth, Inc."
   },
   "app.settings.about.original-source": {
     "message": "Original Modrinth source"
@@ -11524,7 +11514,7 @@
     "message": "Press Space or click to start"
   },
   "app.settings.about.run.title": {
-    "message": "Axolotl run"
+    "message": "StarryIsle run"
   },
   "app.settings.about.run.tnt": {
     "message": "TNT"
@@ -11573,9 +11563,6 @@
   },
   "app.settings.defaults.game-language.follow-launcher": {
     "message": "Follow launcher language"
-  },
-  "app.settings.defaults.game-language.search": {
-    "message": "Minecraft game language locale language region"
   },
   "app.settings.defaults.game-language.title": {
     "message": "Default game language"
@@ -11720,30 +11707,6 @@
   },
   "app.settings.environment-variables.invalid-format": {
     "message": "Use NAME=value, separated by spaces. A name and an equals sign are required; the value may be empty or contain more equals signs."
-  },
-  "app.settings.export.all-button": {
-    "message": "Export all settings files…"
-  },
-  "app.settings.export.all-label": {
-    "message": "All settings files"
-  },
-  "app.settings.export.exported-text": {
-    "message": "The settings archive was saved to {path}"
-  },
-  "app.settings.export.exported-title": {
-    "message": "Settings exported"
-  },
-  "app.settings.export.patch-button": {
-    "message": "Export patch…"
-  },
-  "app.settings.export.patch-description": {
-    "message": "Only keys that differ from the defaults. The archive holds one document per domain; unzip it and use it directly as a deployment config."
-  },
-  "app.settings.export.patch-label": {
-    "message": "Deployment patch"
-  },
-  "app.settings.export.title": {
-    "message": "Manage settings files"
   },
   "app.settings.feature-flags.advanced-filters-collapsed": {
     "message": "Collapse advanced filters by default"
@@ -12955,7 +12918,7 @@
     "message": "Network connections"
   },
   "app.settings.logs.export.modal.network-connections-hint": {
-    "message": "Run fresh service tests using launcher network settings, including a short download sample. Also include captured file timings, request speeds and remote addresses when advanced download information is enabled."
+    "message": "Run fresh tests for all services using launcher network settings when exporting, including a short download sample."
   },
   "app.settings.logs.export.modal.range": {
     "message": "Time range"
@@ -13170,12 +13133,6 @@
   "app.settings.network.url": {
     "message": "Request URL"
   },
-  "app.settings.override.hint": {
-    "message": "Overrides the deployed value."
-  },
-  "app.settings.override.restore": {
-    "message": "Restore deployed value"
-  },
   "app.settings.privacy.data-handling": {
     "message": "Telemetry uses a random installation identifier and sends only a daily activity signal. Turning telemetry off clears pending data immediately."
   },
@@ -13189,13 +13146,13 @@
     "message": "Allow external links"
   },
   "app.settings.privacy.external-scheme-description": {
-    "message": "Respond to axolotl:// links from browsers and other apps. Turning this off blocks launches, installs and page jumps from outside."
+    "message": "Respond to starryisle:// links from browsers and other apps. Turning this off blocks launches, installs and page jumps from outside."
   },
   "app.settings.privacy.privileged-scheme": {
     "message": "Allow privileged link actions"
   },
   "app.settings.privacy.privileged-scheme-description": {
-    "message": "Let axolotl:// links change settings and stop game processes. Turning this on requires reading a risk warning; every action still asks for your confirmation."
+    "message": "Let starryisle:// links change settings and stop game processes. Turning this on requires reading a risk warning; every action still asks for your confirmation."
   },
   "app.settings.privacy.section-title": {
     "message": "Privacy & data sharing"
@@ -13222,7 +13179,7 @@
     "message": "You are currently running in portable mode. The app directory is fixed and cannot be changed."
   },
   "app.settings.resources.axolotl-data-directory": {
-    "message": "Axolotl data directory"
+    "message": "StarryIsle data directory"
   },
   "app.settings.resources.chinese-names": {
     "message": "Add known Chinese names to downloads"
@@ -13336,7 +13293,7 @@
     "message": "Minecraft directories"
   },
   "app.settings.resources.minecraft-directories-description": {
-    "message": "Add one or more .minecraft folders for instances that use an external game directory. These folders are kept separate from Axolotl data."
+    "message": "Add one or more .minecraft folders for instances that use an external game directory. These folders are kept separate from StarryIsle data."
   },
   "app.settings.resources.minecraft-directory-mode": {
     "message": "Game directory mode"
@@ -13651,7 +13608,7 @@
     "message": "External game directories"
   },
   "app.settings.storage.externalHelp": {
-    "message": "These directories are managed outside Axolotl and are excluded from the launcher total. Overlapping directories are listed once."
+    "message": "These directories are managed outside StarryIsle and are excluded from the launcher total. Overlapping directories are listed once."
   },
   "app.settings.storage.externalMetadata": {
     "message": "Linked instances also use this folder. Files with uncertain usage are kept."
@@ -13865,9 +13822,6 @@
   },
   "app.settings.storage.unknown": {
     "message": "Kept"
-  },
-  "app.settings.storage.unknownError": {
-    "message": "Unknown error"
   },
   "app.settings.storage.unknownUsage": {
     "message": "Files whose usage cannot be verified are kept."
@@ -14230,7 +14184,7 @@
     "message": "Copy Release data to Beta?"
   },
   "app.settings.updates.channel.description": {
-    "message": "Choose which launcher versions Axolotl receives."
+    "message": "Choose which launcher versions StarryIsle receives."
   },
   "app.settings.updates.channel.label": {
     "message": "Channel"
@@ -14242,7 +14196,7 @@
     "message": "Stable, tested features and fixes. Updates arrive less often."
   },
   "app.settings.updates.channel.restart-description": {
-    "message": "Restart Axolotl now to start using the new update channel, or restart manually later."
+    "message": "Restart StarryIsle now to start using the new update channel, or restart manually later."
   },
   "app.settings.updates.channel.restart-development-description": {
     "message": "The new update channel will be used after you manually restart the development session."
@@ -14293,7 +14247,7 @@
     "message": "Database isolation"
   },
   "app.settings.updates.database-operation.active-target": {
-    "message": "Cannot overwrite the database currently in use. Restart Axolotl and switch channels first."
+    "message": "Cannot overwrite the database currently in use. Restart StarryIsle and switch channels first."
   },
   "app.settings.updates.database-operation.beta-to-release": {
     "message": "Copy Beta to Release"
@@ -14311,7 +14265,7 @@
     "message": "Overwrite database?"
   },
   "app.settings.updates.database-operation.failed": {
-    "message": "The database could not be copied. Please make sure Axolotl is not using the target database."
+    "message": "The database could not be copied. Please make sure StarryIsle is not using the target database."
   },
   "app.settings.updates.database-operation.label": {
     "message": "Database operation"
@@ -14368,7 +14322,7 @@
     "message": "Updates are installed only when their cryptographic signature is valid."
   },
   "app.settings.updates.up-to-date": {
-    "message": "Axolotl is up to date."
+    "message": "StarryIsle is up to date."
   },
   "app.shortcut-settings.change-shortcut": {
     "message": "Change the shortcut for {action}"
@@ -14638,13 +14592,13 @@
     "message": "Tiny Takeover"
   },
   "app.skins.sign-in.axolotl-alt": {
-    "message": "Axolotl Launcher"
+    "message": "StarryIsle Launcher"
   },
   "app.skins.sign-in.button": {
     "message": "Sign In"
   },
   "app.skins.sign-in.description": {
-    "message": "Please sign into your Minecraft account to use the skin management features of Axolotl Launcher."
+    "message": "Please sign into your Minecraft account to use the skin management features of StarryIsle Launcher."
   },
   "app.skins.sign-in.title": {
     "message": "Please sign in"
@@ -14669,6 +14623,90 @@
   },
   "app.splash.updating-app-directory": {
     "message": "Updating app directory..."
+  },
+  "app.stats.empty": {
+    "message": "No statistics yet. Start the game and your records will show up here."
+  },
+  "app.stats.heatmap": {
+    "message": "Playtime"
+  },
+  "app.stats.hours": {
+    "message": "{hours} h {minutes} min"
+  },
+  "app.stats.hours-only": {
+    "message": "{hours} h"
+  },
+  "app.stats.instances": {
+    "message": "Instances"
+  },
+  "app.stats.legend1": {
+    "message": "Up to 30 min"
+  },
+  "app.stats.legend2": {
+    "message": "30 min – 2 h"
+  },
+  "app.stats.legend3": {
+    "message": "2 – 5 h"
+  },
+  "app.stats.legend4": {
+    "message": "Over 5 h"
+  },
+  "app.stats.less": {
+    "message": "Less"
+  },
+  "app.stats.load-error": {
+    "message": "Could not load statistics."
+  },
+  "app.stats.loading": {
+    "message": "Collecting statistics…"
+  },
+  "app.stats.minutes": {
+    "message": "{minutes} min"
+  },
+  "app.stats.more": {
+    "message": "More"
+  },
+  "app.stats.no-play": {
+    "message": "No playtime"
+  },
+  "app.stats.ranking": {
+    "message": "Playtime by instance"
+  },
+  "app.stats.refresh": {
+    "message": "Refresh"
+  },
+  "app.stats.retry": {
+    "message": "Try again"
+  },
+  "app.stats.screenshots": {
+    "message": "Screenshots"
+  },
+  "app.stats.time-unknown": {
+    "message": "Time unknown"
+  },
+  "app.stats.time-unknown-hint": {
+    "message": "Not counted in the yearly total"
+  },
+  "app.stats.timeline": {
+    "message": "Achievement timeline"
+  },
+  "app.stats.title": {
+    "message": "Statistics"
+  },
+  "app.stats.weekday-fri": {
+    "message": "Fri"
+  },
+  "app.stats.weekday-mon": {
+    "message": "Mon"
+  },
+  "app.stats.weekday-wed": {
+    "message": "Wed"
+  },
+  "app.stats.year-achievements": {
+    "message": "Unlocked in {year}"
+  },
+  "app.stats.year-playtime": {
+    "message": "Playtime in {year}"
   },
   "app.symlink-warning.delete.body": {
     "message": "Deleting this instance removes only the launcher entry. The original files at \"{path}\" will remain."
@@ -14875,16 +14913,16 @@
     "message": "This version does not have a bundled announcement yet. Visit the website for the full changelog."
   },
   "app.update-announcement.unknown-title": {
-    "message": "Axolotl Launcher was updated"
+    "message": "StarryIsle Launcher was updated"
   },
   "app.update-announcement.version": {
     "message": "Version {version}"
   },
   "app.update-popup.body.download-complete": {
-    "message": "Axolotl Launcher v{version} has finished downloading. Reload to update now, or automatically when you close Axolotl Launcher."
+    "message": "StarryIsle Launcher v{version} has finished downloading. Reload to update now, or automatically when you close StarryIsle Launcher."
   },
   "app.update-popup.body.metered": {
-    "message": "Axolotl Launcher v{version} is available now! Since you're on a metered network, we didn't automatically download it."
+    "message": "StarryIsle Launcher v{version} is available now! Since you're on a metered network, we didn't automatically download it."
   },
   "app.update-popup.changelog": {
     "message": "Changelog"
@@ -14914,7 +14952,7 @@
     "message": "Installing version {version}"
   },
   "app.warning.running-as-admin": {
-    "message": "Axolotl is running as administrator. Drag-and-drop file import is disabled in this mode; please restart the launcher without administrator privileges."
+    "message": "StarryIsle is running as administrator. Drag-and-drop file import is disabled in this mode; please restart the launcher without administrator privileges."
   },
   "app.window-controls.close": {
     "message": "Close"
@@ -15385,7 +15423,7 @@
     "message": "Shader Packs"
   },
   "drop.help.title": {
-    "message": "What can I drop into Axolotl?"
+    "message": "What can I drop into StarryIsle?"
   },
   "drop.help.worlds-desc": {
     "message": "Drag world save folders to import them into an instance."
@@ -15669,24 +15707,6 @@
   "instance.files.studio.editor-loading": {
     "message": "Loading editor..."
   },
-  "instance.files.studio.edit-deleted": {
-    "message": "This file was removed before the edit could be saved."
-  },
-  "instance.files.studio.discard-image-confirm": {
-    "message": "Discard"
-  },
-  "instance.files.studio.discard-image-description": {
-    "message": "The image has changes that have not been saved. Opening another file discards them."
-  },
-  "instance.files.studio.discard-image-keep": {
-    "message": "Keep editing"
-  },
-  "instance.files.studio.discard-image-title": {
-    "message": "Discard the image edit?"
-  },
-  "instance.files.studio.edit-conflict": {
-    "message": "This file changed on disk after it was opened. The edit was not saved."
-  },
   "instance.files.studio.empty-description": {
     "message": "Open any text file from the explorer."
   },
@@ -15747,9 +15767,6 @@
   "instance.files.studio.not-text-file": {
     "message": "This file is not a text file and cannot be opened in Studio."
   },
-  "instance.files.studio.open-in-schematic-workshop": {
-    "message": "Open with schematic workshop"
-  },
   "instance.files.studio.open-in-system": {
     "message": "Open in system"
   },
@@ -15761,33 +15778,6 @@
   },
   "instance.files.studio.paste": {
     "message": "Paste"
-  },
-  "instance.files.studio.preview-actual-size": {
-    "message": "Actual size"
-  },
-  "instance.files.studio.preview-edit": {
-    "message": "Edit"
-  },
-  "instance.files.studio.preview-failed": {
-    "message": "This file could not be previewed."
-  },
-  "instance.files.studio.preview-fit": {
-    "message": "Fit to window"
-  },
-  "instance.files.studio.preview-loading": {
-    "message": "Loading preview..."
-  },
-  "instance.files.studio.preview-save": {
-    "message": "Save"
-  },
-  "instance.files.studio.preview-tools": {
-    "message": "Image editing tools"
-  },
-  "instance.files.studio.preview-zoom-in": {
-    "message": "Zoom in"
-  },
-  "instance.files.studio.preview-zoom-out": {
-    "message": "Zoom out"
   },
   "instance.files.studio.refresh": {
     "message": "Refresh files"
@@ -16000,7 +15990,7 @@
     "message": "Version isolated (stored in versions/)"
   },
   "instance.settings.tabs.general.game-dir.managed-note": {
-    "message": "This instance uses the Axolotl-managed folder."
+    "message": "This instance uses the StarryIsle-managed folder."
   },
   "instance.settings.tabs.general.game-dir.move-note": {
     "message": "Switching isolation only updates the launcher path. Move the mods, saves, and config folders yourself to match."
@@ -16573,7 +16563,7 @@
     "message": "{count, plural, one {# exact choice} other {# exact choices}}"
   },
   "instance.upgrade.customize.custom.description": {
-    "message": "Fix exact versions for selected content and let Axolotl solve the remaining dependency graph."
+    "message": "Fix exact versions for selected content and let StarryIsle solve the remaining dependency graph."
   },
   "instance.upgrade.customize.custom.discard-switch": {
     "message": "Discard and switch"
@@ -16627,7 +16617,7 @@
     "message": "Update dependency"
   },
   "instance.upgrade.customize.description": {
-    "message": "Choose how aggressively Axolotl should update content in this instance."
+    "message": "Choose how aggressively StarryIsle should update content in this instance."
   },
   "instance.upgrade.customize.effective-changes": {
     "message": "Effective changes"
@@ -16678,7 +16668,7 @@
     "message": "Resolve custom conflicts before continuing."
   },
   "instance.upgrade.customize.search-limit.body": {
-    "message": "Axolotl couldn't find a solution within the search limit. Try relaxing one of your custom choices."
+    "message": "StarryIsle couldn't find a solution within the search limit. Try relaxing one of your custom choices."
   },
   "instance.upgrade.customize.search-limit.title": {
     "message": "Search limit reached"
@@ -17103,9 +17093,6 @@
   "instance.upgrade.select.loading-fabric-versions": {
     "message": "Loading Fabric versions…"
   },
-  "instance.upgrade.select.downgrade-unsupported": {
-    "message": "Downgrading is not supported."
-  },
   "instance.upgrade.select.loading-versions": {
     "message": "Loading Minecraft versions…"
   },
@@ -17501,278 +17488,5 @@
   },
   "unknown-pack-warning-modal.warning.title": {
     "message": "Unknown file warning"
-  },
-  "app.skins.player.title": {
-    "message": "Find player skin"
-  },
-  "app.skins.player.input": {
-    "message": "Player name or UUID"
-  },
-  "app.skins.player.search": {
-    "message": "Search"
-  },
-  "app.skins.player.download": {
-    "message": "Download PNG"
-  },
-  "app.skins.player.import": {
-    "message": "Add to saved skins"
-  },
-  "app.skins.player.imported": {
-    "message": "Added to saved skins"
-  },
-  "app.skins.player.invalid-input": {
-    "message": "Enter a valid Java player name or UUID."
-  },
-  "app.skins.player.not-found": {
-    "message": "Player not found. Check the name or UUID."
-  },
-  "app.skins.player.no-custom-skin": {
-    "message": "This player has no custom skin."
-  },
-  "app.skins.player.rate-limited": {
-    "message": "Too many requests. Please wait before trying again."
-  },
-  "app.skins.player.unavailable": {
-    "message": "Could not load this skin. Check your connection and try again."
-  },
-  "app.skins.player.save-failed": {
-    "message": "Could not save the skin. Please try again."
-  },
-  "app.downloads.diagnostics.title": {
-    "message": "Advanced download information"
-  },
-  "app.downloads.diagnostics.file": {
-    "message": "File"
-  },
-  "app.downloads.diagnostics.waiting": {
-    "message": "Waiting for download observations. Start a download after enabling this option."
-  },
-  "app.downloads.diagnostics.loading": {
-    "message": "Loading download information…"
-  },
-  "app.downloads.diagnostics.unavailable": {
-    "message": "Download information could not be refreshed. Retrying…"
-  },
-  "app.downloads.diagnostics.disabled": {
-    "message": "Download observation is disabled."
-  },
-  "app.downloads.diagnostics.elapsed": {
-    "message": "File elapsed time"
-  },
-  "app.downloads.diagnostics.network-elapsed": {
-    "message": "Network time"
-  },
-  "app.downloads.diagnostics.received": {
-    "message": "Received bytes"
-  },
-  "app.downloads.diagnostics.active-requests": {
-    "message": "Active requests"
-  },
-  "app.downloads.diagnostics.effective-requests": {
-    "message": "Requests receiving data"
-  },
-  "app.downloads.diagnostics.physical-connections": {
-    "message": "Physical connections"
-  },
-  "app.downloads.diagnostics.effective-physical": {
-    "message": "Connections receiving data"
-  },
-  "app.downloads.diagnostics.configured-limit": {
-    "message": "Configured limit"
-  },
-  "app.downloads.diagnostics.effective-cap": {
-    "message": "Current request limit"
-  },
-  "app.downloads.diagnostics.target": {
-    "message": "Target requests"
-  },
-  "app.downloads.diagnostics.held": {
-    "message": "Held permits"
-  },
-  "app.downloads.diagnostics.pool": {
-    "message": "Available pool permits"
-  },
-  "app.downloads.diagnostics.address": {
-    "message": "Remote address"
-  },
-  "app.downloads.diagnostics.protocol": {
-    "message": "Protocol / socket"
-  },
-  "app.downloads.diagnostics.speed": {
-    "message": "Request speed"
-  },
-  "app.downloads.diagnostics.duration": {
-    "message": "Request time"
-  },
-  "app.downloads.diagnostics.state": {
-    "message": "State"
-  },
-  "app.downloads.diagnostics.slow": {
-    "message": "Slow"
-  },
-  "app.downloads.diagnostics.proxy": {
-    "message": "Proxy"
-  },
-  "app.downloads.diagnostics.socket": {
-    "message": "Socket #{id}"
-  },
-  "app.downloads.diagnostics.seconds": {
-    "message": "{seconds} s"
-  },
-  "app.downloads.diagnostics.rate": {
-    "message": "{speed}/s"
-  },
-  "app.downloads.diagnostics.priority": {
-    "message": "Active / slow first"
-  },
-  "app.downloads.diagnostics.note": {
-    "message": "Each row is a request or HTTP/2 stream; streams may share a socket. Unknown physical connection counts are shown as —. Active speeds use recent samples; finished speeds are averages. Slow means below 256 KiB/s after warm-up. Receiving data means bytes arrived within the last 2 seconds."
-  },
-  "app.downloads.diagnostics.fileSelectionGuide": {
-    "message": "Choose a file, and its download summary will appear below."
-  },
-  "app.downloads.diagnostics.truncated": {
-    "message": "Observation limits reached: {files} earlier files and {transfers} earlier requests are omitted."
-  },
-  "app.downloads.diagnostics.no-requests": {
-    "message": "No requests observed for this file yet."
-  },
-  "app.downloads.diagnostics.active": {
-    "message": "Active"
-  },
-  "app.downloads.diagnostics.connecting": {
-    "message": "Connecting"
-  },
-  "app.downloads.diagnostics.completed": {
-    "message": "Completed"
-  },
-  "app.downloads.diagnostics.closed": {
-    "message": "Closed"
-  },
-  "app.downloads.diagnostics.failed": {
-    "message": "Failed"
-  },
-  "app.downloads.diagnostics.canceled": {
-    "message": "Canceled"
-  },
-  "app.settings.feature-flags.advanced-download-info": {
-    "message": "Advanced download information"
-  },
-  "app.settings.feature-flags.advanced-download-info-description": {
-    "message": "Show file timings, request speeds and remote addresses in download details. Observations are collected while enabled and included when exporting network connections."
-  },
-  "app.downloads.diagnostics.elapsed-help": {
-    "message": "Time spent processing this file, including resource waits, existing-file checks, transfer, writing and integrity verification. This is not the entire installation time."
-  },
-  "app.downloads.diagnostics.network-elapsed-help": {
-    "message": "Time from the first recorded request starting to the last request finishing, including connection setup, response waits and retry gaps. Parallel request times are not added together."
-  },
-  "app.downloads.diagnostics.received-help": {
-    "message": "Total response body bytes received, excluding headers and TLS overhead. Retries may count duplicate bytes, so this can differ from the file size; cached files may show zero."
-  },
-  "app.downloads.diagnostics.active-requests-help": {
-    "message": "Requests or HTTP/2 streams currently in the active state, excluding those still connecting. Active requests may be waiting without receiving data."
-  },
-  "app.downloads.diagnostics.effective-requests-help": {
-    "message": "Active requests that received bytes within the last 2 seconds."
-  },
-  "app.downloads.diagnostics.physical-connections-help": {
-    "message": "Distinct identifiable physical connections used by this file’s active requests. HTTP/2 streams may share a connection. Idle connections are excluded; — means the count is unknown."
-  },
-  "app.downloads.diagnostics.effective-physical-help": {
-    "message": "Distinct identifiable connections with an active request that received bytes within the last 2 seconds. Shared connections count once; — means the count is unknown."
-  },
-  "app.downloads.diagnostics.configured-limit-help": {
-    "message": "Configured resource permit limit for the global download pool. Shared across files and tasks; this is not a physical connection count or a per-file allocation."
-  },
-  "app.downloads.diagnostics.effective-cap-help": {
-    "message": "Adaptive concurrency limit for this file, adjusted for remaining data, available resources and failures. Completed files retain the last reported value."
-  },
-  "app.downloads.diagnostics.target-help": {
-    "message": "Concurrency the scheduler aims to maintain for this file, subject to available permits and splittable work. This is not the active request count; completed files retain the last value."
-  },
-  "app.downloads.diagnostics.held-help": {
-    "message": "Download resource permits currently held by this file’s scheduler. These are not physical connections and are released when the file finishes."
-  },
-  "app.downloads.diagnostics.pool-help": {
-    "message": "Currently available resource permits in the global download pool, shared with other files and tasks. This is not the number of sockets the operating system can open."
-  },
-  "app.settings.export.cleanup-label": {
-    "message": "Local settings files"
-  },
-  "app.settings.export.cleanup-button": {
-    "message": "Clean up…"
-  },
-  "app.settings.export.cleanup-running": {
-    "message": "Cleaning up…"
-  },
-  "app.settings.export.cleanup-confirm-title": {
-    "message": "Clean up local settings files?"
-  },
-  "app.settings.export.cleanup-confirm-description": {
-    "message": "Rewrites every local settings document, discarding unknown and redundant keys. This cannot be undone."
-  },
-  "app.settings.export.cleanup-confirm-proceed": {
-    "message": "Clean up"
-  },
-  "app.settings.export.cleanup-done-title": {
-    "message": "Local settings files cleaned up"
-  },
-  "app.settings.export.cleanup-done-text": {
-    "message": "{count, plural, =0 {No local settings document needed rewriting.} one {Rewrote # local settings document.} other {Rewrote # local settings documents.}}"
-  },
-  "app.settings.export.import-label": {
-    "message": "Settings archive"
-  },
-  "app.settings.export.import-button": {
-    "message": "Import…"
-  },
-  "app.settings.export.import-running": {
-    "message": "Importing…"
-  },
-  "app.settings.export.import-confirm-title": {
-    "message": "Import settings?"
-  },
-  "app.settings.export.import-confirm-description": {
-    "message": "Merges the archive into your local settings. Where both set the same key, the imported value wins. This cannot be undone."
-  },
-  "app.settings.export.import-confirm-proceed": {
-    "message": "Import"
-  },
-  "app.settings.export.imported-title": {
-    "message": "Settings imported"
-  },
-  "app.settings.export.imported-text": {
-    "message": "{count, plural, =0 {No local settings document changed.} one {Updated # local settings document.} other {Updated # local settings documents.}}"
-  },
-  "app.settings.export.import-danger-title": {
-    "message": "The settings you are about to import may be dangerous"
-  },
-  "app.settings.export.import-danger-description": {
-    "message": "The settings you are about to import will change {keys}."
-  },
-  "app.settings.export.import-danger-key-column": {
-    "message": "Dangerous setting"
-  },
-  "app.settings.export.import-danger-before-column": {
-    "message": "Before import"
-  },
-  "app.settings.export.import-danger-after-column": {
-    "message": "After import"
-  },
-  "app.settings.export.import-danger-note": {
-    "message": "They change the arguments the game is started with or the commands that run before it, and may also change the environment of the game process, for example by injecting environment variables. If you do not trust where the file came from, or do not understand what they mean and do, you should cancel the import or skip these dangerous settings. Please continue only if you fully understand and trust them."
-  },
-  "app.settings.export.import-danger-cancel": {
-    "message": "Cancel import"
-  },
-  "app.settings.export.import-danger-skip": {
-    "message": "Skip dangerous settings"
-  },
-  "app.settings.export.import-danger-allow": {
-    "message": "Continue import"
-  },
-  "app.settings.export.imported-dropped-text": {
-    "message": "{count, plural, =0 {No local settings document changed.} one {Updated # local settings document.} other {Updated # local settings documents.}} {dropped, plural, one {# value was ignored because its type is invalid.} other {# values were ignored because their types are invalid.}}"
   }
 }

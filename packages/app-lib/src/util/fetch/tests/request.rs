@@ -2,7 +2,7 @@
 
 use crate::ErrorKind;
 use crate::util::download::constants::{
-    FILE_VALIDATION_CONCURRENCY, ROUTE_PROBE_CONCURRENCY,
+    FILE_VALIDATION_CONCURRENCY, METADATA_HEDGE_DELAY, ROUTE_PROBE_CONCURRENCY,
 };
 use crate::util::download::modrinth_redirect::is_official_redirect as is_official_modrinth_cdn_redirect;
 use bytes::Bytes;
@@ -103,12 +103,6 @@ async fn metadata_hedging_rejects_a_fast_invalid_primary() {
 
 #[tokio::test]
 async fn metadata_hedging_does_not_start_a_loser_for_a_fast_primary() {
-    // The point of the test is the ordering, not the wall clock: the primary
-    // must complete before the hedge fires. Serving it after a fixed short
-    // delay makes that a race the instrumented build can lose on a loaded
-    // runner, which then reports a real hedge as a defect. Delay the *hedge*
-    // instead, so a fast primary always wins regardless of how slow the
-    // process is.
     let (primary_url, primary_requests, primary_server) = spawn_http_fixture(
         HttpFixture::new("200 OK", br#"{"valid":true}"#)
             .with_headers("Content-Type: application/json\r\n"),
@@ -129,7 +123,7 @@ async fn metadata_hedging_does_not_start_a_loser_for_a_fast_primary() {
         Ok(())
     };
 
-    let bytes = fetch_hedged_metadata_with_hedge_delay(
+    let _ = fetch_hedged_metadata(
         &routes,
         ResourceClass::Metadata,
         None,
@@ -137,13 +131,11 @@ async fn metadata_hedging_does_not_start_a_loser_for_a_fast_primary() {
         &FetchSemaphore(Semaphore::new(ROUTE_PROBE_CONCURRENCY)),
         &INSECURE_REQWEST_CLIENT,
         &validate,
-        // Long enough that even a slow instrumented primary answers first.
-        Duration::from_secs(30),
     )
     .await
     .unwrap();
+    tokio::time::sleep(METADATA_HEDGE_DELAY * 2).await;
 
-    assert_eq!(bytes, Bytes::from_static(br#"{"valid":true}"#));
     assert_eq!(primary_requests.load(Ordering::Relaxed), 1);
     assert_eq!(secondary_requests.load(Ordering::Relaxed), 0);
     primary_server.abort();

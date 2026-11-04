@@ -20,13 +20,11 @@ import dayjs from 'dayjs'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
-import GameDirectoryBadge from '@/components/ui/instance/GameDirectoryBadge.vue'
 import InstanceIcon from '@/components/ui/InstanceIcon.vue'
 import { useMinecraftLaunchError } from '@/composables/useMinecraftLaunchError'
 import { useNetworkStatus } from '@/composables/useNetworkStatus'
 import { trackEvent } from '@/helpers/analytics'
 import { process_listener } from '@/helpers/events'
-import { resolveGameDirectory } from '@/helpers/game-directory'
 import { install_existing_instance, install_pack_to_existing_instance } from '@/helpers/install'
 import { kill, run } from '@/helpers/instance'
 import { getDisplayInstanceIcon } from '@/helpers/instance-icons'
@@ -81,10 +79,6 @@ const props = defineProps({
         type: Boolean,
         default: false,
     },
-    showGameDirectory: {
-        type: Boolean,
-        default: false,
-    },
 })
 
 const internalPlaying = ref(false)
@@ -92,7 +86,6 @@ const isPlaying = computed(() => props.playing ?? internalPlaying.value)
 const displayIcon = computed(() =>
     getDisplayInstanceIcon(props.instance.icon_path, props.instance.loader),
 )
-const gameDirectory = computed(() => resolveGameDirectory(props.instance))
 const loading = ref(false)
 const modLoading = computed(
     () =>
@@ -229,14 +222,9 @@ onUnmounted(() => unlisten())
                 :alt="instance.name"
             />
             <div
-                class="flex h-full min-w-0 flex-col items-start justify-center gap-0.5 font-bold text-[var(--color-text-primary)] leading-normal"
+                class="h-full flex items-center font-bold text-[var(--color-text-primary)] leading-normal"
             >
                 <span class="line-clamp-2">{{ instance.name }}</span>
-                <GameDirectoryBadge
-                    v-if="showGameDirectory"
-                    :directory="gameDirectory"
-                    class="max-w-full"
-                />
             </div>
             <div class="flex items-center">
                 <Button
@@ -390,11 +378,6 @@ onUnmounted(() => unlisten())
                 >
                     {{ instance.loader }} {{ instance.game_version }}
                 </p>
-                <GameDirectoryBadge
-                    v-if="showGameDirectory"
-                    :directory="gameDirectory"
-                    class="max-w-full"
-                />
             </div>
         </div>
     </div>
@@ -489,11 +472,6 @@ onUnmounted(() => unlisten())
                         {{ instance.loader }} {{ instance.game_version }}
                     </span>
                 </div>
-                <GameDirectoryBadge
-                    v-if="showGameDirectory"
-                    :directory="gameDirectory"
-                    class="max-w-full"
-                />
             </div>
         </div>
     </div>

@@ -252,6 +252,7 @@ const messages = defineMessages({
 
 const providerItems = computed(() =>
     catalog.value
+        .filter((definition) => !definition.sponsored)
         .map((definition) => ({
             definition,
             config: state.value.providers.find(

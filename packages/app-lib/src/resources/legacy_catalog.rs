@@ -250,7 +250,7 @@ pub(crate) async fn releases_exact<T: DeserializeOwned>(
     Ok(releases)
 }
 
-pub(crate) async fn page<T: DeserializeOwned + Send>(
+pub(crate) async fn page<T: DeserializeOwned>(
     source: SourceId,
     project_id: String,
     target: ipc::ResourceTarget,
@@ -260,29 +260,12 @@ pub(crate) async fn page<T: DeserializeOwned + Send>(
     page_with_service(source, project_id, target, service).await
 }
 
-pub(crate) async fn page_with_service<T: DeserializeOwned + Send>(
+pub(crate) async fn page_with_service<T: DeserializeOwned>(
     source: SourceId,
     project_id: String,
     target: ipc::ResourceTarget,
     service: &std::sync::Arc<ResourceService>,
 ) -> crate::Result<(Vec<T>, bool)> {
-    let mut documents = Vec::new();
-    let mut push = |value| -> crate::Result<()> {
-        documents.push(serde_json::from_value(value)?);
-        Ok(())
-    };
-    let limited =
-        page_with_sink(source, project_id, target, service, &mut push).await?;
-    Ok((documents, limited))
-}
-
-async fn page_with_sink(
-    source: SourceId,
-    project_id: String,
-    target: ipc::ResourceTarget,
-    service: &std::sync::Arc<ResourceService>,
-    push: &mut (dyn FnMut(Value) -> crate::Result<()> + Send),
-) -> crate::Result<bool> {
     let project_id = SourceProjectId::new(project_id)
         .map_err(|error| crate::ErrorKind::InputError(error.to_string()))?;
     let cancel = CancellationToken::new();
@@ -305,6 +288,7 @@ async fn page_with_sink(
                 )
                 .into());
             };
+            let mut documents = Vec::new();
             for value in values {
                 let release = providers::legacy::release(value.clone())
                     .map_err(error)?
@@ -324,10 +308,10 @@ async fn page_with_sink(
                     && (target.channels.is_empty()
                         || target.channels.contains(&release.channel))
                 {
-                    push(value)?;
+                    documents.push(serde_json::from_value(value)?);
                 }
             }
-            return Ok(false);
+            return Ok((documents, false));
         } else {
             cached_catalog = true;
         }
@@ -389,14 +373,17 @@ async fn page_with_sink(
             },
         )
         .await;
+    let mut documents = Vec::new();
     for value in values {
         match value.map_err(error)?.value {
             ProviderValue::Release(document) => {
-                push(document.protocol.ok_or_else(|| {
-                    crate::ErrorKind::InputError(
-                        "release protocol projection missing".into(),
-                    )
-                })?)?
+                documents.push(serde_json::from_value(
+                    document.protocol.ok_or_else(|| {
+                        crate::ErrorKind::InputError(
+                            "release protocol projection missing".into(),
+                        )
+                    })?,
+                )?)
             }
             _ => {
                 return Err(crate::ErrorKind::InputError(
@@ -406,5 +393,5 @@ async fn page_with_sink(
             }
         }
     }
-    Ok(limited)
+    Ok((documents, limited))
 }

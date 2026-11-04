@@ -18,18 +18,6 @@ const message = (id: string, defaultMessage: string): MessageDescriptor => ({ id
 
 export const settingsSearchEntries: SettingsSearchEntry[] = [
     {
-        id: 'third-party-shimu',
-        categoryId: 'third-party-accounts',
-        targetId: 'settings-target-third-party-shimu',
-        label: message('app.third-party.shimu', 'Shimu Space'),
-        keywords: [
-            message(
-                'app.third-party.search',
-                'Shimu mcimg OAuth account authorization sign in connect',
-            ),
-        ],
-    },
-    {
         id: 'mcp-authentication',
         categoryId: 'mcp',
         targetId: 'settings-target-mcp-access',
@@ -86,7 +74,7 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
         label: message('app.appearance-settings.color-theme.title', 'Color theme'),
         description: message(
             'app.appearance-settings.color-theme.description',
-            'Select your preferred color theme for Axolotl Launcher.',
+            'Select your preferred color theme for StarryIsle Launcher.',
         ),
     },
     {
@@ -430,7 +418,7 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
         targetId: 'settings-target-appearance-close-behavior',
         label: message(
             'app.appearance-settings.close-behavior.title',
-            'Choose how to close Axolotl Launcher',
+            'Choose how to close StarryIsle Launcher',
         ),
         keywords: [
             message('app.appearance-settings.close-behavior.close', 'Close directly'),
@@ -592,7 +580,7 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
         label: message('app.settings.privacy.external-scheme', 'Allow external links'),
         description: message(
             'app.settings.privacy.external-scheme-description',
-            'Respond to axolotl:// links from browsers and other apps.',
+            'Respond to starryisle:// links from browsers and other apps.',
         ),
     },
     {
@@ -602,7 +590,7 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
         label: message('app.settings.privacy.privileged-scheme', 'Allow privileged link actions'),
         description: message(
             'app.settings.privacy.privileged-scheme-description',
-            'Let axolotl:// links change settings and stop game processes.',
+            'Let starryisle:// links change settings and stop game processes.',
         ),
     },
     // The instance-sync category had no entries at all, so none of its rows
@@ -823,7 +811,7 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
         id: 'storage-app-directory',
         categoryId: 'storage-backups',
         targetId: 'settings-target-storage-app-directory',
-        label: message('app.settings.resources.axolotl-data-directory', 'Axolotl data directory'),
+        label: message('app.settings.resources.axolotl-data-directory', 'StarryIsle data directory'),
     },
     {
         id: 'storage-minecraft-directories',
@@ -874,19 +862,6 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
         id: 'feature-flags',
         categoryId: 'feature-flags',
         label: message('settings.feature-flags.title', 'Feature flags'),
-    },
-    {
-        id: 'advanced-download-info',
-        categoryId: 'feature-flags',
-        targetId: 'settings-target-advanced-download-info',
-        label: message(
-            'app.settings.feature-flags.advanced-download-info',
-            'Advanced download information',
-        ),
-        description: message(
-            'app.settings.feature-flags.advanced-download-info-description',
-            'Show file timings, request speeds and remote addresses in download details. Observations are collected while enabled and included when exporting network connections.',
-        ),
     },
 ]
 

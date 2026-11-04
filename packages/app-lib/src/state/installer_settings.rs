@@ -157,7 +157,7 @@ mod windows {
         use super::*;
 
         fn default_directory() -> PathBuf {
-            PathBuf::from(r"C:\Users\Test\AppData\Roaming\red.ghs.axolotl")
+            PathBuf::from(r"C:\Users\Test\AppData\Roaming\com.starryisle.launcher")
         }
 
         #[test]
@@ -182,7 +182,7 @@ mod windows {
         fn clears_a_default_installer_directory() {
             assert_eq!(
                 decide_pending_directory(
-                    Some(r"C:\Users\Test\AppData\Roaming\red.ghs.axolotl\"),
+                    Some(r"C:\Users\Test\AppData\Roaming\com.starryisle.launcher\"),
                     &default_directory(),
                     false,
                     false,

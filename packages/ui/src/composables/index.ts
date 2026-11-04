@@ -11,7 +11,6 @@ export * from './i18n-debug'
 export * from './modal-stack'
 export * from './page-leave-safety'
 export * from './scroll-indicator'
-export * from './scroll-to-top-visibility'
 export type { ArmorPreviewConfig } from './skin-rendering/armor-preview-types'
 export {
     ARMOR_SLOTS,

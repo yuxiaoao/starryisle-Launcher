@@ -137,7 +137,10 @@ const metadataComplete = ref(false)
 const committedView = shallowRef<FavoritesView | null>(null)
 
 const messages = defineMessages({
-    schematics: { id: 'app.browse.schematics-project-type', defaultMessage: 'Schematics' },
+    refreshing: {
+        id: 'app.content-favorites.refreshing',
+        defaultMessage: 'Updating favorites…',
+    },
     browseResources: {
         id: 'app.content-favorites.browse-resources',
         defaultMessage: 'Browse resources',
@@ -355,7 +358,6 @@ const projectTabs = computed(() => {
             resourcepacks: formatMessage(messages.resourcepacks),
             datapacks: formatMessage(messages.datapacks),
             maps: formatMessage(messages.maps),
-            schematics: formatMessage(messages.schematics),
             shaders: formatMessage(messages.shaders),
             servers: formatMessage(messages.servers),
             favorites: formatMessage(messages.title),
@@ -1003,6 +1005,13 @@ onMounted(() => {
             </div>
         </div>
 
+        <p
+            v-if="loadingProjects && committedView"
+            role="status"
+            class="m-0 text-sm text-[var(--color-text-tertiary)]"
+        >
+            {{ formatMessage(messages.refreshing) }}
+        </p>
         <Admonition
             v-if="projectsLoadFailed && hasProjectsSnapshot"
             type="warning"

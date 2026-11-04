@@ -3,7 +3,6 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { parseArgs } from 'node:util'
 
-import { blockbenchBuildInputs } from './build-blockbench-skin-editor.mjs'
 import { app, files, output, root, run, sha256 } from './desktop-build-utils.mjs'
 
 const { values } = parseArgs({
@@ -24,12 +23,18 @@ const inputs = [
     'packages/app-lib/java/gradlew',
     'packages/app-lib/java/gradlew.bat',
     'scripts/axolotl/prepare-build-resources.mjs',
-    'scripts/axolotl/build-blockbench-skin-editor.mjs',
     'scripts/axolotl/desktop-build-utils.mjs',
     'scripts/axolotl/sync-blockbench-skin-editor.mjs',
-    ...[...blockbenchBuildInputs, 'css', 'font', 'index.html'].map(
-        (file) => `third-party/blockbench/${file}`,
-    ),
+    ...[
+        'package.json',
+        'package-lock.json',
+        'build.js',
+        'js',
+        'css',
+        'assets',
+        'font',
+        'index.html',
+    ].map((file) => `third-party/blockbench/${file}`),
 ]
 const inputHash = createHash('sha256')
 const repositoryInputs = inputs.filter((input) => !input.startsWith('third-party/'))

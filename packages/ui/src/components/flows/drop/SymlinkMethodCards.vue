@@ -463,7 +463,7 @@ const messages = defineMessages({
     },
     statsCacheTooltip: {
         id: 'drop.symlink_method.stats_cache_tooltip',
-        defaultMessage: 'Axolotl cache',
+        defaultMessage: 'StarryIsle cache',
     },
     statsLocal: {
         id: 'drop.symlink_method.stats_local',

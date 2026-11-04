@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import fastaiLogo from '@/assets/external/fastai.webp'
+import fastaiLogo from '@/assets/external/fastai.png'
 
 withDefaults(defineProps<{ size?: number }>(), { size: undefined })
 </script>

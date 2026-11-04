@@ -35,7 +35,7 @@ const { formatMessage } = useVIntl()
 const canvas = ref<HTMLCanvasElement>()
 
 const messages = defineMessages({
-    title: { id: 'app.settings.about.run.title', defaultMessage: 'Axolotl run' },
+    title: { id: 'app.settings.about.run.title', defaultMessage: 'StarryIsle run' },
     score: { id: 'app.settings.about.run.score', defaultMessage: 'Score: {score}' },
     best: { id: 'app.settings.about.run.best', defaultMessage: 'Best: {score}' },
     scoreLabel: { id: 'app.settings.about.run.score-label', defaultMessage: 'Score' },

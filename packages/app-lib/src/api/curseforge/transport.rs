@@ -198,7 +198,7 @@ async fn api_permit(
 }
 
 static CLIENT: LazyLock<reqwest::Client> = LazyLock::new(|| {
-    crate::util::http::client_builder()
+    reqwest::Client::builder()
         .connect_timeout(Duration::from_secs(15))
         .read_timeout(Duration::from_secs(30))
         .redirect(reqwest::redirect::Policy::none())
@@ -217,7 +217,7 @@ async fn response_body(
 
 #[cfg(debug_assertions)]
 static LOCAL_CLIENT: LazyLock<reqwest::Client> = LazyLock::new(|| {
-    crate::util::http::client_builder()
+    reqwest::Client::builder()
         .connect_timeout(Duration::from_secs(15))
         .read_timeout(Duration::from_secs(30))
         .redirect(reqwest::redirect::Policy::none())
@@ -353,7 +353,7 @@ fn request_routes_with_mode(
     .collect()
 }
 
-pub(crate) async fn request_json<T: DeserializeOwned + Send>(
+pub(crate) async fn request_json<T: DeserializeOwned>(
     method: Method,
     path: &str,
     query: Vec<(String, String)>,
@@ -371,7 +371,7 @@ pub(crate) async fn request_json<T: DeserializeOwned + Send>(
     .await
 }
 
-pub(super) async fn request_json_with_origin<T: DeserializeOwned + Send>(
+pub(super) async fn request_json_with_origin<T: DeserializeOwned>(
     method: Method,
     path: &str,
     query: Vec<(String, String)>,
@@ -379,33 +379,6 @@ pub(super) async fn request_json_with_origin<T: DeserializeOwned + Send>(
     mirror_policy: MirrorPolicy,
     origin: RequestOrigin,
 ) -> crate::Result<T> {
-    let mut decoded = None;
-    let mut decode = |bytes: &[u8]| -> serde_json::Result<()> {
-        decoded = Some(serde_json::from_slice(bytes)?);
-        Ok(())
-    };
-    request_with_decoder(
-        method,
-        path,
-        query,
-        body,
-        mirror_policy,
-        origin,
-        &mut decode,
-    )
-    .await?;
-    Ok(decoded.expect("a successful request decoded its response"))
-}
-
-async fn request_with_decoder(
-    method: Method,
-    path: &str,
-    query: Vec<(String, String)>,
-    body: Option<Value>,
-    mirror_policy: MirrorPolicy,
-    origin: RequestOrigin,
-    decode: &mut (dyn FnMut(&[u8]) -> serde_json::Result<()> + Send),
-) -> crate::Result<()> {
     let mut trace = RequestTrace::new(&method, path, &query, &body, origin);
     let deadline = tokio::time::Instant::now() + METADATA_REQUEST_TIMEOUT;
     let result = metadata_deadline(
@@ -418,7 +391,6 @@ async fn request_with_decoder(
             mirror_policy,
             deadline,
             &mut trace,
-            decode,
         ),
     )
     .await;
@@ -438,7 +410,7 @@ async fn request_with_decoder(
     result
 }
 
-async fn request_json_inner(
+async fn request_json_inner<T: DeserializeOwned>(
     method: Method,
     path: &str,
     query: Vec<(String, String)>,
@@ -446,8 +418,7 @@ async fn request_json_inner(
     mirror_policy: MirrorPolicy,
     deadline: tokio::time::Instant,
     trace: &mut RequestTrace,
-    decode: &mut (dyn FnMut(&[u8]) -> serde_json::Result<()> + Send),
-) -> crate::Result<()> {
+) -> crate::Result<T> {
     let key = api_key();
     let key_generation = api_key_generation();
     let state = State::get().await?;
@@ -545,10 +516,10 @@ async fn request_json_inner(
 
         if status.is_success() {
             trace.stage("decode");
-            match decode(&bytes) {
-                Ok(()) => {
+            match serde_json::from_slice(&bytes) {
+                Ok(value) => {
                     record_key_response(key_generation, false);
-                    return Ok(());
+                    return Ok(value);
                 }
                 Err(error)
                     if route.source == RequestRouteSource::Mirror

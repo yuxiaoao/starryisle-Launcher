@@ -51,7 +51,7 @@
     "message": "Dựng hình nâng cao"
   },
   "app.appearance-settings.color-theme.description": {
-    "message": "Chọn màu nền ưu thích của bạn cho Axolotl Launcher."
+    "message": "Chọn màu nền ưu thích của bạn cho StarryIsle Launcher."
   },
   "app.appearance-settings.color-theme.title": {
     "message": "Màu chủ đề"
@@ -381,7 +381,7 @@
     "message": "Đặng nhập vào mội tài khoản Minecraft để đổi skin Skin trong ứng dụng này."
   },
   "app.skins.sign-in.axolotl-alt": {
-    "message": "Axolotl Launcher"
+    "message": "StarryIsle Launcher"
   },
   "app.skins.sign-in.title": {
     "message": "Đăng nhập đã"
@@ -390,10 +390,10 @@
     "message": "Đổi skin"
   },
   "app.update-popup.body.download-complete": {
-    "message": "Phiên bản v{version} của Axolotl Launcherđã sẵn sàng để có thể cài đặt. Khởi động lại ứng dụng để cập nhật ngay bây giờ, hoặc tự động cập nhật sau khi bạn tắt Axolotl Launcher."
+    "message": "Phiên bản v{version} của StarryIsle Launcherđã sẵn sàng để có thể cài đặt. Khởi động lại ứng dụng để cập nhật ngay bây giờ, hoặc tự động cập nhật sau khi bạn tắt StarryIsle Launcher."
   },
   "app.update-popup.body.metered": {
-    "message": "Phiên bản v{version} của Axolotl Launcherhiện đang khả dụng ngay bây giờ! Vì bạn đang sử dụng mạng có tính phí theo dung lượng nên chúng tôi không tự động tải xuống."
+    "message": "Phiên bản v{version} của StarryIsle Launcherhiện đang khả dụng ngay bây giờ! Vì bạn đang sử dụng mạng có tính phí theo dung lượng nên chúng tôi không tự động tải xuống."
   },
   "app.update-popup.changelog": {
     "message": "Nhật ký thay đổi"

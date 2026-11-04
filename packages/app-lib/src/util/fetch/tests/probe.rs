@@ -39,7 +39,7 @@ async fn route_probe_selects_a_faster_distinct_authority() {
     let mut candidate = route(url, DownloadRouteSource::Alternate, false, true);
     candidate.proxy = ProxyPolicy::Direct;
     let candidates = vec![candidate.clone()];
-    let client = crate::util::http::client_builder()
+    let client = reqwest::Client::builder()
         .no_proxy()
         .redirect(reqwest::redirect::Policy::none())
         .build()

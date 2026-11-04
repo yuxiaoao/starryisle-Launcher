@@ -1,6 +1,7 @@
 //! AI provider catalog, credentials, and text-generation adapters.
 
 pub mod chat;
+mod credentials;
 
 use std::collections::HashMap;
 use std::sync::{LazyLock, Mutex};
@@ -9,11 +10,9 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use base64::Engine;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use hmac::{Hmac, Mac};
+use jsonwebtoken::{Algorithm, EncodingKey, Header};
 use keyring::Entry;
 use reqwest::{Response, StatusCode};
-use ring::rand::SystemRandom;
-use ring::signature::{RSA_PKCS1_SHA256, RsaKeyPair};
-use rustls_pki_types::{PrivateKeyDer, pem::PemObject};
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
@@ -22,11 +21,11 @@ use uuid::Uuid;
 
 use crate::state::documents;
 use crate::state::documents::ai::{AiDocument, ProviderConfig};
-use crate::util::oauth_credentials as credentials;
 use crate::{ErrorKind, State};
 
-const CATALOG_SOURCE: &str = "LobeHub 700c8349e35477cb602975f8089c942e96bc9601";
+const CATALOG_SOURCE: &str = "LobeHub 483c4a343e437bf6e812b5f71a9a47ce7b5c7be4";
 const KEYRING_PREFIX: &str = "ai-provider";
+const OAUTH_CREDENTIAL: &str = "oauth";
 const API_KEY_CREDENTIAL: &str = "api-key";
 const AWS_ACCESS_KEY_ID_CREDENTIAL: &str = "aws-access-key-id";
 const AWS_SECRET_ACCESS_KEY_CREDENTIAL: &str = "aws-secret-access-key";
@@ -38,7 +37,7 @@ const OAUTH_REFRESH_SKEW_SECONDS: u64 = 120;
 const OAUTH_DEFAULT_TOKEN_TTL_SECONDS: u64 = 60 * 60;
 
 static AI_CLIENT: LazyLock<reqwest::Client> = LazyLock::new(|| {
-    crate::util::http::client_builder()
+    reqwest::Client::builder()
         .timeout(Duration::from_secs(45))
         .user_agent(crate::launcher_user_agent())
         .build()
@@ -46,7 +45,7 @@ static AI_CLIENT: LazyLock<reqwest::Client> = LazyLock::new(|| {
 });
 
 static AI_TRANSLATION_CLIENT: LazyLock<reqwest::Client> = LazyLock::new(|| {
-    crate::util::http::client_builder()
+    reqwest::Client::builder()
         .timeout(Duration::from_secs(90))
         .user_agent(crate::launcher_user_agent())
         .build()
@@ -297,9 +296,8 @@ const PROVIDERS: &[AiProviderDefinition] = &[
         true,
         ["account_id"]
     ),
-    // Sponsored listing; scripts/axolotl/sync-lobehub-models.mjs syncs its
-    // models from CodeFlow's public pricing API instead of LobeHub. See
-    // SPONSORED_PROVIDERS.
+    // Sponsored listing; kept out of LobeHub syncs by
+    // scripts/axolotl/sync-lobehub-models.mjs. See SPONSORED_PROVIDERS.
     provider!(
         "codeflow",
         "CodeFlow",
@@ -1201,48 +1199,6 @@ fn vertex_jwt_claims(
     }
 }
 
-fn vertex_jwt_assertion(
-    account: &VertexServiceAccount,
-    issued_at: u64,
-) -> crate::Result<String> {
-    let invalid_key =
-        || input_error("Vertex AI private key is invalid".to_string());
-    let private_key =
-        PrivateKeyDer::from_pem_slice(account.private_key.as_bytes())
-            .map_err(|_| invalid_key())?;
-    let key_pair = match private_key {
-        PrivateKeyDer::Pkcs1(key) => {
-            RsaKeyPair::from_der(key.secret_pkcs1_der())
-        }
-        PrivateKeyDer::Pkcs8(key) => {
-            RsaKeyPair::from_pkcs8(key.secret_pkcs8_der())
-        }
-        _ => return Err(invalid_key()),
-    }
-    .map_err(|_| invalid_key())?;
-    let message = format!(
-        "{}.{}",
-        URL_SAFE_NO_PAD.encode(br#"{"typ":"JWT","alg":"RS256"}"#),
-        URL_SAFE_NO_PAD.encode(serde_json::to_vec(&vertex_jwt_claims(
-            account, issued_at,
-        ))?),
-    );
-    let mut signature = vec![0; key_pair.public().modulus_len()];
-    key_pair
-        .sign(
-            &RSA_PKCS1_SHA256,
-            &SystemRandom::new(),
-            message.as_bytes(),
-            &mut signature,
-        )
-        .map_err(|error| {
-            ErrorKind::OtherError(format!(
-                "Could not sign the Vertex AI access token request: {error}"
-            ))
-        })?;
-    Ok(format!("{message}.{}", URL_SAFE_NO_PAD.encode(signature)))
-}
-
 #[derive(Debug, Clone, Copy)]
 struct OAuthDefinition {
     client_id: &'static str,
@@ -1583,33 +1539,21 @@ fn models_from_document(
     document: &AiDocument,
     provider_id: &str,
 ) -> Vec<AiProviderModel> {
-    let stored = document
+    let mut stored = document
         .models
         .iter()
         .filter(|model| model.provider_id == provider_id)
-        .map(|model| AiProviderModel {
-            id: model.model_id.clone(),
-            name: model.display_name.clone(),
-            enabled: model.enabled,
-            source: model.source.clone(),
+        .map(|model| {
+            let model = AiProviderModel {
+                id: model.model_id.clone(),
+                name: model.display_name.clone(),
+                enabled: model.enabled,
+                source: model.source.clone(),
+            };
+            (model.id.clone(), model)
         })
-        .collect();
-    merge_provider_models(builtin_models(provider_id), stored)
-}
-
-/// Overlays saved rows on the bundled models. A `builtin` row only records a
-/// toggle or rename of a bundled model, so once a catalog sync drops that model
-/// the row is ignored rather than resurfacing a model the provider may no
-/// longer serve. Custom and fetched rows are the user's own and are kept.
-fn merge_provider_models(
-    bundled: &[BuiltinModel],
-    stored: Vec<AiProviderModel>,
-) -> Vec<AiProviderModel> {
-    let mut stored = stored
-        .into_iter()
-        .map(|model| (model.id.clone(), model))
         .collect::<HashMap<_, _>>();
-    let mut models = bundled
+    let mut models = builtin_models(provider_id)
         .iter()
         .map(|builtin| {
             let saved = stored.remove(&builtin.id);
@@ -1627,10 +1571,7 @@ fn merge_provider_models(
             }
         })
         .collect::<Vec<_>>();
-    let mut additional = stored
-        .into_values()
-        .filter(|model| model.source != "builtin")
-        .collect::<Vec<_>>();
+    let mut additional = stored.into_values().collect::<Vec<_>>();
     additional.sort_by(|left, right| {
         left.name
             .cmp(&right.name)
@@ -2779,7 +2720,19 @@ async fn vertex_access_token(
         return Ok((account, cached.access_token));
     }
     let issued_at = now_seconds();
-    let assertion = vertex_jwt_assertion(&account, issued_at)?;
+    let claims = vertex_jwt_claims(&account, issued_at);
+    let assertion = jsonwebtoken::encode(
+        &Header::new(Algorithm::RS256),
+        &claims,
+        &EncodingKey::from_rsa_pem(account.private_key.as_bytes()).map_err(
+            |_| input_error("Vertex AI private key is invalid".to_string()),
+        )?,
+    )
+    .map_err(|error| {
+        ErrorKind::OtherError(format!(
+            "Could not sign the Vertex AI access token request: {error}"
+        ))
+    })?;
     let value = checked_json(
         AI_CLIENT
             .post(&account.token_uri)
@@ -3706,7 +3659,7 @@ mod tests {
 
     #[test]
     fn opencode_session_headers_are_stable_and_provider_scoped() {
-        let client = crate::util::http::client_builder()
+        let client = reqwest::Client::builder()
             .user_agent(crate::launcher_user_agent())
             .build()
             .unwrap();
@@ -3901,43 +3854,6 @@ mod tests {
     }
 
     #[test]
-    fn saved_rows_of_models_dropped_from_the_catalog_are_ignored() {
-        let builtin = [BuiltinModel {
-            id: "kept".to_string(),
-            name: "Kept".to_string(),
-            enabled: true,
-        }];
-        let saved = |id: &str, name: &str, source: &str| AiProviderModel {
-            id: id.to_string(),
-            name: name.to_string(),
-            enabled: false,
-            source: source.to_string(),
-        };
-        let models = merge_provider_models(
-            &builtin,
-            vec![
-                saved("kept", "Renamed", "builtin"),
-                saved("dropped", "Dropped", "builtin"),
-                saved("fetched", "Fetched", "remote"),
-                saved("added", "Added", "custom"),
-            ],
-        );
-        assert_eq!(
-            models
-                .iter()
-                .map(|model| (model.id.as_str(), model.source.as_str()))
-                .collect::<Vec<_>>(),
-            [
-                ("kept", "builtin"),
-                ("added", "custom"),
-                ("fetched", "remote")
-            ]
-        );
-        assert_eq!(models[0].name, "Renamed");
-        assert!(!models[0].enabled);
-    }
-
-    #[test]
     fn bundled_catalog_contains_supported_lobehub_chat_models() {
         let model_count = BUILTIN_MODEL_CATALOG
             .providers
@@ -4105,7 +4021,7 @@ mod tests {
             "f7bc83f430538424b13298e6aa6fb143ef4d59a14946175997479dbc2d1a3cd8"
         );
         let request = sign_bedrock_request(
-            crate::util::http::client_builder().build().unwrap().post(
+            reqwest::Client::new().post(
                 "https://bedrock-runtime.us-east-1.amazonaws.com/model/example/invoke",
             ),
             "https://bedrock-runtime.us-east-1.amazonaws.com/model/example/invoke",
@@ -4169,123 +4085,5 @@ mod tests {
             )
             .is_err()
         );
-    }
-
-    fn vertex_signing_key() -> &'static rsa::RsaPrivateKey {
-        use rand::{SeedableRng, rngs::StdRng};
-        static KEY: LazyLock<rsa::RsaPrivateKey> = LazyLock::new(|| {
-            rsa::RsaPrivateKey::new(
-                &mut StdRng::seed_from_u64(0x5253_3235_36),
-                2048,
-            )
-            .unwrap()
-        });
-        &KEY
-    }
-
-    fn vertex_signing_account(private_key: String) -> VertexServiceAccount {
-        VertexServiceAccount {
-            client_email: "service@example.test".into(),
-            private_key,
-            project_id: "project".into(),
-            token_uri: default_google_token_uri(),
-        }
-    }
-
-    #[test]
-    fn vertex_assertions_match_the_previous_encoder_for_pkcs1_and_pkcs8() {
-        use rsa::pkcs1::EncodeRsaPrivateKey;
-        use rsa::pkcs8::{EncodePrivateKey, LineEnding};
-        let key = vertex_signing_key();
-        let pkcs1 = key.to_pkcs1_pem(LineEnding::LF).unwrap().to_string();
-        let pkcs8 = key.to_pkcs8_pem(LineEnding::LF).unwrap().to_string();
-        for private_key in [pkcs1, pkcs8.clone(), pkcs8.replace('\n', "\r\n")] {
-            let account = vertex_signing_account(private_key);
-            let previous = jsonwebtoken::encode(
-                &jsonwebtoken::Header::new(jsonwebtoken::Algorithm::RS256),
-                &vertex_jwt_claims(&account, 100),
-                &jsonwebtoken::EncodingKey::from_rsa_pem(
-                    account.private_key.as_bytes(),
-                )
-                .unwrap(),
-            )
-            .unwrap();
-            assert_eq!(vertex_jwt_assertion(&account, 100).unwrap(), previous);
-        }
-    }
-
-    #[test]
-    fn vertex_assertions_verify_independently_and_reject_tampered_claims() {
-        use rsa::pkcs8::{EncodePrivateKey, EncodePublicKey, LineEnding};
-        let key = vertex_signing_key();
-        let public_key = rsa::RsaPublicKey::from(key)
-            .to_public_key_pem(LineEnding::LF)
-            .unwrap();
-        let verification_key =
-            jsonwebtoken::DecodingKey::from_rsa_pem(public_key.as_bytes())
-                .unwrap();
-        let account = vertex_signing_account(
-            key.to_pkcs8_pem(LineEnding::LF).unwrap().to_string(),
-        );
-        let token = vertex_jwt_assertion(&account, 100).unwrap();
-        let mut validation =
-            jsonwebtoken::Validation::new(jsonwebtoken::Algorithm::RS256);
-        validation.validate_exp = false;
-        validation.set_audience(&[&account.token_uri]);
-        validation.set_issuer(&[&account.client_email]);
-        let verified = jsonwebtoken::decode::<Value>(
-            &token,
-            &verification_key,
-            &validation,
-        )
-        .unwrap();
-        assert_eq!(verified.header.typ.as_deref(), Some("JWT"));
-        assert_eq!(
-            verified.claims,
-            serde_json::to_value(vertex_jwt_claims(&account, 100)).unwrap()
-        );
-        let parts: Vec<_> = token.split('.').collect();
-        let mut claims = verified.claims;
-        claims["scope"] = json!("tampered");
-        let tampered = format!(
-            "{}.{}.{}",
-            parts[0],
-            URL_SAFE_NO_PAD.encode(serde_json::to_vec(&claims).unwrap()),
-            parts[2]
-        );
-        let error = jsonwebtoken::decode::<Value>(
-            &tampered,
-            &verification_key,
-            &validation,
-        )
-        .unwrap_err();
-        assert!(matches!(
-            error.kind(),
-            jsonwebtoken::errors::ErrorKind::InvalidSignature
-        ));
-    }
-
-    #[test]
-    fn vertex_assertions_reject_invalid_non_rsa_and_weak_keys() {
-        use rand::{SeedableRng, rngs::StdRng};
-        use rsa::pkcs8::{EncodePrivateKey, LineEnding};
-        let ec = p256::SecretKey::from_slice(&[1; 32]).unwrap();
-        let weak =
-            rsa::RsaPrivateKey::new(&mut StdRng::seed_from_u64(1024), 1024)
-                .unwrap();
-        for private_key in [
-            "not a PEM private key".to_string(),
-            ec.to_pkcs8_pem(LineEnding::LF).unwrap().to_string(),
-            weak.to_pkcs8_pem(LineEnding::LF).unwrap().to_string(),
-        ] {
-            let account = vertex_signing_account(private_key);
-            let error = vertex_jwt_assertion(&account, 100).unwrap_err();
-            assert!(matches!(error.raw.as_ref(), ErrorKind::InputError(_)));
-            assert!(
-                error
-                    .to_string()
-                    .contains("Vertex AI private key is invalid")
-            );
-        }
     }
 }

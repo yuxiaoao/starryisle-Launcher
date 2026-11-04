@@ -445,7 +445,7 @@ pub(crate) async fn generate_pack_from_version_id_with_reporter(
             }),
             details.clone(),
             vec![InstallJobEventKind::ContentFileQueued {
-                path: item_path.clone(),
+                path: item_path,
                 bytes_total: Some(pack_file.size as u64),
                 max_attempts: INSTALL_FILE_REPORTED_ATTEMPTS,
             }],
@@ -466,7 +466,7 @@ pub(crate) async fn generate_pack_from_version_id_with_reporter(
             .with_download_meta(download_meta)
             .with_install_tracking(
                 reporter.clone(),
-                item_path.clone(),
+                pack_path.display().to_string(),
                 pack_file.filename.clone(),
             ),
         &pack_path,
@@ -484,15 +484,7 @@ pub(crate) async fn generate_pack_from_version_id_with_reporter(
     }
 
     reporter
-        .update_with_events(
-            InstallPhaseId::ResolvingPack,
-            None,
-            details.clone(),
-            vec![InstallJobEventKind::ContentFileCompleted {
-                path: item_path,
-                bytes: download_result.size,
-            }],
-        )
+        .update(InstallPhaseId::ResolvingPack, None, details.clone())
         .await?;
 
     let project = CachedEntry::get_project(

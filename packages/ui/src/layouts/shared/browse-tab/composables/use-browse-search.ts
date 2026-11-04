@@ -4,7 +4,6 @@ import { useRoute, useRouter } from 'vue-router'
 
 import { useDebugLogger } from '#ui/composables/debug-logger'
 import { defineMessages, useVIntl } from '#ui/composables/i18n'
-import { MAX_RESULTS_OPTIONS } from '#ui/utils/browse-max-results'
 import type {
     EnvironmentSearchOverride,
     FilterType,
@@ -160,7 +159,7 @@ export function useBrowseSearch(options: UseBrowseSearchOptions): BrowseSearchSt
     })
 
     const effectiveMaxResultsOptions = computed(
-        () => options.maxResultsOptions?.value ?? MAX_RESULTS_OPTIONS,
+        () => options.maxResultsOptions?.value ?? [5, 10, 15, 20, 50, 100],
     )
 
     watch(

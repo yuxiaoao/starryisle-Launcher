@@ -21,32 +21,25 @@ export function contentItemStableId(item: ContentItem): string | null {
     return item.instanceEntryId ?? item.instanceMemberId ?? item.instanceFileId ?? null
 }
 
-export function indexContentChanges(
-    jobs: InstallJobSnapshot[],
-    pendingChanges: PendingContentChange[],
-) {
-    const contentIds = new Set<string>()
-    let allUserAdded = false
-    for (const job of jobs) {
-        const change = job.content_change
-        if (!change) continue
-        if (change.intent.type === 'update_all_user_added' && change.content_ids.length === 0) {
-            allUserAdded = true
-        }
-        for (const id of change.content_ids) contentIds.add(id)
+export function contentChangeAffectsItem(job: InstallJobSnapshot, item: ContentItem): boolean {
+    const change = job.content_change
+    if (!change) return false
+    if (change.intent.type === 'update_all_user_added' && change.content_ids.length === 0) {
+        return item.instanceOwnershipKind === 'user_added'
     }
-    for (const pending of pendingChanges) {
-        if (pending.updateAll) allUserAdded = true
-        else for (const id of pending.contentIds) contentIds.add(id)
-    }
-    return { contentIds, allUserAdded }
+    const contentId = contentItemStableId(item)
+    return contentId != null && change.content_ids.includes(contentId)
 }
 
-export function contentChangeAffectsItem(
-    index: ReturnType<typeof indexContentChanges>,
+export function hasActiveContentChange(jobs: InstallJobSnapshot[], item: ContentItem): boolean {
+    return jobs.some((job) => contentChangeAffectsItem(job, item))
+}
+
+export function pendingContentChangeAffectsItem(
+    pending: PendingContentChange,
     item: ContentItem,
 ): boolean {
-    if (index.allUserAdded && item.instanceOwnershipKind === 'user_added') return true
+    if (pending.updateAll) return item.instanceOwnershipKind === 'user_added'
     const contentId = contentItemStableId(item)
-    return contentId != null && index.contentIds.has(contentId)
+    return contentId != null && pending.contentIds.includes(contentId)
 }

@@ -122,6 +122,14 @@ pub fn init<R: tauri::Runtime>() -> tauri::plugin::TauriPlugin<R> {
             instance_import_screenshot_groups,
             instance_delete_screenshots,
             instance_export_screenshots,
+            instance_list_worlds,
+            instance_world_advancements,
+            instance_advancement_catalog,
+            stats_overview,
+            instance_export_screenshots_bundle,
+            instance_import_screenshots_bundle,
+            instance_set_screenshot_note,
+            instance_list_screenshot_notes,
             instance_move_screenshots,
             instance_open_screenshot,
             instance_get_synced_options,
@@ -1096,11 +1104,7 @@ pub async fn instance_get_content_items_by_paths(
 pub async fn instance_get_content_snapshot(
     instance_id: &str,
     defer_enrichment: Option<bool>,
-    refresh_files: Option<bool>,
 ) -> Result<theseus::data::InstanceContentSnapshot> {
-    if refresh_files.unwrap_or(false) {
-        theseus::instance::sync_content_files(instance_id).await?;
-    }
     if defer_enrichment.unwrap_or(false) {
         return Ok(theseus::instance::get_content_snapshot_for_display(
             instance_id,
@@ -1529,6 +1533,76 @@ pub async fn instance_delete_screenshots(
 ) -> Result<()> {
     Ok(theseus::instance::delete_screenshots(&keys).await?)
 }
+#[tauri::command]
+pub async fn instance_set_screenshot_note(
+    instance_id: String,
+    file_name: String,
+    note: String,
+) -> Result<()> {
+    Ok(theseus::instance::set_screenshot_note(&instance_id, &file_name, &note).await?)
+}
+
+#[tauri::command]
+pub async fn instance_list_screenshot_notes(
+    instance_id: Option<String>,
+) -> Result<Vec<theseus::instance::ScreenshotNote>> {
+    Ok(theseus::instance::list_screenshot_notes(instance_id.as_deref()).await?)
+}
+
+#[tauri::command]
+pub async fn instance_export_screenshots_bundle(
+    instance_id: String,
+    file_names: Option<Vec<String>>,
+    path: PathBuf,
+) -> Result<theseus::instance::BundleExportReport> {
+    Ok(theseus::instance::export_instance_bundle(&instance_id, file_names, path).await?)
+}
+
+#[tauri::command]
+pub async fn instance_import_screenshots_bundle(
+    instance_id: String,
+    path: PathBuf,
+    conflict: String,
+) -> Result<theseus::instance::BundleImportReport> {
+    Ok(theseus::instance::import_instance_bundle(&instance_id, path, &conflict).await?)
+}
+
+#[tauri::command]
+pub async fn stats_overview(
+    year: Option<i32>,
+    force: Option<bool>,
+) -> Result<theseus::stats::StatsOverview> {
+    Ok(theseus::stats::overview(year, force.unwrap_or(false)).await?)
+}
+
+#[tauri::command]
+pub async fn instance_list_worlds(
+    instance_id: String,
+) -> Result<Vec<theseus::instance::WorldSummary>> {
+    Ok(theseus::instance::list_worlds(&instance_id).await?)
+}
+
+#[tauri::command]
+pub async fn instance_world_advancements(
+    instance_id: String,
+    world: String,
+    player: Option<String>,
+) -> Result<theseus::instance::WorldAdvancements> {
+    Ok(theseus::instance::world_advancements(
+        &instance_id,
+        &world,
+        player.as_deref(),
+    )
+    .await?)
+}
+
+#[tauri::command]
+pub async fn instance_advancement_catalog(
+    instance_id: Option<String>,
+) -> Result<Vec<theseus::instance::AdvancementDef>> {
+    Ok(theseus::instance::advancement_catalog(instance_id).await?)
+}
+
 #[tauri::command]
 pub async fn instance_export_screenshots(
     keys: Vec<theseus::instance::ScreenshotKey>,

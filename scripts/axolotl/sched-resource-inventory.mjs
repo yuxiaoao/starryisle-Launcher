@@ -156,7 +156,7 @@ export function buildInventory(policy) {
     }
 }
 
-if (isMain(import.meta.url)) {
+if (import.meta.url === new URL(`file:///${path.resolve(process.argv[1]).replaceAll('\\', '/')}`).href) {
     const args = parseArgs(process.argv.slice(2))
     const outDir = args.out ?? defaultOutDir
     try {

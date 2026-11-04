@@ -1,0 +1,104 @@
+name: Rebuild fork as a thin branch
+
+# Rebuilds the fork's main branch as "upstream/main plus one layer of StarryIsle
+# changes", which is what makes future syncs a plain rebase instead of a huge
+# file-by-file merge. It only writes the branch named by `branch`; publishing to
+# main requires the separate `publish` switch so the result can be reviewed first.
+on:
+  workflow_dispatch:
+    inputs:
+      upstream:
+        description: Upstream repository (owner/name)
+        required: false
+        default: Axolotl-Launcher/Axolotl
+      branch:
+        description: Branch that receives the rebuilt history
+        required: false
+        default: thin
+      publish:
+        description: Also force-update main from that branch
+        type: boolean
+        required: false
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: thin-fork
+  cancel-in-progress: false
+
+jobs:
+  rebuild:
+    name: Rebuild thin branch
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out main with full history
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Rebuild the branch
+        env:
+          UPSTREAM: ${{ inputs.upstream }}
+          TARGET: ${{ inputs.branch }}
+        run: |
+          set -euo pipefail
+          git config user.name "starryisle-sync"
+          git config user.email "sync@users.noreply.github.com"
+
+          git remote add upstream "https://github.com/${UPSTREAM}.git" 2>/dev/null || \
+            git remote set-url upstream "https://github.com/${UPSTREAM}.git"
+          git fetch upstream main --no-tags
+
+          echo "upstream head: $(git rev-parse --short upstream/main)"
+          echo "our head:      $(git rev-parse --short origin/main)"
+
+          echo "### Files that differ from upstream"
+          git diff --stat upstream/main origin/main | tail -n 30
+
+          # Our whole delta, replayed on top of the upstream commit.
+          git diff --binary upstream/main origin/main > /tmp/starryisle.patch
+          echo "patch size: $(wc -c < /tmp/starryisle.patch) bytes"
+
+          git checkout -B "$TARGET" upstream/main
+          git apply --index /tmp/starryisle.patch
+
+          git commit -m "feat: StarryIsle changes on top of upstream main" \
+            -m "Branding, the screenshot timeline with notes, bundle export/import and the own updater endpoint, rebased onto upstream so the fork stays one commit thick."
+
+          echo "### Tree comparison against the previous main"
+          if git diff --quiet "origin/main" HEAD; then
+            echo "tree is identical to the old main"
+          else
+            echo "TREE DIFFERS — inspect before publishing"
+            git diff --stat origin/main HEAD | tail -n 40
+          fi
+
+          git push --force origin "HEAD:refs/heads/${TARGET}"
+          echo "pushed branch ${TARGET}: $(git rev-parse --short HEAD)"
+
+      - name: Publish to main
+        if: inputs.publish
+        env:
+          TARGET: ${{ inputs.branch }}
+        run: |
+          set -euo pipefail
+          git push --force origin "refs/heads/${TARGET}:refs/heads/main"
+          echo "main now points at $(git rev-parse --short HEAD)"
+
+      - name: Summary
+        if: always()
+        run: |
+          {
+            echo "## Thin fork rebuild"
+            echo ""
+            echo "- upstream: \`${{ inputs.upstream }}\`"
+            echo "- branch: \`${{ inputs.branch }}\`"
+            echo "- published to main: \`${{ inputs.publish }}\`"
+            echo ""
+            echo '```'
+            git log --oneline -n 3
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

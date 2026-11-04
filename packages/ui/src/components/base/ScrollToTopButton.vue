@@ -1,9 +1,8 @@
 <script setup lang="ts">
 import { ChevronUpIcon } from '@modrinth/assets'
-import { onBeforeUnmount, onMounted, useId } from 'vue'
+import { onBeforeUnmount, onMounted, ref } from 'vue'
 
 import { defineMessages, useVIntl } from '../../composables/i18n'
-import { useScrollToTopVisibility } from '../../composables/scroll-to-top-visibility'
 import Button from './buttons/Button.vue'
 
 const { formatMessage } = useVIntl()
@@ -14,9 +13,12 @@ const messages = defineMessages({
     },
 })
 
-const componentId = useId()
+const visible = ref(false)
 let scrollContainer: Element | null = null
-const { visible, update } = useScrollToTopVisibility(() => scrollContainer)
+
+function update() {
+    visible.value = (scrollContainer?.scrollTop ?? 0) > 300
+}
 
 function scrollToTop() {
     scrollContainer?.scrollTo({ top: 0, behavior: 'smooth' })
@@ -37,7 +39,7 @@ onBeforeUnmount(() => {
 
 <template>
     <Transition name="scroll-to-top">
-        <div v-if="visible" :data-scroll-to-top="componentId" class="scroll-to-top-wrapper">
+        <div v-if="visible" class="scroll-to-top-wrapper">
             <Button
                 v-tooltip="formatMessage(messages.tooltip)"
                 type="colored"
@@ -60,10 +62,7 @@ onBeforeUnmount(() => {
 }
 
 .scroll-to-top-wrapper {
-    position: fixed;
-    right: calc(var(--right-bar-width, 0px) + 1.5rem);
-    bottom: calc(max(4rem, 4dvh) + var(--floating-action-bar-clearance, 0px));
-    z-index: 60;
+    @apply fixed bottom-10 left-24 z-50;
 }
 
 .scroll-to-top-enter-active,

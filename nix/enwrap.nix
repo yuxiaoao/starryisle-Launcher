@@ -10,14 +10,12 @@
 let
   axolotl = callPackage ./axolotl.nix { inherit inputs; };
 in
-buildFHSEnv {
-  name = "axolotl-launcher";
-  targetPkgs =
-    pkgs:
-    builtins.concatLists [
+  buildFHSEnv {
+    name = "axolotl-launcher";
+    targetPkgs = pkgs: builtins.concatLists [
       [ axolotl ]
       (with pkgs; [
-        # For Axolotl
+      # For Axolotl
         libnotify
         gtk3
         webkitgtk_4_1
@@ -29,7 +27,7 @@ buildFHSEnv {
         libsoup_3
         glib-networking
         cacert
-        # For Minecraft
+      # For Minecraft
         stdenv.cc.cc.lib
         ## native versions
         glfw3-minecraft
@@ -47,19 +45,19 @@ buildFHSEnv {
         libxrandr
         libxxf86vm
         wayland
-        udev # oshi
+        udev          # oshi
         vulkan-loader # VulkanMod's lwjglt
         flite
         gamemode
         libusb1
       ])
     ];
-  profile = ''
-    set -o allexport
-    ${lib.toShellVars launchEnv}
-    set +o allexport
-  '';
-  runScript = ''
-    "${axolotl}/bin/Axolotl Launcher"
-  '';
-}
+    profile = ''
+      set -o allexport
+      ${lib.toShellVars launchEnv}
+      set +o allexport
+    '';
+    runScript = ''
+      "${axolotl}/bin/Axolotl Launcher"
+    '';
+  }

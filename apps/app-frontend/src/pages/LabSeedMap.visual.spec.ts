@@ -104,7 +104,6 @@ vi.mock('@modrinth/ui', async () => {
     return {
         Admonition: control,
         Checkbox: control,
-        ColorPicker: control,
         Combobox: control,
         PopoutMenu: control,
         Slider: control,

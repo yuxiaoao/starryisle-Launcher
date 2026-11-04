@@ -2518,29 +2518,13 @@ impl ResourceService {
                             format!("target already exists: {path}"),
                         );
                     } else {
-                        // A missing file still owns its persisted entry and references.
-                        let missing = installed.iter().find(|item| {
-                            item.missing
-                                && item.scope == selection.scope
-                                && item.resource_type == selection.resource_type
-                                && item
-                                    .relative_path
-                                    .eq_ignore_ascii_case(&path)
-                        });
                         draft.plan.actions.push(ResourceEntryAction {
-                            entry_id: match missing {
-                                Some(entry) => entry.entry_id.clone(),
-                                None => InstalledEntryId::new(
-                                    uuid::Uuid::new_v4().to_string(),
-                                )?,
-                            },
+                            entry_id: InstalledEntryId::new(
+                                uuid::Uuid::new_v4().to_string(),
+                            )?,
                             node_id: selection.id.clone(),
-                            kind: if missing.is_some() {
-                                ResourceActionKind::Replace
-                            } else {
-                                ResourceActionKind::Install
-                            },
-                            current: missing.cloned(),
+                            kind: ResourceActionKind::Install,
+                            current: None,
                             target: artifact.clone(),
                             target_relative_path: path,
                         });
@@ -3926,15 +3910,7 @@ pub async fn queue(
     id: PlanId,
     revision: u32,
 ) -> ResourceResult<crate::install::InstallJobSnapshot> {
-    queue_with_resource_names(id, revision, HashMap::new()).await
-}
-
-pub async fn queue_with_resource_names(
-    id: PlanId,
-    revision: u32,
-    resource_names: HashMap<String, String>,
-) -> ResourceResult<crate::install::InstallJobSnapshot> {
-    crate::install::runner::queue_resource_plan(id, revision, resource_names)
+    crate::install::runner::queue_resource_plan(id, revision)
         .await
         .map_err(|error| ResourceError::InvalidRequest(error.to_string()))
 }

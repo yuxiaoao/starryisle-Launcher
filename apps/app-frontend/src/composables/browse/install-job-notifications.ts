@@ -21,7 +21,6 @@ import {
     type InstallPhaseId,
     type InstallProgress,
 } from '@/helpers/install'
-import { installJobTitle } from '@/helpers/install-job-presentation'
 import {
     effectiveInstallProgress,
     hasDeterminateInstallProgress,
@@ -264,12 +263,14 @@ export async function useInstallJobNotifications(opts: {
         if (job.error?.code === 'cache_repair_required') {
             return formatMessage(messages.cacheRepairTitle)
         }
+        if (job.display?.title) return job.display.title
+        if (job.details.type === 'instance') return job.details.name
+        if (job.details.type === 'modpack' && job.details.title) return job.details.title
         const instanceId = installJobInstanceId(job)
-        const fallback = job.instance_deleted
+        return job.instance_deleted
             ? formatMessage(messages.deletedInstance)
             : ((instanceId ? instanceNames.value[instanceId] : null) ??
-              formatMessage(messages.unknownInstance))
-        return installJobTitle(job, formatMessage, fallback)
+                  formatMessage(messages.unknownInstance))
     }
 
     function getText(job: InstallJobSnapshot): string {

@@ -2,7 +2,6 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
-import SchematicInfoModal from '@/components/lab/schematic-preview/SchematicInfoModal.vue'
 import type { SchematicEditResult, SchematicPreviewManifest } from '@/lab/schematic-preview/backend'
 
 import LabSchematicPreview from './LabSchematicPreview.vue'
@@ -28,7 +27,7 @@ vi.mock('@/components/lab/schematic-preview/SchematicBlockPickerModal.vue', () =
     default: { render: () => null },
 }))
 vi.mock('@/components/lab/schematic-preview/SchematicInfoModal.vue', () => ({
-    default: { props: ['warnings'], render: () => null },
+    default: { render: () => null },
 }))
 vi.mock('@/components/lab/schematic-preview/SchematicInstancePickerModal.vue', () => ({
     default: { render: () => null },
@@ -159,20 +158,12 @@ function deferred<T>() {
 function resources() {
     return {
         texture: { dispose: vi.fn() },
-        workerResources: {
-            blockDefinitions: {},
-            blockModels: {},
-            textureUvs: {},
-            bubbleUv: [0, 0.52, 0.004, 0.522],
-        },
+        workerResources: { blockDefinitions: {}, blockModels: {}, textureUvs: {} },
         blockNames: { en_us: {}, zh_cn: {} },
         availableBlockStates: [],
         atlas: document.createElement('canvas'),
-        warnings: [],
     }
 }
-
-let meshWarnings: string[] = []
 
 class MeshWorker {
     onmessage?: (event: { data: unknown }) => void
@@ -201,11 +192,7 @@ class MeshWorker {
                               type: 'mesh',
                               opaque: empty,
                               translucent: empty,
-                              bubble: empty,
-                              water: empty,
-                              lava: empty,
                               missing: [],
-                              warnings: meshWarnings,
                           },
             }),
         )
@@ -216,12 +203,11 @@ let wrapper: ReturnType<typeof mount>
 beforeEach(() => {
     vi.clearAllMocks()
     localStorage.clear()
-    meshWarnings = []
     fixture.scene = Object.fromEntries(
         [
             'setRegions',
             'fitView',
-            'setTextures',
+            'setTexture',
             'clearChunks',
             'setChunk',
             'setSelectionBlocks',
@@ -399,35 +385,13 @@ it('changing glass rendering while B loads resources preserves B resource owners
     const pending = deferred<ReturnType<typeof resources>>()
     fixture.resources.mockReturnValueOnce(pending.promise)
     await openFile('B')
-    fixture.scene.setTextures.mockClear()
+    fixture.scene.setTexture.mockClear()
     await wrapper.get('[data-menu-id="seamless-glass"]').trigger('click')
     const loaded = resources()
     pending.resolve(loaded)
     await flushPromises()
     expect(loaded.texture.dispose).not.toHaveBeenCalled()
-    expect(fixture.scene.setTextures).toHaveBeenLastCalledWith({ atlas: loaded.texture })
+    expect(fixture.scene.setTexture).toHaveBeenLastCalledWith(loaded.texture)
     expect(wrapper.find('[role="progressbar"]').exists()).toBe(false)
     expect(button('Rotate clockwise').attributes('disabled')).toBeUndefined()
-})
-
-it('every pass the worker meshes reaches the scene, bubbles included', async () => {
-    await openFile('A')
-    const calls = fixture.scene.setChunk.mock.calls
-    const [, , meshes] = calls[calls.length - 1] as [
-        string,
-        [number, number, number],
-        Record<string, unknown>,
-    ]
-    // A bubble column has no block model, so dropping its pass leaves nothing but water on screen.
-    expect(meshes.bubble).toBeDefined()
-    expect(meshes.water).toBeDefined()
-})
-
-it('a warning the worker reports reaches the warnings panel', async () => {
-    const warning = 'Fluid geometry for minecraft:water failed and was skipped: boom'
-    meshWarnings = [warning]
-    await openFile('A')
-    // A fluid that fails to mesh draws nothing at all, so the chunk response is the only place the
-    // failure can surface; dropping it there leaves a silent hole in the water.
-    expect(wrapper.findComponent(SchematicInfoModal).props('warnings')).toContain(warning)
 })

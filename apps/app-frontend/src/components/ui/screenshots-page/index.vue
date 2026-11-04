@@ -10,12 +10,14 @@ import {
 import {
     CheckIcon,
     ClipboardCopyIcon,
+    DownloadIcon,
     EditIcon,
     FileArchiveIcon,
     FolderOpenIcon,
     MinusIcon,
     PlusIcon,
     TrashIcon,
+    UploadIcon,
     XIcon,
 } from '@modrinth/assets'
 import {
@@ -41,7 +43,7 @@ import {
     useVIntl,
 } from '@modrinth/ui'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
-import { save } from '@tauri-apps/plugin-dialog'
+import { open, save } from '@tauri-apps/plugin-dialog'
 import { readFile } from '@tauri-apps/plugin-fs'
 import { useElementSize, useStorage, useWindowSize } from '@vueuse/core'
 import dayjs from 'dayjs'
@@ -70,6 +72,15 @@ import {
 } from '@/helpers/instance'
 import { MAX_INSTANCE_GROUP_NAME_LENGTH } from '@/helpers/instance-groups'
 import {
+    exportScreenshotBundle,
+    importScreenshotBundle,
+} from '@/helpers/screenshot-bundles'
+import {
+    getScreenshotNotes,
+    screenshotNoteKey,
+    setScreenshotNote,
+} from '@/helpers/screenshot-notes'
+import {
     instanceListQueryOptions,
     instanceScreenshotsQueryOptions,
     screenshotGroupsQueryOptions,
@@ -80,6 +91,7 @@ import {
 import ScreenshotDragGather from './drag-gather.vue'
 import ScreenshotDragPreview from './drag-preview.vue'
 import ScreenshotGroupSection from './group.vue'
+import ScreenshotTimeline from './timeline.vue'
 import { screenshotRenderWindows } from './screenshot-render-window'
 import {
     createScreenshotSelection,
@@ -91,7 +103,7 @@ import { type ActiveScreenshotDrag, useScreenshotDragGather } from './use-screen
 import { useScreenshotMarquee } from './use-screenshot-marquee'
 
 type ScreenshotSort = 'newest' | 'oldest' | 'name'
-type ScreenshotGroupBy = 'custom' | 'instance' | 'date' | 'none'
+type ScreenshotGroupBy = 'custom' | 'instance' | 'date' | 'timeline' | 'none'
 
 type LegacyCustomScreenshotGrouping = {
     groups: ScreenshotGroup[]
@@ -155,6 +167,197 @@ const storageSuffix = props.instanceId ? 'instance' : 'global'
 const search = ref('')
 const sort = useStorage<ScreenshotSort>(`screenshots-sort-${storageSuffix}`, 'newest')
 const groupBy = useStorage<ScreenshotGroupBy>(`screenshots-group-v2-${storageSuffix}`, 'date')
+const timelineInstanceId = useStorage<string>(`screenshots-timeline-instance-${storageSuffix}`, 'all')
+const viewMode = useStorage<'grid' | 'timeline'>(`screenshots-view-${storageSuffix}`, 'grid')
+if (viewMode.value !== 'grid' && viewMode.value !== 'timeline') viewMode.value = 'grid'
+if (!['custom', 'instance', 'date', 'none'].includes(groupBy.value)) groupBy.value = 'date'
+const timelineGroupFilter = useStorage<string>(`screenshots-timeline-group-${storageSuffix}`, 'all')
+const screenshotNotes = ref(new Map<string, string>())
+const editingNoteKey = ref<string | null>(null)
+const noteMenu = ref<{ x: number, y: number, screenshot: InstanceScreenshot } | null>(null)
+
+function noteKeyFor(screenshot: InstanceScreenshot): string {
+    return screenshotNoteKey(screenshot.instance_id, screenshot.file_name)
+}
+
+function noteFor(screenshot: InstanceScreenshot): string | undefined {
+    return screenshotNotes.value.get(noteKeyFor(screenshot))
+}
+
+async function loadScreenshotNotes() {
+    try {
+        const rows = await getScreenshotNotes()
+        const map = new Map<string, string>()
+        for (const row of rows) {
+            map.set(screenshotNoteKey(row.instanceId, row.fileName), row.note)
+        }
+        screenshotNotes.value = map
+    } catch (error) {
+        console.warn('Failed to load screenshot notes', error)
+    }
+}
+
+async function saveScreenshotNote(screenshot: InstanceScreenshot, note: string) {
+    const key = noteKeyFor(screenshot)
+    const previous = screenshotNotes.value.get(key) ?? ''
+    editingNoteKey.value = null
+    if (previous === note) return
+    try {
+        await setScreenshotNote(screenshot.instance_id, screenshot.file_name, note)
+        const next = new Map(screenshotNotes.value)
+        if (note) next.set(key, note)
+        else next.delete(key)
+        screenshotNotes.value = next
+    } catch (error) {
+        handleError(error)
+    }
+}
+
+function openScreenshotNoteMenu(screenshot: InstanceScreenshot, event: MouseEvent) {
+    noteMenu.value = { x: event.clientX, y: event.clientY, screenshot }
+}
+
+function startEditingNote(screenshot: InstanceScreenshot) {
+    noteMenu.value = null
+    editingNoteKey.value = noteKeyFor(screenshot)
+}
+
+async function copyScreenshotPath(screenshot: InstanceScreenshot) {
+    noteMenu.value = null
+    try {
+        await navigator.clipboard.writeText(screenshot.path)
+    } catch (error) {
+        console.warn('Failed to copy screenshot path', error)
+    }
+}
+
+function bundleTargetInstanceId(): string | null {
+    if (props.instanceId) return props.instanceId
+    if (timelineInstanceId.value && timelineInstanceId.value !== 'all') {
+        return timelineInstanceId.value
+    }
+    const ids = new Set(selectedScreenshots.value.map((shot) => shot.instance_id))
+    if (ids.size === 1) return Array.from(ids)[0] ?? null
+    const counts = new Map<string, number>()
+    for (const shot of screenshots.value) {
+        counts.set(shot.instance_id, (counts.get(shot.instance_id) ?? 0) + 1)
+    }
+    let best: string | null = null
+    let bestCount = 0
+    for (const [id, count] of counts) {
+        if (count > bestCount) {
+            best = id
+            bestCount = count
+        }
+    }
+    return best
+}
+
+function warnBundleInstanceMissing() {
+    addNotification({
+        type: 'warning',
+        title: formatMessage(messages.bundleNeedInstance),
+    })
+}
+
+async function exportBundle() {
+    const instanceId = bundleTargetInstanceId()
+    if (!instanceId) {
+        warnBundleInstanceMissing()
+        return
+    }
+    if (bulkBusy.value) return
+    const outputPath = await save({
+        defaultPath: formatMessage(messages.bundleExportFilename),
+        filters: [{ name: formatMessage(messages.bundleFilters), extensions: ['zip'] }],
+    })
+    if (!outputPath) return
+    bulkBusy.value = true
+    try {
+        const report = await exportScreenshotBundle(
+            instanceId,
+            outputPath,
+            selectedScreenshots.value
+                .filter((shot) => shot.instance_id === instanceId)
+                .map((shot) => shot.file_name),
+        )
+        addNotification({
+            type: 'success',
+            title: formatMessage(messages.bundleExportSuccess, {
+                count: report.screenshotCount,
+                notes: report.noteCount,
+            }),
+        })
+    } catch (error) {
+        handleError(error)
+    } finally {
+        bulkBusy.value = false
+    }
+}
+
+async function importBundle() {
+    const instanceId = bundleTargetInstanceId()
+    if (!instanceId) {
+        warnBundleInstanceMissing()
+        return
+    }
+    if (bulkBusy.value) return
+    let selected: string | string[] | null = null
+    try {
+        selected = await open({
+            multiple: false,
+            filters: [{ name: formatMessage(messages.bundleFilters), extensions: ['zip'] }],
+        })
+    } catch (error) {
+        handleError(error)
+        return
+    }
+    if (!selected || Array.isArray(selected)) return
+    bulkBusy.value = true
+    try {
+        const report = await importScreenshotBundle(instanceId, selected, 'skip')
+        addNotification({
+            type: 'success',
+            title: formatMessage(messages.bundleImportSuccess, {
+                count: report.imported,
+                notes: report.notesWritten,
+            }),
+        })
+        await screenshotsQuery.refetch()
+        await loadScreenshotNotes()
+    } catch (error) {
+        handleError(error)
+    } finally {
+        bulkBusy.value = false
+    }
+}
+
+function deleteScreenshotFromMenu(screenshot: InstanceScreenshot) {
+    noteMenu.value = null
+    requestDelete(screenshot)
+}
+
+function isEditingNote(screenshot: InstanceScreenshot): boolean {
+    return editingNoteKey.value === noteKeyFor(screenshot)
+}
+
+function isScreenshotSelected(screenshot: InstanceScreenshot): boolean {
+    return selectedKeys.value.has(getSelectionKey(screenshot))
+}
+
+function toggleTimelineSelection(screenshot: InstanceScreenshot) {
+    toggleScreenshotSelection(screenshot)
+}
+
+async function assignScreenshotToGroup(screenshot: InstanceScreenshot, groupId: string | null) {
+    noteMenu.value = null
+    try {
+        await set_screenshot_group_memberships([{ screenshot_id: screenshot.id, group_id: groupId }])
+        await screenshotsQuery.refetch()
+    } catch (error) {
+        handleError(error)
+    }
+}
 const sortModel = computed<string>({
     get: () => sort.value,
     set: (value) => {
@@ -273,6 +476,40 @@ const messages = defineMessages({
     instance: { id: 'app.screenshots.group.instance', defaultMessage: 'Instance' },
     date: { id: 'app.screenshots.group.date', defaultMessage: 'Date' },
     none: { id: 'app.screenshots.group.none', defaultMessage: 'No grouping' },
+    timeline: { id: 'app.screenshots.group.timeline', defaultMessage: 'Timeline' },
+    viewGrid: { id: 'app.screenshots.view.grid', defaultMessage: 'Grid' },
+    viewTimeline: { id: 'app.screenshots.view.timeline', defaultMessage: 'Timeline' },
+    allInstances: { id: 'app.screenshots.filter.all-instances', defaultMessage: 'All instances' },
+    menuEditNote: { id: 'app.screenshots.menu.edit-note', defaultMessage: 'Edit note' },
+    menuCopyPath: { id: 'app.screenshots.menu.copy-path', defaultMessage: 'Copy file path' },
+    menuDelete: { id: 'app.screenshots.menu.delete', defaultMessage: 'Delete' },
+    menuAddToGroup: { id: 'app.screenshots.menu.add-to-group', defaultMessage: 'Add to group' },
+    bundleExportSuccess: {
+        id: 'app.screenshots.bundle.export-success',
+        defaultMessage: 'Exported {count} screenshots and {notes} notes',
+    },
+    bundleExportFilename: {
+        id: 'app.screenshots.bundle.export-filename',
+        defaultMessage: 'StarryIsle screenshots.zip',
+    },
+    bundleImportSuccess: {
+        id: 'app.screenshots.bundle.import-success',
+        defaultMessage: 'Imported {count} screenshots and {notes} notes',
+    },
+    bundleFilters: { id: 'app.screenshots.bundle.filters', defaultMessage: 'StarryIsle bundle' },
+    bundleExport: { id: 'app.screenshots.bundle.export', defaultMessage: 'Export bundle' },
+    bundleImport: { id: 'app.screenshots.bundle.import', defaultMessage: 'Import bundle' },
+    bundleNeedInstance: {
+        id: 'app.screenshots.bundle.need-instance',
+        defaultMessage: 'Select screenshots from a single instance first',
+    },
+    menuRemoveFromGroup: { id: 'app.screenshots.menu.remove-from-group', defaultMessage: 'Remove from group' },
+    rangeAll: { id: 'app.screenshots.filter.range-all', defaultMessage: 'All time' },
+    rangeToday: { id: 'app.screenshots.filter.range-today', defaultMessage: 'Today' },
+    rangeWeek: { id: 'app.screenshots.filter.range-week', defaultMessage: 'Last 7 days' },
+    rangeMonth: { id: 'app.screenshots.filter.range-month', defaultMessage: 'Last 30 days' },
+    groupFilterAll: { id: 'app.screenshots.filter.group-all', defaultMessage: 'All groups' },
+    groupFilterUngrouped: { id: 'app.screenshots.filter.group-ungrouped', defaultMessage: 'Ungrouped' },
     today: { id: 'app.screenshots.group.today', defaultMessage: 'Today' },
     yesterday: { id: 'app.screenshots.group.yesterday', defaultMessage: 'Yesterday' },
     thisWeek: { id: 'app.screenshots.group.this-week', defaultMessage: 'This week' },
@@ -461,14 +698,58 @@ const groupOptions = computed<ComboboxOption<string>[]>(() => [
     { value: 'none', label: formatMessage(messages.none) },
 ])
 
+const instanceFilterOptions = computed<ComboboxOption<string>[]>(() => {
+    const seen = new Map<string, string>()
+    for (const screenshot of screenshots.value) {
+        if (!seen.has(screenshot.instance_id)) {
+            seen.set(screenshot.instance_id, screenshot.instance_name)
+        }
+    }
+    return [
+        { value: 'all', label: formatMessage(messages.allInstances) },
+        ...[...seen.entries()].map(([id, name]) => ({ value: id, label: name })),
+    ]
+})
+
+const viewOptions = computed<ComboboxOption<string>[]>(() => [
+    { value: 'grid', label: formatMessage(messages.viewGrid) },
+    { value: 'timeline', label: formatMessage(messages.viewTimeline) },
+])
+
+const groupFilterOptions = computed<ComboboxOption<string>[]>(() => [
+    { value: 'all', label: formatMessage(messages.groupFilterAll) },
+    ...customGroups.value.map((group) => ({ value: group.id, label: group.name })),
+    { value: 'ungrouped', label: formatMessage(messages.groupFilterUngrouped) },
+])
+
+const timelineScreenshots = computed(() =>
+    filteredScreenshots.value.filter((screenshot) => {
+        if (
+            timelineInstanceId.value !== 'all' &&
+            screenshot.instance_id !== timelineInstanceId.value
+        ) {
+            return false
+        }
+        if (timelineGroupFilter.value === 'ungrouped') return !screenshot.group_id
+        if (timelineGroupFilter.value !== 'all') {
+            return screenshot.group_id === timelineGroupFilter.value
+        }
+        return true
+    }),
+)
+
+watch(screenshots, () => { void loadScreenshotNotes() }, { immediate: true })
+
 const filteredScreenshots = computed(() => {
+
     const query = search.value.trim().toLocaleLowerCase()
     const filtered = screenshots.value.filter((screenshot) => {
         if (screenshot.id === revealedScreenshotId.value) return true
         return (
             !query ||
             screenshot.file_name.toLocaleLowerCase().includes(query) ||
-            screenshot.instance_name.toLocaleLowerCase().includes(query)
+            screenshot.instance_name.toLocaleLowerCase().includes(query) ||
+            (noteFor(screenshot) ?? '').toLocaleLowerCase().includes(query)
         )
     })
 
@@ -489,6 +770,7 @@ const groupedScreenshots = computed((): ScreenshotGroupData[] => {
             },
         ]
     }
+
 
     if (groupBy.value === 'instance') {
         const screenshotGroups = new Map<string, InstanceScreenshot[]>()
@@ -1604,9 +1886,22 @@ onBeforeUnmount(() => {
                 v-model:search="search"
                 v-model:sort="sortModel"
                 v-model:group="groupByModel"
+                v-model:instance="timelineInstanceId"
+                v-model:view="viewMode"
+                v-model:group-filter="timelineGroupFilter"
                 :sort-options="sortOptions"
                 :group-options="groupOptions"
+                :instance-options="instanceFilterOptions"
+                :show-instance-filter="viewMode === 'timeline'"
+                :view-options="viewOptions"
+                :show-group="viewMode === 'grid'"
+                :show-view-toggle="true"
+                :group-filter-options="groupFilterOptions"
+                :show-group-filter="viewMode === 'timeline'"
+                :show-import-action="true"
+                :on-import-bundle="importBundle"
                 @new-group="createCustomGroup"
+                @import-bundle="importBundle"
             />
         </template>
 
@@ -1650,6 +1945,22 @@ onBeforeUnmount(() => {
                 :heading="formatMessage(messages.noResultsHeading)"
                 :description="formatMessage(messages.noResultsDescription)"
             />
+
+            <ScreenshotTimeline
+                v-else-if="viewMode === 'timeline'"
+                :screenshots="timelineScreenshots"
+                :show-instance="isGlobal"
+                :note-for="noteFor"
+                :editing-for="isEditingNote"
+                :is-selected="isScreenshotSelected"
+                @activate="activateScreenshot"
+                @contextmenu="openScreenshotNoteMenu"
+                @save-note="saveScreenshotNote"
+                @cancel-note="editingNoteKey = null"
+                @toggle-select="toggleTimelineSelection"
+                @clear-selection="clearSelection"
+            />
+
 
             <DragDropProvider
                 v-else
@@ -1770,10 +2081,12 @@ onBeforeUnmount(() => {
                                         <TrashIcon />
                                     </IconButton>
                                 </div>
+
                             </template>
                         </ScreenshotGroupSection>
                     </div>
                 </div>
+
                 <Teleport to="body">
                     <div class="pointer-events-none fixed inset-0 z-[9999]">
                         <DragOverlay :drop-animation="null">
@@ -1799,6 +2112,60 @@ onBeforeUnmount(() => {
             />
         </ReadyTransition>
     </div>
+
+    <Teleport to="body">
+                <div
+                    v-if="noteMenu"
+                    class="fixed z-[60] min-w-[180px] overflow-hidden rounded-lg border border-solid border-surface-4 bg-surface-2 py-1 shadow-xl"
+                    :style="{ left: `${noteMenu.x}px`, top: `${noteMenu.y}px` }"
+                >
+                    <button
+                        class="block w-full cursor-pointer border-0 bg-transparent px-3 py-2 text-left text-sm text-[var(--color-text-default)] hover:bg-surface-3"
+                        @click="startEditingNote(noteMenu.screenshot)"
+                    >
+                        {{ formatMessage(messages.menuEditNote) }}
+                    </button>
+                    <button
+                        class="block w-full cursor-pointer border-0 bg-transparent px-3 py-2 text-left text-sm text-[var(--color-text-default)] hover:bg-surface-3"
+                        @click="copyScreenshotPath(noteMenu.screenshot)"
+                    >
+                        {{ formatMessage(messages.menuCopyPath) }}
+                    </button>
+                    <div
+                        v-if="customGroups.length > 0"
+                        class="border-t border-solid border-surface-4"
+                    >
+                        <p class="m-0 px-3 pb-1 pt-2 text-xs text-[var(--color-text-tertiary)]">
+                            {{ formatMessage(messages.menuAddToGroup) }}
+                        </p>
+                        <button
+                            v-for="group in customGroups"
+                            :key="group.id"
+                            class="block w-full cursor-pointer border-0 bg-transparent px-5 py-1.5 text-left text-sm text-[var(--color-text-default)] hover:bg-surface-3"
+                            @click="assignScreenshotToGroup(noteMenu.screenshot, group.id)"
+                        >
+                            {{ group.name }}
+                        </button>
+                        <button
+                            class="block w-full cursor-pointer border-0 bg-transparent px-5 py-1.5 pb-2 text-left text-sm text-[var(--color-text-secondary)] hover:bg-surface-3"
+                            @click="assignScreenshotToGroup(noteMenu.screenshot, null)"
+                        >
+                            {{ formatMessage(messages.menuRemoveFromGroup) }}
+                        </button>
+                    </div>
+                    <button
+                        class="block w-full cursor-pointer border-0 bg-transparent px-3 py-2 text-left text-sm text-red hover:bg-surface-3"
+                        @click="deleteScreenshotFromMenu(noteMenu.screenshot)"
+                    >
+                        {{ formatMessage(messages.menuDelete) }}
+                    </button>
+                </div>
+                <div
+                    v-if="noteMenu"
+                    class="fixed inset-0 z-[55]"
+                    @click="noteMenu = null"
+                />
+    </Teleport>
 
     <Teleport to="body">
         <div
@@ -1862,7 +2229,22 @@ onBeforeUnmount(() => {
                 @click="exportSelected"
             >
                 <FileArchiveIcon />
-                <span class="bar-label">{{ formatMessage(messages.exportZip) }}</span>
+            </Button>
+            <Button
+                v-tooltip="formatMessage(messages.bundleExport)"
+                type="quiet"
+                :disabled="bulkBusy"
+                @click="exportBundle"
+            >
+                <DownloadIcon />
+            </Button>
+            <Button
+                v-tooltip="formatMessage(messages.bundleImport)"
+                type="quiet"
+                :disabled="bulkBusy"
+                @click="importBundle"
+            >
+                <UploadIcon />
             </Button>
             <div class="mx-1 h-6 w-px bg-surface-5" />
             <Button
