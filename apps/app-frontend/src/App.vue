@@ -10,6 +10,7 @@ import {
     FolderOpenIcon,
     HomeIcon,
     ImagesIcon,
+    ChartColumnBigIcon,
     LibraryIcon,
     LogInIcon,
     LogOutIcon,
@@ -379,7 +380,7 @@ const {
 
 const { offline } = useNetworkStatus()
 
-// Temporarily pause automatic tours while keeping manual replay available.
+// Upstream keeps automatic tours paused while manual replay stays available.
 const autoStartOnboarding = false
 const showOnboarding = ref(false)
 const onboardingMode = ref('main')
@@ -1108,6 +1109,10 @@ const messages = defineMessages({
         id: 'app.navigation.downloads',
         defaultMessage: 'Downloads',
     },
+    stats: {
+        id: 'app.navigation.stats',
+        defaultMessage: 'Statistics',
+    },
     screenshots: {
         id: 'app.navigation.screenshots',
         defaultMessage: 'Screenshots',
@@ -1551,6 +1556,7 @@ async function setupApp() {
     await applyWindowAppearance()
     themeStore.homeWidgetBackgroundOpacity = home_widget_background_opacity ?? 100
     themeStore.setHomeWidgetBackgroundOpacity()
+    // Statistics is hidden by default; the backend adds it to an untouched list.
     themeStore.hiddenNavItems = hidden_nav_items ?? []
     themeStore.sidebarInstanceCount = sidebar_instance_count
     themeStore.autoHideDownloadsButton = auto_hide_downloads_button
@@ -3050,6 +3056,14 @@ provideAppUpdateDownloadProgress(appUpdateDownload)
                     "
                 >
                     <LibraryIcon />
+                </NavButton>
+                <NavButton
+                    v-if="!themeStore.isNavItemHidden('stats')"
+                    v-tooltip.right="formatMessage(messages.stats)"
+                    to="/stats"
+                    :is-primary="(r) => r.path.startsWith('/stats')"
+                >
+                    <ChartColumnBigIcon />
                 </NavButton>
                 <NavButton
                     v-if="!themeStore.isNavItemHidden('lab')"

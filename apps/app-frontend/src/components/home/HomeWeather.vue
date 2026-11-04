@@ -79,38 +79,150 @@ const messages = defineMessages({
         id: 'app.home.weather.updated-at',
         defaultMessage: 'Updated {time}',
     },
+    c0: {
+        id: 'app.home.weather.condition.sunny',
+        defaultMessage: 'Clear',
+    },
+    c1: {
+        id: 'app.home.weather.condition.mostly-clear',
+        defaultMessage: 'Mostly clear',
+    },
+    c2: {
+        id: 'app.home.weather.condition.partly-cloudy',
+        defaultMessage: 'Partly cloudy',
+    },
+    c3: {
+        id: 'app.home.weather.condition.overcast',
+        defaultMessage: 'Overcast',
+    },
+    c45: {
+        id: 'app.home.weather.condition.fog',
+        defaultMessage: 'Fog',
+    },
+    c48: {
+        id: 'app.home.weather.condition.rime-fog',
+        defaultMessage: 'Depositing rime fog',
+    },
+    c51: {
+        id: 'app.home.weather.condition.light-drizzle',
+        defaultMessage: 'Light drizzle',
+    },
+    c53: {
+        id: 'app.home.weather.condition.drizzle',
+        defaultMessage: 'Drizzle',
+    },
+    c55: {
+        id: 'app.home.weather.condition.dense-drizzle',
+        defaultMessage: 'Dense drizzle',
+    },
+    c56: {
+        id: 'app.home.weather.condition.light-freezing-drizzle',
+        defaultMessage: 'Light freezing drizzle',
+    },
+    c57: {
+        id: 'app.home.weather.condition.freezing-drizzle',
+        defaultMessage: 'Freezing drizzle',
+    },
+    c61: {
+        id: 'app.home.weather.condition.light-rain',
+        defaultMessage: 'Light rain',
+    },
+    c63: {
+        id: 'app.home.weather.condition.rain',
+        defaultMessage: 'Rain',
+    },
+    c65: {
+        id: 'app.home.weather.condition.heavy-rain',
+        defaultMessage: 'Heavy rain',
+    },
+    c66: {
+        id: 'app.home.weather.condition.light-freezing-rain',
+        defaultMessage: 'Light freezing rain',
+    },
+    c67: {
+        id: 'app.home.weather.condition.freezing-rain',
+        defaultMessage: 'Freezing rain',
+    },
+    c71: {
+        id: 'app.home.weather.condition.light-snow',
+        defaultMessage: 'Light snow',
+    },
+    c73: {
+        id: 'app.home.weather.condition.snow',
+        defaultMessage: 'Snow',
+    },
+    c75: {
+        id: 'app.home.weather.condition.heavy-snow',
+        defaultMessage: 'Heavy snow',
+    },
+    c77: {
+        id: 'app.home.weather.condition.snow-grains',
+        defaultMessage: 'Snow grains',
+    },
+    c80: {
+        id: 'app.home.weather.condition.light-showers',
+        defaultMessage: 'Light showers',
+    },
+    c81: {
+        id: 'app.home.weather.condition.showers',
+        defaultMessage: 'Showers',
+    },
+    c82: {
+        id: 'app.home.weather.condition.violent-showers',
+        defaultMessage: 'Violent showers',
+    },
+    c85: {
+        id: 'app.home.weather.condition.light-snow-showers',
+        defaultMessage: 'Light snow showers',
+    },
+    c86: {
+        id: 'app.home.weather.condition.snow-showers',
+        defaultMessage: 'Snow showers',
+    },
+    c95: {
+        id: 'app.home.weather.condition.thunderstorm',
+        defaultMessage: 'Thunderstorm',
+    },
+    c96: {
+        id: 'app.home.weather.condition.thunderstorm-hail',
+        defaultMessage: 'Thunderstorm with hail',
+    },
+    c99: {
+        id: 'app.home.weather.condition.severe-thunderstorm-hail',
+        defaultMessage: 'Severe thunderstorm with hail',
+    },
 })
 
 /** WMO weather codes, grouped so one label covers the neighbouring codes. */
-const WEATHER_CODES: Record<number, { label: string; icon: string }> = {
-    0: { label: '晴', icon: '☀️' },
-    1: { label: '大部晴朗', icon: '🌤️' },
-    2: { label: '多云', icon: '⛅' },
-    3: { label: '阴', icon: '☁️' },
-    45: { label: '有雾', icon: '🌫️' },
-    48: { label: '雾凇', icon: '🌫️' },
-    51: { label: '小毛毛雨', icon: '🌦️' },
-    53: { label: '毛毛雨', icon: '🌦️' },
-    55: { label: '大毛毛雨', icon: '🌦️' },
-    56: { label: '冻毛毛雨', icon: '🌧️' },
-    57: { label: '强冻毛毛雨', icon: '🌧️' },
-    61: { label: '小雨', icon: '🌧️' },
-    63: { label: '中雨', icon: '🌧️' },
-    65: { label: '大雨', icon: '🌧️' },
-    66: { label: '冻雨', icon: '🌧️' },
-    67: { label: '强冻雨', icon: '🌧️' },
-    71: { label: '小雪', icon: '🌨️' },
-    73: { label: '中雪', icon: '🌨️' },
-    75: { label: '大雪', icon: '❄️' },
-    77: { label: '雪粒', icon: '🌨️' },
-    80: { label: '阵雨', icon: '🌦️' },
-    81: { label: '中阵雨', icon: '🌧️' },
-    82: { label: '强阵雨', icon: '⛈️' },
-    85: { label: '阵雪', icon: '🌨️' },
-    86: { label: '强阵雪', icon: '🌨️' },
-    95: { label: '雷雨', icon: '⛈️' },
-    96: { label: '雷雨伴冰雹', icon: '⛈️' },
-    99: { label: '强雷雨伴冰雹', icon: '⛈️' },
+const WEATHER_CODES: Record<number, { message: keyof typeof messages; icon: string }> = {
+    0: { message: 'c0', icon: '☀️' },
+    1: { message: 'c1', icon: '🌤️' },
+    2: { message: 'c2', icon: '⛅' },
+    3: { message: 'c3', icon: '☁️' },
+    45: { message: 'c45', icon: '🌫️' },
+    48: { message: 'c48', icon: '🌫️' },
+    51: { message: 'c51', icon: '🌦️' },
+    53: { message: 'c53', icon: '🌦️' },
+    55: { message: 'c55', icon: '🌦️' },
+    56: { message: 'c56', icon: '🌧️' },
+    57: { message: 'c57', icon: '🌧️' },
+    61: { message: 'c61', icon: '🌧️' },
+    63: { message: 'c63', icon: '🌧️' },
+    65: { message: 'c65', icon: '🌧️' },
+    66: { message: 'c66', icon: '🌧️' },
+    67: { message: 'c67', icon: '🌧️' },
+    71: { message: 'c71', icon: '🌨️' },
+    73: { message: 'c73', icon: '🌨️' },
+    75: { message: 'c75', icon: '❄️' },
+    77: { message: 'c77', icon: '🌨️' },
+    80: { message: 'c80', icon: '🌦️' },
+    81: { message: 'c81', icon: '🌧️' },
+    82: { message: 'c82', icon: '⛈️' },
+    85: { message: 'c85', icon: '🌨️' },
+    86: { message: 'c86', icon: '🌨️' },
+    95: { message: 'c95', icon: '⛈️' },
+    96: { message: 'c96', icon: '⛈️' },
+    99: { message: 'c99', icon: '⛈️' },
 }
 
 type WeatherData = {
@@ -136,8 +248,45 @@ const searching = ref(false)
 
 let refreshTimer: ReturnType<typeof setInterval> | null = null
 let searchTimer: ReturnType<typeof setTimeout> | null = null
+let searchGeneration = 0
+let weatherGeneration = 0
+
+const WEATHER_CACHE_PREFIX = 'home-weather:v1:'
+
+/// Last successful reading, so an offline or rate-limited refresh can still show
+/// today's weather instead of an error.
+function readWeatherCache(city: HomeWeatherCity): {
+    weather: WeatherData
+    updatedAt: Date
+} | null {
+    try {
+        const raw = window.localStorage.getItem(`${WEATHER_CACHE_PREFIX}${city.id}`)
+        if (!raw) return null
+        const parsed = JSON.parse(raw) as { weather: WeatherData; updatedAt: string }
+        if (!parsed?.weather || !parsed.updatedAt) return null
+        const updatedAt = new Date(parsed.updatedAt)
+        if (Number.isNaN(updatedAt.getTime())) return null
+        // Older than a day is not worth showing as current weather.
+        if (Date.now() - updatedAt.getTime() > 24 * 60 * 60 * 1000) return null
+        return { weather: parsed.weather, updatedAt }
+    } catch {
+        return null
+    }
+}
+
+function writeWeatherCache(city: HomeWeatherCity, data: WeatherData, at: Date) {
+    try {
+        window.localStorage.setItem(
+            `${WEATHER_CACHE_PREFIX}${city.id}`,
+            JSON.stringify({ weather: data, updatedAt: at.toISOString() }),
+        )
+    } catch {
+        // Storage may be unavailable; caching is only a fallback.
+    }
+}
 
 const condition = computed(() => WEATHER_CODES[weather.value?.weatherCode ?? 0] ?? WEATHER_CODES[3])
+const conditionLabel = computed(() => formatMessage(messages[condition.value.message]))
 const updatedLabel = computed(() => {
     if (!updatedAt.value) return ''
     const time = updatedAt.value.toLocaleTimeString(undefined, {
@@ -149,6 +298,7 @@ const updatedLabel = computed(() => {
 
 async function loadWeather() {
     const { latitude, longitude } = activeCity.value
+    const generation = ++weatherGeneration
     loading.value = true
     failed.value = false
     try {
@@ -166,6 +316,8 @@ async function loadWeather() {
         const response = await fetch(url, { signal: AbortSignal.timeout(10000) })
         if (!response.ok) throw new Error(`HTTP ${response.status}`)
         const payload = await response.json()
+        if (generation !== weatherGeneration) return
+
         weather.value = {
             temperature: Math.round(payload.current.temperature_2m),
             apparentTemperature: Math.round(payload.current.apparent_temperature),
@@ -176,10 +328,19 @@ async function loadWeather() {
             low: Math.round(payload.daily.temperature_2m_min[0]),
         }
         updatedAt.value = new Date()
+        writeWeatherCache(activeCity.value, weather.value, updatedAt.value)
     } catch {
-        failed.value = true
+        if (generation !== weatherGeneration) return
+        // Keep the last successful reading so the widget still shows something offline.
+        const cached = readWeatherCache(activeCity.value)
+        if (cached) {
+            weather.value = cached.weather
+            updatedAt.value = cached.updatedAt
+        } else {
+            failed.value = true
+        }
     } finally {
-        loading.value = false
+        if (generation === weatherGeneration) loading.value = false
     }
 }
 
@@ -303,12 +464,13 @@ function scheduleSearch() {
     }
     searching.value = true
     searchTimer = setTimeout(async () => {
+        const generation = ++searchGeneration
         try {
             // Chinese cities resolve locally: the online geocoder mixes villages into
             // results and frequently reports the wrong province.
             const local = searchChinaCities(query)
             if (local.length > 0) {
-                searchResults.value = local
+                if (generation === searchGeneration) searchResults.value = local
                 return
             }
 
@@ -320,11 +482,14 @@ function scheduleSearch() {
             let results = await fetchCities(capital ?? alias?.name ?? query, alias?.country)
             if (results.length === 0 && alias) results = await fetchCities(query)
             if (results.length === 0 && capital) results = await fetchCities(query)
+            // A slower earlier query must not overwrite the newer results.
+            if (generation !== searchGeneration) return
             searchResults.value = results
         } catch {
+            if (generation !== searchGeneration) return
             searchResults.value = []
         } finally {
-            searching.value = false
+            if (generation === searchGeneration) searching.value = false
         }
     }, 350)
 }
@@ -451,7 +616,10 @@ watch(
 
 onMounted(() => {
     loadWeather()
-    refreshTimer = setInterval(loadWeather, HOME_WEATHER_REFRESH_MS)
+    refreshTimer = setInterval(() => {
+            // No point polling while the window is in the background.
+            if (!document.hidden) void loadWeather()
+        }, HOME_WEATHER_REFRESH_MS)
     document.addEventListener('pointerdown', handleDocumentPointerDown, true)
 })
 
@@ -531,7 +699,7 @@ onUnmounted(() => {
                 <span class="home-weather-icon" aria-hidden="true">{{ condition.icon }}</span>
                 <span class="home-weather-temp">{{ weather.temperature }}°</span>
                 <div class="home-weather-meta">
-                    <span class="home-weather-condition">{{ condition.label }}</span>
+                    <span class="home-weather-condition">{{ conditionLabel }}</span>
                     <span class="home-weather-sub">
                         {{ formatMessage(messages.feelsLike) }} {{ weather.apparentTemperature }}°
                     </span>

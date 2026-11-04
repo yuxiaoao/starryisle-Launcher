@@ -12,7 +12,7 @@ import {
 it('creates pack.mcmeta with legacy and ranged pack formats', () => {
     expect(JSON.parse(createPackMcmeta(48)).pack.pack_format).toBe(48)
     expect(JSON.parse(createPackMcmeta([107, 1])).pack).toEqual({
-        description: 'Axolotl Recipe Generator',
+        description: 'StarryIsle Recipe Generator',
         min_format: [107, 1],
         max_format: [107, 1],
     })
@@ -26,7 +26,7 @@ it('creates a datapack file name with a timestamp', () => {
 
 it('creates a description listing recipe product names in brackets', () => {
     expect(createDatapackDescription(['橡木活板门', '闪长岩台阶'])).toBe(
-        'Axolotl Recipe Generator\n[橡木活板门] [闪长岩台阶]',
+        'StarryIsle Recipe Generator\n[橡木活板门] [闪长岩台阶]',
     )
 })
 

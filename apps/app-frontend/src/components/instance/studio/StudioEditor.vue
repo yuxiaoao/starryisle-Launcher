@@ -107,7 +107,7 @@ function cssVariable(name: string): string {
 function applyTheme() {
     if (!monaco) return
     const isLight = document.documentElement.classList.contains('light-mode')
-    monaco.editor.defineTheme('axolotl-studio', {
+    monaco.editor.defineTheme('starryisle-studio', {
         base: isLight ? 'vs' : 'vs-dark',
         inherit: true,
         rules: [],
@@ -120,7 +120,7 @@ function applyTheme() {
             'editorCursor.foreground': cssVariable('--color-brand'),
         },
     })
-    monaco.editor.setTheme('axolotl-studio')
+    monaco.editor.setTheme('starryisle-studio')
 }
 
 function registerStudioLanguages() {
@@ -214,7 +214,7 @@ onMounted(async () => {
         readOnly: props.readOnly,
         renderWhitespace: 'selection',
         scrollBeyondLastLine: false,
-        theme: 'axolotl-studio',
+        theme: 'starryisle-studio',
     })
     editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => emit('save'))
     editor.onDidBlurEditorWidget(() => emit('blur'))

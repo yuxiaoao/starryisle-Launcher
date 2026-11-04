@@ -527,6 +527,7 @@ const messages = defineMessages({
         defaultMessage: 'Discover content',
     },
     navScreenshots: { id: 'app.navigation.screenshots', defaultMessage: 'Screenshots' },
+    navStats: { id: 'app.navigation.stats', defaultMessage: 'Statistics' },
     navLibrary: { id: 'app.navigation.library', defaultMessage: 'Library' },
     navWorlds: { id: 'app.navigation.worlds', defaultMessage: 'Worlds' },
     navMultiplayer: { id: 'app.navigation.multiplayer', defaultMessage: 'Multiplayer' },
@@ -617,6 +618,7 @@ const NAV_TREE_ITEMS: NavTreeItem[] = [
     { id: 'discover', label: messages.navDiscover, group: 'browse' },
     { id: 'screenshots', label: messages.navScreenshots, group: 'browse' },
     { id: 'library', label: messages.navLibrary, group: 'play' },
+    { id: 'stats', label: messages.navStats, group: 'play' },
     { id: 'worlds', label: messages.navWorlds, group: 'play' },
     { id: 'multiplayer', label: messages.navMultiplayer, group: 'play' },
     { id: 'skins', label: messages.navSkins, group: 'play' },
@@ -647,6 +649,10 @@ function navItemLockReason(id: string): MessageDescriptor | null {
     return null
 }
 
+/// Marker that records an explicit navigation choice. Without it the backend
+/// keeps statistics hidden by default, so user preferences need a non-empty list.
+const NAV_CHOICE_MARKER = 'nav_prefs_touched'
+
 function isNavItemVisible(id: string) {
     return !settings.value.hidden_nav_items.includes(id)
 }
@@ -655,6 +661,7 @@ function setNavItemVisible(id: string, visible: boolean) {
     if (navItemLockReason(id)) return
 
     const hidden = new Set(settings.value.hidden_nav_items)
+    hidden.delete(NAV_CHOICE_MARKER)
     if (visible) {
         hidden.delete(id)
     } else {
@@ -663,8 +670,8 @@ function setNavItemVisible(id: string, visible: boolean) {
     // Boundary guard: never persist core items as hidden.
     for (const locked of LOCKED_NAV_ITEM_IDS) hidden.delete(locked)
 
-    settings.value.hidden_nav_items = [...hidden]
-    themeStore.hiddenNavItems = settings.value.hidden_nav_items
+    settings.value.hidden_nav_items = [...hidden, NAV_CHOICE_MARKER]
+    themeStore.hiddenNavItems = [...hidden]
 }
 const customBackgroundPreview = computed(() =>
     settings.value.custom_background_path

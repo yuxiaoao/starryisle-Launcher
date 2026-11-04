@@ -242,3 +242,73 @@ pub(crate) async fn mark_playtime_submitted(
 
     Ok(())
 }
+
+/// Total playtime of every instance, largest first.
+pub(crate) async fn get_instance_totals(
+    pool: &SqlitePool,
+) -> crate::Result<Vec<(String, i64)>> {
+    let rows = sqlx::query(
+        r#"
+        SELECT instance_name, SUM(played_seconds) AS played_seconds
+        FROM instance_daily_playtime
+        GROUP BY instance_name
+        ORDER BY played_seconds DESC
+        "#,
+    )
+    .fetch_all(pool)
+    .await?;
+
+    use sqlx::Row;
+    Ok(rows
+        .into_iter()
+        .map(|row| {
+            (
+                row.get::<String, _>("instance_name"),
+                row.get::<i64, _>("played_seconds"),
+            )
+        })
+        .collect())
+}
+/// All-time playtime across every instance.
+pub(crate) async fn get_total_seconds(pool: &SqlitePool) -> crate::Result<i64> {
+    use sqlx::Row;
+    let row = sqlx::query(
+        r#"
+        SELECT COALESCE(SUM(played_seconds), 0) AS total
+        FROM instance_daily_playtime
+        "#,
+    )
+    .fetch_one(pool)
+    .await?;
+    Ok(row.get::<i64, _>("total"))
+}
+
+/// Earliest date with recorded playtime, so the statistics page can offer a year
+/// picker that starts where the records do.
+pub(crate) async fn get_first_play_date(pool: &SqlitePool) -> crate::Result<Option<String>> {
+    use sqlx::Row;
+    let row = sqlx::query(
+        r#"
+        SELECT MIN(played_on) AS first_date
+        FROM instance_daily_playtime
+        "#,
+    )
+    .fetch_one(pool)
+    .await?;
+    Ok(row.get::<Option<String>, _>("first_date"))
+}
+
+/// Newest modification stamp in the playtime table, used as a cache fingerprint
+/// by the statistics page.
+pub(crate) async fn get_last_modified(pool: &SqlitePool) -> crate::Result<Option<i64>> {
+    use sqlx::Row;
+    let row = sqlx::query(
+        r#"
+        SELECT MAX(modified) AS last_modified
+        FROM instance_daily_playtime
+        "#,
+    )
+    .fetch_one(pool)
+    .await?;
+    Ok(row.get::<Option<i64>, _>("last_modified"))
+}

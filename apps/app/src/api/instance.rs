@@ -122,6 +122,10 @@ pub fn init<R: tauri::Runtime>() -> tauri::plugin::TauriPlugin<R> {
             instance_import_screenshot_groups,
             instance_delete_screenshots,
             instance_export_screenshots,
+            instance_list_worlds,
+            instance_world_advancements,
+            instance_advancement_catalog,
+            stats_overview,
             instance_export_screenshots_bundle,
             instance_import_screenshots_bundle,
             instance_set_screenshot_note,
@@ -1561,6 +1565,42 @@ pub async fn instance_import_screenshots_bundle(
     conflict: String,
 ) -> Result<theseus::instance::BundleImportReport> {
     Ok(theseus::instance::import_instance_bundle(&instance_id, path, &conflict).await?)
+}
+
+#[tauri::command]
+pub async fn stats_overview(
+    year: Option<i32>,
+    force: Option<bool>,
+) -> Result<theseus::stats::StatsOverview> {
+    Ok(theseus::stats::overview(year, force.unwrap_or(false)).await?)
+}
+
+#[tauri::command]
+pub async fn instance_list_worlds(
+    instance_id: String,
+) -> Result<Vec<theseus::instance::WorldSummary>> {
+    Ok(theseus::instance::list_worlds(&instance_id).await?)
+}
+
+#[tauri::command]
+pub async fn instance_world_advancements(
+    instance_id: String,
+    world: String,
+    player: Option<String>,
+) -> Result<theseus::instance::WorldAdvancements> {
+    Ok(theseus::instance::world_advancements(
+        &instance_id,
+        &world,
+        player.as_deref(),
+    )
+    .await?)
+}
+
+#[tauri::command]
+pub async fn instance_advancement_catalog(
+    instance_id: Option<String>,
+) -> Result<Vec<theseus::instance::AdvancementDef>> {
+    Ok(theseus::instance::advancement_catalog(instance_id).await?)
 }
 
 #[tauri::command]

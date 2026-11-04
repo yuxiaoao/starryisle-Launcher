@@ -1212,7 +1212,7 @@
     "defaultMessage": "Game directory"
   },
   "creation-flow.modal.custom-setup.game-dir.managed": {
-    "defaultMessage": "Axolotl directory"
+    "defaultMessage": "StarryIsle directory"
   },
   "creation-flow.modal.custom-setup.game-version-type.alpha": {
     "defaultMessage": "April Fools"
@@ -1575,7 +1575,7 @@
     "defaultMessage": "Cache"
   },
   "drop.symlink_method.stats_cache_tooltip": {
-    "defaultMessage": "Axolotl cache"
+    "defaultMessage": "StarryIsle cache"
   },
   "drop.symlink_method.stats_files": {
     "defaultMessage": "{files} files"

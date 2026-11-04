@@ -1,4 +1,91 @@
 {
+  "app.stats.time-unknown-hint": {
+    "message": "不计入年度统计"
+  },
+  "app.stats.time-unknown": {
+    "message": "时间未知"
+  },
+  "app.stats.refresh": {
+    "message": "刷新"
+  },
+  "app.stats.retry": {
+    "message": "重试"
+  },
+  "app.stats.load-error": {
+    "message": "统计加载失败。"
+  },
+  "app.stats.year-playtime": {
+    "message": "{year} 年游玩时长"
+  },
+  "app.stats.year-achievements": {
+    "message": "{year} 年解锁"
+  },
+  "app.stats.weekday-mon": {
+    "message": "一"
+  },
+  "app.stats.weekday-wed": {
+    "message": "三"
+  },
+  "app.stats.weekday-fri": {
+    "message": "五"
+  },
+  "app.stats.legend1": {
+    "message": "1 分钟 – 30 分钟"
+  },
+  "app.stats.legend2": {
+    "message": "30 分钟 – 2 小时"
+  },
+  "app.stats.legend3": {
+    "message": "2 – 5 小时"
+  },
+  "app.stats.legend4": {
+    "message": "5 小时以上"
+  },
+  "app.navigation.stats": {
+    "message": "统计"
+  },
+  "app.stats.title": {
+    "message": "统计"
+  },
+  "app.stats.instances": {
+    "message": "实例"
+  },
+  "app.stats.screenshots": {
+    "message": "截图"
+  },
+  "app.stats.heatmap": {
+    "message": "游玩时长"
+  },
+  "app.stats.less": {
+    "message": "少"
+  },
+  "app.stats.more": {
+    "message": "多"
+  },
+  "app.stats.ranking": {
+    "message": "实例游玩排行"
+  },
+  "app.stats.timeline": {
+    "message": "成就时间线"
+  },
+  "app.stats.empty": {
+    "message": "还没有统计数据。启动游戏后这里会显示你的记录。"
+  },
+  "app.stats.loading": {
+    "message": "正在统计…"
+  },
+  "app.stats.hours": {
+    "message": "{hours} 小时 {minutes} 分"
+  },
+  "app.stats.hours-only": {
+    "message": "{hours} 小时"
+  },
+  "app.stats.minutes": {
+    "message": "{minutes} 分钟"
+  },
+  "app.stats.no-play": {
+    "message": "没有游玩记录"
+  },
   "app.drop.minecraft-root-added": {
     "message": "已添加 Minecraft 文件夹"
   },
@@ -4579,6 +4666,60 @@
   },
   "app.instance.stopping": {
     "message": "正在停止……"
+  },
+  "app.instance.advancements.hidden": {
+    "message": "已隐藏成就"
+  },
+  "app.instance.advancements.category.husbandry": {
+    "message": "农牧"
+  },
+  "app.instance.advancements.hidden-hint": {
+    "message": "继续游戏以发现此成就"
+  },
+  "app.instance.advancements.unknown-player": {
+    "message": "未知玩家（{id}）"
+  },
+  "app.instance.advancements.no-player": {
+    "message": "该世界没有玩家进度"
+  },
+  "app.instance.advancements.player": {
+    "message": "玩家"
+  },
+  "app.instance.advancements.category.adventure": {
+    "message": "冒险"
+  },
+  "app.instance.advancements.category.nether": {
+    "message": "下界"
+  },
+  "app.instance.advancements.category.end": {
+    "message": "末地"
+  },
+  "app.instance.advancements.completed-on": {
+    "message": "解锁于 {date}"
+  },
+  "app.instance.advancements.category.story": {
+    "message": "故事"
+  },
+  "app.instance.advancements.catalog-missing": {
+    "message": "先启动一次游戏，才能从游戏文件里读取成就列表。"
+  },
+  "app.instance.advancements.last-played": {
+    "message": "上次游玩 {when}"
+  },
+  "app.instance.advancements.empty": {
+    "message": "还没有单人存档。创建一个世界开始游戏，进度会显示在这里。"
+  },
+  "app.instance.advancements.refresh": {
+    "message": "刷新"
+  },
+  "app.instance.advancements.heading": {
+    "message": "成就"
+  },
+  "app.instance.advancements.loading": {
+    "message": "正在读取存档…"
+  },
+  "app.instance.tabs.advancements": {
+    "message": "成就"
   },
   "app.instance.tabs.content": {
     "message": "内容"
@@ -20380,6 +20521,90 @@
   },
   "app.home.widgets.weather-description": {
     "message": "显示你选定城市的当前天气，数据来自 Open-Meteo。"
+  },
+  "app.home.weather.condition.sunny": {
+    "message": "晴"
+  },
+  "app.home.weather.condition.mostly-clear": {
+    "message": "大部晴朗"
+  },
+  "app.home.weather.condition.partly-cloudy": {
+    "message": "多云"
+  },
+  "app.home.weather.condition.overcast": {
+    "message": "阴"
+  },
+  "app.home.weather.condition.fog": {
+    "message": "有雾"
+  },
+  "app.home.weather.condition.rime-fog": {
+    "message": "雾凇"
+  },
+  "app.home.weather.condition.light-drizzle": {
+    "message": "小毛毛雨"
+  },
+  "app.home.weather.condition.drizzle": {
+    "message": "毛毛雨"
+  },
+  "app.home.weather.condition.dense-drizzle": {
+    "message": "大毛毛雨"
+  },
+  "app.home.weather.condition.light-freezing-drizzle": {
+    "message": "冻毛毛雨"
+  },
+  "app.home.weather.condition.freezing-drizzle": {
+    "message": "强冻毛毛雨"
+  },
+  "app.home.weather.condition.light-rain": {
+    "message": "小雨"
+  },
+  "app.home.weather.condition.rain": {
+    "message": "中雨"
+  },
+  "app.home.weather.condition.heavy-rain": {
+    "message": "大雨"
+  },
+  "app.home.weather.condition.light-freezing-rain": {
+    "message": "冻雨"
+  },
+  "app.home.weather.condition.freezing-rain": {
+    "message": "强冻雨"
+  },
+  "app.home.weather.condition.light-snow": {
+    "message": "小雪"
+  },
+  "app.home.weather.condition.snow": {
+    "message": "中雪"
+  },
+  "app.home.weather.condition.heavy-snow": {
+    "message": "大雪"
+  },
+  "app.home.weather.condition.snow-grains": {
+    "message": "雪粒"
+  },
+  "app.home.weather.condition.light-showers": {
+    "message": "阵雨"
+  },
+  "app.home.weather.condition.showers": {
+    "message": "中阵雨"
+  },
+  "app.home.weather.condition.violent-showers": {
+    "message": "强阵雨"
+  },
+  "app.home.weather.condition.light-snow-showers": {
+    "message": "阵雪"
+  },
+  "app.home.weather.condition.snow-showers": {
+    "message": "强阵雪"
+  },
+  "app.home.weather.condition.thunderstorm": {
+    "message": "雷雨"
+  },
+  "app.home.weather.condition.thunderstorm-hail": {
+    "message": "雷雨伴冰雹"
+  },
+  "app.home.weather.condition.severe-thunderstorm-hail": {
+    "message": "强雷雨伴冰雹"
   },
   "app.home.weather.title": {
     "message": "天气"

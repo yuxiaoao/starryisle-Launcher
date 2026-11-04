@@ -340,6 +340,11 @@ impl Settings {
             serde_json::from_str(&record.hidden_nav_items).unwrap_or_default();
         // Home and Library must stay reachable from the nav rail.
         hidden_nav_items.retain(|id| id != "home" && id != "library");
+        // Statistics ships off by default. An empty list means the user never
+        // touched the navigation settings, so hide it until they opt in.
+        if hidden_nav_items.is_empty() {
+            hidden_nav_items.push("stats".to_string());
+        }
 
         Self {
             resource_chinese_filenames: record.resource_chinese_filenames,

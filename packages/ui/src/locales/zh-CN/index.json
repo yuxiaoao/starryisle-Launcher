@@ -717,7 +717,7 @@
     "defaultMessage": "点击右上角「开始游戏」即可接收实时日志"
   },
   "console.empty.server-title": {
-    "defaultMessage": "欢迎使用 Axolotl 服务器！"
+    "defaultMessage": "欢迎使用 StarryIsle 服务器！"
   },
   "console.empty.server-description": {
     "defaultMessage": "点击启动按钮即可启动服务器！"
@@ -1143,7 +1143,7 @@
     "defaultMessage": "游戏目录"
   },
   "creation-flow.modal.custom-setup.game-dir.managed": {
-    "defaultMessage": "Axolotl 目录"
+    "defaultMessage": "StarryIsle 目录"
   },
   "creation-flow.modal.custom-setup.game-version.load-failed": {
     "defaultMessage": "游戏版本加载失败"

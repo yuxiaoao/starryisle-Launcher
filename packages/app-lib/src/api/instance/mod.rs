@@ -1,5 +1,7 @@
 //! Theseus instance management interface
 
+mod advancement_catalog;
+mod advancements;
 mod backup;
 mod content;
 mod core_components;
@@ -24,6 +26,11 @@ mod synced_packs_axolotl;
 pub(crate) mod synced_servers;
 mod upgrade;
 
+pub use self::advancement_catalog::{AdvancementDef, advancement_catalog};
+pub use self::advancements::{
+    CompletedAdvancement, PlayerRef, WorldAdvancements, WorldSummary, list_worlds,
+    version_jar, world_advancements, world_completed_all_players,
+};
 pub use self::backup::{
     BackupDeleteSummary, BackupExclusion, BackupExclusionKind, BackupOperation,
     BackupOperationState, BackupOperationType, BackupRepositoryStatus,

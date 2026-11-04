@@ -203,7 +203,7 @@ export const DEFAULT_THEME_STORE: ThemeStore = {
     transparentBackgroundOpacity: 55,
     transparentBackgroundBlur: false,
     homeWidgetBackgroundOpacity: 100,
-    hiddenNavItems: [],
+    hiddenNavItems: ['stats'],
     sidebarInstanceCount: 0,
     autoHideDownloadsButton: false,
     homeLayout: 'standard',

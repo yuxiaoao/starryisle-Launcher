@@ -11,6 +11,7 @@ pub mod google_ip;
 pub mod handler;
 pub mod hongshi;
 pub mod instance;
+pub mod stats;
 pub mod jre;
 pub(crate) mod loader_metadata;
 pub mod logs;
