@@ -663,6 +663,7 @@ onUnmounted(() => {
                 <div class="home-weather-search">
                     <SearchIcon />
                     <input
+                        class="home-weather-search-input"
                         ref="searchInputEl"
                         v-model="searchQuery"
                         type="text"
@@ -802,7 +803,7 @@ onUnmounted(() => {
     color: var(--color-text-tertiary);
 }
 
-.home-weather-search input {
+.home-weather-search-input {
     flex: 1;
     min-width: 0;
     border: none;
@@ -812,8 +813,8 @@ onUnmounted(() => {
     outline: none;
 }
 
-.home-weather-search input:focus,
-.home-weather-search input:focus-visible {
+.home-weather-search-input:focus,
+.home-weather-search-input:focus-visible {
     outline: none;
     box-shadow: none;
 }
