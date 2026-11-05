@@ -123,8 +123,8 @@ pub use self::screenshots::{
     list_synced_screenshots, move_screenshots, save_edited_screenshot,
 };
 pub use self::screenshots::{
-    ScreenshotNote, export_instance_bundle, import_instance_bundle,
-    list_screenshot_notes, set_screenshot_note,
+    BundleExportReport, BundleImportReport, ScreenshotNote, export_instance_bundle,
+    import_instance_bundle, list_screenshot_notes, set_screenshot_note,
 };
 pub(crate) use self::screenshots::{
     reconcile_screenshots, reconcile_screenshots_with_state,
