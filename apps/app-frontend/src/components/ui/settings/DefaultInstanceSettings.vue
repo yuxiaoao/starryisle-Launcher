@@ -17,11 +17,13 @@ import { createSettingsPatchSaver } from '@/helpers/settings-patch'
 import { usableU16 } from '@/helpers/usable-u16'
 
 import LogShareSettings from './LogShareSettings.vue'
+import PinnedOverrideHint from './PinnedOverrideHint.vue'
 import SettingsRow from './SettingsRow.vue'
 import SettingsSection from './SettingsSection.vue'
 import SharedLogsSettings from './SharedLogsSettings.vue'
 
 const { formatMessage } = useVIntl()
+const { handleError } = injectNotificationManager()
 
 const messages = defineMessages({
     gameLanguageSectionTitle: {
@@ -228,6 +230,69 @@ function setResolutionDimension(index: 0 | 1, value: unknown) {
     settings.value.game_resolution = next
 }
 
+async function reloadSettings() {
+    try {
+        settings.value = await get()
+        saveDraft.reset(settings.value)
+    } catch (error) {
+        handleError(error)
+    }
+}
+const FOLLOW_LAUNCHER_LANGUAGE = 'follow-launcher'
+const gameLanguageOptions = computed<ComboboxOption<string>[]>(() => {
+    const current = settings.value.default_game_language
+    const options = [...minecraftLanguageOptions]
+
+    if (
+        current &&
+        current !== FOLLOW_LAUNCHER_LANGUAGE &&
+        !options.some((option) => option.value === current)
+    ) {
+        options.unshift({ value: current, label: current, searchTerms: [current] })
+    }
+
+    return [
+        {
+            value: FOLLOW_LAUNCHER_LANGUAGE,
+            label: formatMessage(messages.followLauncherLanguage),
+            searchTerms: ['follow', 'launcher', 'language', 'locale'],
+        },
+        ...options,
+    ]
+})
+const selectedGameLanguage = computed(
+    () => settings.value.default_game_language || FOLLOW_LAUNCHER_LANGUAGE,
+)
+
+function updateDefaultGameLanguage(value: string) {
+    settings.value.default_game_language = value === FOLLOW_LAUNCHER_LANGUAGE ? '' : value
+}
+
+// Bumped when an unusable size edit is discarded so both fields re-mount and show the
+// stored pair again instead of the text the user cleared.
+const dimensionResetToken = ref(0)
+
+const widthInput = ref<InstanceType<typeof StyledInput>>()
+const heightInput = ref<InstanceType<typeof StyledInput>>()
+
+function setResolutionDimension(index: 0 | 1, value: unknown) {
+    const current = settings.value.game_resolution
+    const usable = usableU16(value)
+    if (usable === null) {
+        // Re-mount the field so it shows the value that is still stored, then put the
+        // caret back in the field the user was editing.
+        dimensionResetToken.value += 1
+        return nextTick().then(() => {
+            const field = index === 0 ? widthInput.value : heightInput.value
+            field?.focus()
+            field?.select()
+        })
+    }
+    const next: [number, number] = [...current]
+    next[index] = usable
+    settings.value.game_resolution = next
+}
+
 watch(
     settings,
     async () => {
@@ -292,6 +357,9 @@ watch(
                 <template #description>{{
                     formatMessage(messages.fullscreenDescription)
                 }}</template>
+                <template #copy>
+                    <PinnedOverrideHint key-name="force_fullscreen" @cleared="reloadSettings" />
+                </template>
                 <template #control
                     ><Toggle id="fullscreen" v-model="settings.force_fullscreen"
                 /></template>
@@ -308,6 +376,9 @@ watch(
                             )
                         }}
                     </span>
+                </template>
+                <template #copy>
+                    <PinnedOverrideHint key-name="maximize_window" @cleared="reloadSettings" />
                 </template>
                 <template #control>
                     <Toggle
@@ -366,6 +437,12 @@ watch(
                 <template #description>{{
                     formatMessage(messages.windowTitleEnabledDescription)
                 }}</template>
+                <template #copy>
+                    <PinnedOverrideHint
+                        key-name="custom_window_title_enabled"
+                        @cleared="reloadSettings"
+                    />
+                </template>
                 <template #control>
                     <Toggle
                         id="custom-window-title-enabled"
@@ -471,6 +548,12 @@ watch(
                 <template #description>{{
                     formatMessage(messages.lightweightModeDescription)
                 }}</template>
+                <template #copy>
+                    <PinnedOverrideHint
+                        key-name="enter_lightweight_mode_on_game_launch"
+                        @cleared="reloadSettings"
+                    />
+                </template>
                 <template #control>
                     <Toggle
                         id="enter-lightweight-mode-on-game-launch"
@@ -493,6 +576,12 @@ watch(
                 <template #description>{{
                     formatMessage(messages.minimizeLauncherDescription)
                 }}</template>
+                <template #copy>
+                    <PinnedOverrideHint
+                        key-name="hide_on_process_start"
+                        @cleared="reloadSettings"
+                    />
+                </template>
                 <template #control>
                     <Toggle
                         id="minimize-launcher"

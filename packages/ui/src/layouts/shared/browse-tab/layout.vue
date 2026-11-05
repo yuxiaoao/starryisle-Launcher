@@ -1,35 +1,30 @@
 <script setup lang="ts">
 import type { Labrinth } from '@modrinth/api-client'
-import { ArrowUpDownIcon, EyeIcon, SearchIcon } from '@modrinth/assets'
-import { computed, ref, toValue } from 'vue'
+import { computed, toValue } from 'vue'
 
 import Button from '#ui/components/base/buttons/Button.vue'
-import Combobox, { type ComboboxOption } from '#ui/components/base/Combobox.vue'
+import type { ComboboxOption } from '#ui/components/base/Combobox.vue'
 import EmptyState from '#ui/components/base/EmptyState.vue'
-import NavTabs from '#ui/components/base/NavTabs.vue'
 import Pagination from '#ui/components/base/Pagination.vue'
-import PopoutMenu from '#ui/components/base/PopoutMenu.vue'
-import StyledInput from '#ui/components/base/StyledInput.vue'
 import ProjectCard from '#ui/components/project/card/ProjectCard.vue'
 import ContentCardReveal from '#ui/components/project/ContentCardReveal.vue'
 import ProjectCardList from '#ui/components/project/ProjectCardList.vue'
 import ProjectCardSkeleton from '#ui/components/project/ProjectCardSkeleton.vue'
 import SearchFilterControl from '#ui/components/search/SearchFilterControl.vue'
 import { defineMessages, useVIntl } from '#ui/composables/i18n'
-import { useStickyObserver } from '#ui/composables/sticky-observer'
-import { commonMessages, formatProjectTypeSentence } from '#ui/utils/common-messages'
+import { formatProjectTypeSentence } from '#ui/utils/common-messages'
 import type { SortType } from '#ui/utils/search'
 
+import BrowseResultControls from './components/BrowseResultControls.vue'
 import SelectedProjectsFloatingBar from './components/SelectedProjectsFloatingBar.vue'
 import { projectCardDates } from './composables/project-dates'
 import BrowseInstallHeader from './header.vue'
 import { injectBrowseManager } from './providers/browse-manager'
+import BrowseToolbar from './toolbar.vue'
 
 const ctx = injectBrowseManager()
 const { formatMessage } = useVIntl()
 const lockedMessages = computed(() => toValue(ctx.lockedFilterMessages))
-const stickyChromeRef = ref<HTMLElement | null>(null)
-const { isStuck: isChromeStuck } = useStickyObserver(stickyChromeRef, 'BrowseToolbarChrome')
 const showInstallHeader = computed(
     () =>
         !!ctx.installContext?.value &&
@@ -37,18 +32,10 @@ const showInstallHeader = computed(
         ctx.variant !== 'web',
 )
 
-const maxResultsValues = computed<number[]>(
-    () => ctx.maxResultsOptions?.value ?? [5, 10, 15, 20, 50, 100],
-)
-
 const messages = defineMessages({
     searchPlaceholder: {
         id: 'browse.search.placeholder',
         defaultMessage: 'Search {projectType}...',
-    },
-    viewPrefix: {
-        id: 'browse.view-prefix',
-        defaultMessage: 'View:',
     },
     filterResults: {
         id: 'browse.filter-results',
@@ -61,10 +48,6 @@ const messages = defineMessages({
     offlineHeading: {
         id: 'browse.offline.heading',
         defaultMessage: 'No connection',
-    },
-    loadingLabel: {
-        id: 'browse.loading-results',
-        defaultMessage: 'Loading results…',
     },
     noResults: {
         id: 'browse.no-results',
@@ -132,13 +115,6 @@ const sortTypeOptions = computed<ComboboxOption<string>[]>(() =>
     })),
 )
 
-const maxResultsOptions = computed<ComboboxOption<number>[]>(() =>
-    maxResultsValues.value.map((value) => ({
-        value,
-        label: String(value),
-    })),
-)
-
 const currentSortTypeName = computed<string>({
     get: () => ctx.effectiveCurrentSortType.value?.name ?? '',
     set: (name: string) => {
@@ -149,9 +125,9 @@ const currentSortTypeName = computed<string>({
     },
 })
 
-const selectedDisplayMode = computed(() =>
-    ctx.displayModeOptions?.value.find((option) => option.id === ctx.displayMode?.value),
-)
+const resultContext = computed(() => ctx.committed?.value)
+const resultProjectType = computed(() => resultContext.value?.projectType ?? ctx.projectType.value)
+const resultIsServer = computed(() => resultProjectType.value === 'server')
 
 const resultContext = computed(() => ctx.committed?.value)
 const resultProjectType = computed(() => resultContext.value?.projectType ?? ctx.projectType.value)
@@ -167,17 +143,18 @@ const skeletonCount = computed(() => {
 </script>
 
 <template>
-    <div
-        ref="stickyChromeRef"
-        class="browse-toolbar-chrome sticky top-0 z-20 flex flex-col gap-3 border-b border-solid border-surface-5"
-        :class="[
-            isChromeStuck && ctx.variant !== 'web'
-                ? 'border-t shadow-[0_8px_16px_-12px_rgba(0,0,0,0.35)]'
-                : '',
-            ctx.variant === 'web'
-                ? 'mb-3 rounded-xl bg-surface-1 p-3'
-                : '-mx-6 -mt-6 border-0 bg-[color-mix(in_srgb,var(--surface-1-opaque,var(--surface-1))_20%,transparent)] backdrop-blur-xl',
-        ]"
+    <BrowseToolbar
+        v-model:query="ctx.query.value"
+        :variant="ctx.variant"
+        :tabs="ctx.selectableProjectTypes.value"
+        :show-tabs="ctx.showProjectTypeTabs.value"
+        :disabled="ctx.filtersReady?.value === false"
+        :placeholder="
+            formatMessage(messages.searchPlaceholder, {
+                projectType: formatProjectTypeSentence(formatMessage, ctx.projectType.value, 2),
+            })
+        "
+        @clear="ctx.clearSearch()"
     >
         <div v-if="showInstallHeader" class="p-3 pb-0">
             <BrowseInstallHeader />
@@ -325,8 +302,8 @@ const skeletonCount = computed(() => {
                 :project-type="ctx.projectType.value"
                 :provided-message="lockedMessages?.providedBy"
             />
-        </div>
-    </div>
+        </template>
+    </BrowseToolbar>
 
     <SelectedProjectsFloatingBar v-if="ctx.installContext?.value && ctx.variant !== 'web'" />
 

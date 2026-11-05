@@ -1,13 +1,13 @@
 import type { ContentItem } from '@modrinth/ui'
 import { expect, it } from 'vitest'
 
+import modsSource from '@/pages/instance/Mods.vue?raw'
 import type { PendingContentChange } from '@/providers/download-manager.ts'
 
 import {
     activeContentChangeJobs,
     contentChangeAffectsItem,
-    hasActiveContentChange,
-    pendingContentChangeAffectsItem,
+    indexContentChanges,
 } from './content-change-jobs.ts'
 import type { InstallJobSnapshot } from './install.ts'
 

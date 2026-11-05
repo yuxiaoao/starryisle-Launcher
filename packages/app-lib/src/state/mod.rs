@@ -52,6 +52,10 @@ mod installer_settings;
 
 mod process;
 pub use self::process::*;
+#[cfg(test)]
+pub(crate) use self::process::{
+    LOG_RING_BUFFER_BYTE_CAPACITY, filled_log_ring_buffer,
+};
 
 pub(crate) async fn instance_has_running_process(
     instance_id: &str,
@@ -712,6 +716,8 @@ impl State {
                 "Error reconciling persisted CurseForge waiting install jobs: {e}"
             );
         }
+        crate::scheduler::reconcile::at_startup(state).await;
+        crate::scheduler::quota::check_at_startup();
 
         state.spawn_background({
             let state = Arc::clone(state);
@@ -1002,6 +1008,9 @@ impl State {
         self: &Arc<Self>,
         settings: &Settings,
     ) {
+        crate::util::download::telemetry::set_enabled(
+            settings.advanced_download_info_enabled(),
+        );
         self.minecraft_metadata_source
             .store(settings.minecraft_metadata_source as u8, Ordering::Relaxed);
         self.minecraft_file_source
@@ -1301,6 +1310,9 @@ impl State {
             &app_identifier,
         )
         .await?;
+        crate::util::download::telemetry::set_enabled(
+            settings.advanced_download_info_enabled(),
+        );
         let download_concurrency =
             settings.effective_max_concurrent_downloads();
         let fetch_semaphore =
@@ -1413,6 +1425,8 @@ impl State {
             install_admission_locks: DashMap::new(),
             install_execution_locks: DashMap::new(),
             install_db_semaphore: Semaphore::new(1),
+            #[cfg(test)]
+            install_db_permit_timeout: AtomicU64::new(20_000),
             install_job_cancellations: DashMap::new(),
             install_job_operation_locks: DashMap::new(),
             discord_rpc,
@@ -1472,22 +1486,36 @@ impl State {
     pub(crate) async fn acquire_install_db_permit(
         &self,
     ) -> crate::Result<tokio::sync::SemaphorePermit<'_>> {
-        let permit = tokio::time::timeout(
-            Duration::from_secs(20),
-            self.install_db_semaphore.acquire(),
-        )
-        .await
-        .map_err(|_| {
-            crate::ErrorKind::InputError(
-                "Timed out waiting for the install database writer".to_string(),
-            )
-        })?
-        .map_err(|_| {
-            crate::ErrorKind::OtherError(
-                "install database semaphore closed".to_string(),
-            )
-        })?;
+        #[cfg(test)]
+        let timeout = Duration::from_millis(
+            self.install_db_permit_timeout.load(Ordering::Relaxed),
+        );
+        #[cfg(not(test))]
+        let timeout = Duration::from_secs(20);
+        let permit =
+            tokio::time::timeout(timeout, self.install_db_semaphore.acquire())
+                .await
+                .map_err(|_| {
+                    crate::ErrorKind::InputError(
+                        "Timed out waiting for the install database writer"
+                            .to_string(),
+                    )
+                })?
+                .map_err(|_| {
+                    crate::ErrorKind::OtherError(
+                        "install database semaphore closed".to_string(),
+                    )
+                })?;
         Ok(permit)
+    }
+
+    #[cfg(test)]
+    pub(crate) fn set_install_db_permit_timeout_for_test(
+        &self,
+        timeout: Duration,
+    ) {
+        self.install_db_permit_timeout
+            .store(timeout.as_millis().max(1) as u64, Ordering::Relaxed);
     }
 
     pub(crate) async fn lock_instance_content_exclusive(
@@ -1609,6 +1637,8 @@ pub(crate) async fn test_state(
         install_admission_locks: DashMap::new(),
         install_execution_locks: DashMap::new(),
         install_db_semaphore: Semaphore::new(1),
+        #[cfg(test)]
+        install_db_permit_timeout: AtomicU64::new(20_000),
         install_job_cancellations: DashMap::new(),
         install_job_operation_locks: DashMap::new(),
         discord_rpc: DiscordGuard::init()?,

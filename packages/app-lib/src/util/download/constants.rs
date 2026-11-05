@@ -691,10 +691,6 @@ pub(crate) const NATIVE_BUDGET_GLOBAL_BATCH_CONTAINS_ENOUGH_PERMITS: &str =
     "global batch contains enough permits";
 pub(crate) const NATIVE_BUDGET_REGULAR_BATCH_CONTAINS_ENOUGH_PERMITS: &str =
     "regular batch contains enough permits";
-pub(crate) const NATIVE_CERTIFICATE_POLICY_REQUIRES_THE_REQWEST_TRANSPORT:
-    &str = "certificate policy requires the reqwest transport";
-pub(crate) const NATIVE_CONFIGURED_PROXY_REQUIRES_THE_REQWEST_TRANSPORT: &str =
-    "configured proxy requires the reqwest transport";
 pub(crate) const NATIVE_DOWNLOAD_SOURCE_HAS_BEEN_RETIRED: &str =
     "download source has been retired";
 pub(crate) const NATIVE_PROXYENABLE: &str = "ProxyEnable";
@@ -703,8 +699,6 @@ pub(crate) const NATIVE_REPUTATION_FILE_NAME: &str =
 pub(crate) const NATIVE_REPUTATION_TMP: &str = ".tmp";
 pub(crate) const NATIVE_REQUEST_TIMED_OUT_WAITING_FOR_CDN_RESPONSE_CONNECTION_BUDGET: &str = "timed out waiting for CDN response connection budget";
 pub(crate) const NATIVE_SOFTWARE_MICROSOFT_WINDOWS_CURRENTVERSION_INTERNET_SETTINGS: &str = "Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings";
-pub(crate) const NATIVE_SYSTEM_PROXY_REQUIRES_THE_REQWEST_TRANSPORT: &str =
-    "system proxy requires the reqwest transport";
 pub(crate) const PARTIAL_FILE_SUFFIX: &str = ".part";
 pub(crate) const PROBE_CERTNOTVALIDFORNAME: &str = "certnotvalidforname";
 pub(crate) const PROBE_X_CACHE: &str = "x-cache";
@@ -775,6 +769,19 @@ pub(crate) const H2_POOL_TEST_INVALID_443: &str = "test.invalid:443";
 pub(crate) const JOB_PROBE_WINDOW: Duration = Duration::from_secs(10);
 #[cfg(test)]
 pub(crate) const METADATA_HEDGE_DELAY: Duration = Duration::from_millis(100);
+/// Slow-detection window used by the download fixtures.
+///
+/// `NATIVE_SLOW_REQUIRED_WINDOWS` windows must complete before the policy
+/// probes, so the matching `TEST_SLOW_MIN_FLOW` stays strictly below
+/// `TEST_SLOW_WINDOW * NATIVE_SLOW_REQUIRED_WINDOWS`. Driving both from these
+/// two constants keeps that relation in one place: a test that sets the
+/// minimum flow equal to two windows makes the decision depend on which clock
+/// is read first, and an instrumented run then reports `NoGain` for a
+/// transfer that is genuinely slow.
+#[cfg(test)]
+pub(crate) const TEST_SLOW_WINDOW: Duration = Duration::from_millis(75);
+#[cfg(test)]
+pub(crate) const TEST_SLOW_MIN_FLOW: Duration = Duration::from_millis(100);
 #[cfg(test)]
 pub(crate) const NATIVE_SLOW_IDLE_TIMEOUT: Duration =
     Duration::from_millis(500);

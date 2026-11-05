@@ -1,8 +1,18 @@
 <template>
-    <ReadyTransition :pending="loading">
+    <ReadyTransition :pending="contentPending">
         <template #pending>
-            <LoadingIndicator class="pt-4" />
+            <p
+                v-if="isInstanceBusy"
+                class="m-0 pt-4 text-[var(--color-text-tertiary)]"
+                role="status"
+            >
+                {{ formatMessage(messages.instanceContentProcessing) }}
+            </p>
+            <LoadingIndicator v-else class="pt-4" />
         </template>
+        <p v-if="isInstanceBusy" class="mb-4 mt-0 text-[var(--color-text-tertiary)]" role="status">
+            {{ formatMessage(messages.instanceContentProcessing) }}
+        </p>
         <CollapsibleAdmonition
             v-if="postUpgradeNotice?.warnings.length"
             v-model="postUpgradeNoticeExpanded"
@@ -375,9 +385,9 @@ import { trackEvent } from '@/helpers/analytics'
 import { get_version_many } from '@/helpers/cache.js'
 import {
     activeContentChangeJobs as selectActiveContentChangeJobs,
+    contentChangeAffectsItem,
     contentItemStableId,
-    hasActiveContentChange,
-    pendingContentChangeAffectsItem,
+    indexContentChanges,
 } from '@/helpers/content-change-jobs'
 import { createContentEventRefresh } from '@/helpers/content-event-refresh'
 import { isUnresolvedProjectId } from '@/helpers/content-identity'
@@ -432,6 +442,13 @@ import i18n from '@/i18n.config'
 import { injectContentInstall } from '@/providers/content-install'
 import { injectDownloadManager } from '@/providers/download-manager'
 import { useTheming } from '@/store/state'
+
+import {
+    createContentRefreshSettlement,
+    modsContentLoading,
+    modsContentPending,
+    modsContentScopeTransition,
+} from './mods-content-state'
 
 const messages = defineMessages({
     checkingContent: {
@@ -491,6 +508,15 @@ const messages = defineMessages({
     contentTypeProject: {
         id: 'app.instance.mods.content-type-project',
         defaultMessage: 'project',
+    },
+    updateNothingToApplyTitle: {
+        id: 'app.instance.mods.update-nothing-to-apply.title',
+        defaultMessage: 'Nothing to update',
+    },
+    updateNothingToApplyBody: {
+        id: 'app.instance.mods.update-nothing-to-apply.body',
+        defaultMessage:
+            'No newer compatible version was found for the selected content, so no files were changed.',
     },
     bulkUpdateResolvingVersions: {
         id: 'app.instance.mods.bulk-update.resolving-versions',
@@ -1191,6 +1217,9 @@ const pendingContentChanges = computed(() =>
         (pending) => pending.instanceId === props.instance.id,
     ),
 )
+const contentChangeIndex = computed(() =>
+    indexContentChanges(activeContentChangeJobs.value, pendingContentChanges.value),
+)
 const isBulkOperating = localBulkOperating
 const CONTENT_EVENT_DEBOUNCE_MS = 180
 let suppressSyncedUntil = 0
@@ -1208,6 +1237,14 @@ watch(isBulkOperating, (operating) => {
 })
 
 const isInstanceBusy = computed(() => props.instance?.install_stage !== 'installed')
+const contentPending = computed(() =>
+    modsContentPending({
+        busy: isInstanceBusy.value,
+        hasSnapshot: contentSnapshot.value !== null,
+        hasItems: mergedProjects.value.length + displayedLinkedModpackContentItems.value.length > 0,
+        loading: loading.value,
+    }),
+)
 const isPackUnlinkDisabled = computed(
     () =>
         isInstanceBusy.value ||
@@ -1450,11 +1487,7 @@ function getStableContentId(item: ContentItem) {
 }
 
 function hasGlobalContentChange(item: ContentItem) {
-    return (
-        pendingContentChanges.value.some((pending) =>
-            pendingContentChangeAffectsItem(pending, item),
-        ) || hasActiveContentChange(activeContentChangeJobs.value, item)
-    )
+    return contentChangeAffectsItem(contentChangeIndex.value, item)
 }
 
 function getContentOperationKeys(item: ContentItem) {
@@ -2588,7 +2621,7 @@ async function initProjectsInternal(cacheBehaviour?: CacheBehaviour) {
     contentEventRefresh.clear()
     void loadWorldDatapacks()
     if (!props.instance || props.instance.install_stage !== 'installed') {
-        invalidateContentRequests(true)
+        suspendContentRequests()
         return
     }
     const instanceId = props.instance.id
@@ -3062,6 +3095,7 @@ provideContentManager({
                       : null,
             toggleDisabled: item.instanceCapabilities?.canToggle === false,
             hideSwitchVersion:
+                item.project_type === 'schematic' ||
                 (isPackLocked.value && item.instanceOwnershipKind === 'pack_managed') ||
                 item.instanceCapabilities?.canChangeVersion === false,
             pendingManualDownload: item.pendingManualDownload,
@@ -3092,7 +3126,7 @@ function getInstallRevision() {
 
 async function loadInitialContent(): Promise<void> {
     if (props.instance.install_stage !== 'installed') {
-        invalidateContentRequests(true)
+        suspendContentRequests()
         return
     }
     handledInstallRevision.value = getInstallRevision()

@@ -1137,7 +1137,7 @@
     "message": "网络连接"
   },
   "app.settings.logs.export.modal.network-connections-hint": {
-    "message": "导出时使用启动器网络设置重新测试所有服务，包含短时下载采样。"
+    "message": "使用启动器网络设置重新测试服务，包含短时下载采样。若已开启高级下载信息，还会包含已采集的文件用时、请求速度和远端地址。"
   },
   "app.settings.logs.export.modal.exporting": {
     "message": "正在导出…"
@@ -2245,6 +2245,12 @@
   },
   "app.browse.preparing-selected": {
     "message": "正在准备 {completed}/{total}"
+  },
+  "app.browse.reviewing-selected": {
+    "message": "正在预览内容变更…"
+  },
+  "app.browse.queueing-selected": {
+    "message": "正在加入下载队列…"
   },
   "app.browse.project-type.datapacks": {
     "message": "数据包"
@@ -4634,6 +4640,12 @@
   "app.instance.mods.update-added-content.description": {
     "message": "仅更新整合包安装后添加的内容，不会更改整合包自带文件。"
   },
+  "app.instance.mods.update-nothing-to-apply.body": {
+    "message": "所选内容没有找到更新的兼容版本，因此没有更改任何文件。"
+  },
+  "app.instance.mods.update-nothing-to-apply.title": {
+    "message": "没有可应用的更新"
+  },
   "app.instance.never-played": {
     "message": "从未游玩"
   },
@@ -4820,8 +4832,17 @@
   "app.instances.edit-groups": {
     "message": "编辑分组"
   },
+  "app.instances.game-directory.managed": {
+    "message": "Axolotl 数据目录"
+  },
+  "app.instances.game-directory.managed-short": {
+    "message": "Axolotl 数据"
+  },
   "app.instances.group-by": {
     "message": "分组方式"
+  },
+  "app.instances.group.game-directory": {
+    "message": "游戏目录"
   },
   "app.instances.group.game-version": {
     "message": "游戏版本"
@@ -6030,7 +6051,7 @@
     "message": "折叠文件夹 {name}"
   },
   "app.lab.schematic-preview.instance-picker.empty": {
-    "message": "该实例中没有找到 .litematic 或 .schem 文件。"
+    "message": "该实例中没有找到投影文件。"
   },
   "app.lab.schematic-preview.instance-picker.expand-folder": {
     "message": "展开文件夹 {name}"
@@ -7649,6 +7670,9 @@
   "app.lab.skin-editor.description": {
     "message": "在本地创建和编辑 Minecraft 玩家皮肤。"
   },
+  "app.lab.skin-editor.discard-draft-failed": {
+    "message": "无法删除恢复草稿。请留在当前页面后重试。"
+  },
   "app.lab.skin-editor.export-skin": {
     "message": "Minecraft 皮肤 PNG"
   },
@@ -7661,11 +7685,71 @@
   "app.lab.skin-editor.loading": {
     "message": "正在加载皮肤编辑器"
   },
+  "app.lab.skin-editor.recovery.body": {
+    "message": "恢复草稿保存于 {date}。"
+  },
+  "app.lab.skin-editor.recovery.continue": {
+    "message": "继续"
+  },
+  "app.lab.skin-editor.recovery.start-new": {
+    "message": "新建"
+  },
+  "app.lab.skin-editor.recovery.title": {
+    "message": "继续上次的皮肤？"
+  },
   "app.lab.skin-editor.retry": {
     "message": "重试"
   },
+  "app.lab.skin-editor.save": {
+    "message": "保存 PNG"
+  },
+  "app.lab.skin-editor.settings.auto-save": {
+    "message": "自动保存恢复草稿"
+  },
+  "app.lab.skin-editor.settings.auto-save-description": {
+    "message": "恢复草稿仅保存在本设备，与导出的 PNG 文件相互独立。"
+  },
+  "app.lab.skin-editor.settings.cancel": {
+    "message": "取消"
+  },
+  "app.lab.skin-editor.settings.interval": {
+    "message": "保存间隔（秒）"
+  },
+  "app.lab.skin-editor.settings.interval-description": {
+    "message": "请输入 5 到 600 秒之间的数值。"
+  },
+  "app.lab.skin-editor.settings.save": {
+    "message": "保存设置"
+  },
+  "app.lab.skin-editor.settings.title": {
+    "message": "编辑器设置"
+  },
+  "app.lab.skin-editor.settings.tooltip": {
+    "message": "皮肤编辑器设置"
+  },
+  "app.lab.skin-editor.settings.warn-before-leave": {
+    "message": "离开前提醒未保存的更改"
+  },
+  "app.lab.skin-editor.settings.warn-before-leave-description": {
+    "message": "关闭自动保存时，为保护你的作品，此提醒会始终启用。"
+  },
   "app.lab.skin-editor.title": {
     "message": "皮肤编辑器"
+  },
+  "app.lab.skin-editor.unsaved.body": {
+    "message": "离开前保存皮肤，或放弃当前更改。"
+  },
+  "app.lab.skin-editor.unsaved.discard": {
+    "message": "放弃"
+  },
+  "app.lab.skin-editor.unsaved.save": {
+    "message": "保存 PNG"
+  },
+  "app.lab.skin-editor.unsaved.stay": {
+    "message": "留下"
+  },
+  "app.lab.skin-editor.unsaved.title": {
+    "message": "皮肤尚未保存"
   },
   "app.lab.title": {
     "message": "实验室"
@@ -7983,7 +8067,7 @@
     "message": "可能的问题：OpenJ9 与此实例不兼容"
   },
   "app.minecraft-crash.diagnosis.out-of-memory.action": {
-    "message": "可以尝试增加实例内存分配，或移除占用内存较多的模组与资源包。"
+    "message": "可以尝试增加实例内存分配，或移除占用内存较多的模组与资源包。若日志提示系统物理内存或交换空间不足，则应改为降低内存分配或关闭其他程序。"
   },
   "app.minecraft-crash.diagnosis.out-of-memory.title": {
     "message": "可能的问题：Minecraft 内存不足"
@@ -8691,7 +8775,7 @@
     "message": "制作数据包配方"
   },
   "app.onboarding.lab-schematic.description": {
-    "message": "打开本地 .litematic 或 .schem 文件，也可以从已安装实例中选择。3D 工作区集中提供查看、测量、图层控制、材料统计和本地编辑。"
+    "message": "打开本地投影文件，也可以从已安装实例中选择。3D 工作区集中提供查看、测量、图层控制、材料统计和本地编辑。"
   },
   "app.onboarding.lab-schematic.title": {
     "message": "放置前先检查建筑"
@@ -10208,6 +10292,30 @@
   "app.settings.downloading": {
     "message": "正在下载 v{version}"
   },
+  "app.settings.export.all-button": {
+    "message": "导出全部设置文件…"
+  },
+  "app.settings.export.all-label": {
+    "message": "全部设置文件"
+  },
+  "app.settings.export.exported-text": {
+    "message": "设置归档已保存到 {path}"
+  },
+  "app.settings.export.exported-title": {
+    "message": "设置已导出"
+  },
+  "app.settings.export.patch-button": {
+    "message": "导出补丁…"
+  },
+  "app.settings.export.patch-description": {
+    "message": "只包含与默认值不同的键。归档里是每个域的文档文件，解压后可直接作为部署配置使用。"
+  },
+  "app.settings.export.patch-label": {
+    "message": "部署补丁"
+  },
+  "app.settings.export.title": {
+    "message": "管理设置文件"
+  },
   "app.settings.feature-flags.reset-to-default": {
     "message": "恢复默认值"
   },
@@ -11429,6 +11537,12 @@
   "app.settings.logs.retention.title": {
     "message": "日志自动保留策略"
   },
+  "app.settings.override.hint": {
+    "message": "已覆盖部署提供的值。"
+  },
+  "app.settings.override.restore": {
+    "message": "恢复部署值"
+  },
   "app.settings.privacy.data-handling": {
     "message": "遥测使用随机安装标识，仅发送每日活跃信号。关闭遥测会立即清空待发送数据。"
   },
@@ -11824,6 +11938,9 @@
   },
   "app.settings.storage.total-description": {
     "message": "总大小包含符号链接与 Junction 引用的大小"
+  },
+  "app.settings.storage.unknownError": {
+    "message": "未知错误"
   },
   "app.settings.storage.update": {
     "message": "更新"
@@ -13598,6 +13715,24 @@
   "instance.files.studio.editor-loading": {
     "message": "正在加载编辑器……"
   },
+  "instance.files.studio.edit-deleted": {
+    "message": "该文件在编辑保存前已被删除。"
+  },
+  "instance.files.studio.discard-image-confirm": {
+    "message": "放弃"
+  },
+  "instance.files.studio.discard-image-description": {
+    "message": "图片有尚未保存的修改，打开其他文件会丢弃这些修改。"
+  },
+  "instance.files.studio.discard-image-keep": {
+    "message": "继续编辑"
+  },
+  "instance.files.studio.discard-image-title": {
+    "message": "放弃图片编辑？"
+  },
+  "instance.files.studio.edit-conflict": {
+    "message": "该文件在打开后已被外部修改，编辑内容未保存。"
+  },
   "instance.files.studio.empty-description": {
     "message": "从资源管理器打开文件。"
   },
@@ -13658,6 +13793,9 @@
   "instance.files.studio.not-text-file": {
     "message": "此文件不是文本文件，无法在 Studio 中打开。"
   },
+  "instance.files.studio.open-in-schematic-workshop": {
+    "message": "使用“投影工坊”打开"
+  },
   "instance.files.studio.open-in-system": {
     "message": "从系统中打开"
   },
@@ -13669,6 +13807,33 @@
   },
   "instance.files.studio.paste": {
     "message": "粘贴"
+  },
+  "instance.files.studio.preview-actual-size": {
+    "message": "实际大小"
+  },
+  "instance.files.studio.preview-edit": {
+    "message": "编辑"
+  },
+  "instance.files.studio.preview-failed": {
+    "message": "无法预览此文件。"
+  },
+  "instance.files.studio.preview-fit": {
+    "message": "适应窗口"
+  },
+  "instance.files.studio.preview-loading": {
+    "message": "正在加载预览……"
+  },
+  "instance.files.studio.preview-save": {
+    "message": "保存"
+  },
+  "instance.files.studio.preview-tools": {
+    "message": "图片编辑工具"
+  },
+  "instance.files.studio.preview-zoom-in": {
+    "message": "放大"
+  },
+  "instance.files.studio.preview-zoom-out": {
+    "message": "缩小"
   },
   "instance.files.studio.refresh": {
     "message": "刷新文件"
@@ -14978,6 +15143,9 @@
   "instance.upgrade.select.loading-fabric-versions": {
     "message": "正在加载 Fabric 版本……"
   },
+  "instance.upgrade.select.downgrade-unsupported": {
+    "message": "不支持降级版本。"
+  },
   "instance.upgrade.select.loading-versions": {
     "message": "正在加载 Minecraft 版本……"
   },
@@ -15706,6 +15874,15 @@
   },
   "app.resources.operation.apply": {
     "message": "加入任务队列"
+  },
+  "app.resources.operation.force-install": {
+    "message": "忽略依赖并强制安装"
+  },
+  "app.resources.operation.force-install-tooltip": {
+    "message": "{reason} 尝试仅安装所选内容，不安装依赖。"
+  },
+  "app.resources.operation.force-install-compatibility-tooltip": {
+    "message": "{reason} 尝试仅安装所选内容，不安装依赖，并接受其 Minecraft 版本或加载器不兼容的情况。"
   },
   "app.resources.operation.empty": {
     "message": "无需变更文件。"

@@ -1,17 +1,6 @@
 <script setup lang="ts">
-import { defineMessages, useVIntl } from '@modrinth/ui'
-import type * as Monaco from 'monaco-editor'
-import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
-
-declare global {
-    interface Window {
-        __axolotlMonacoRuntime?: Promise<typeof Monaco>
-        require?: {
-            config(config: Record<string, unknown>): void
-            (dependencies: string[], callback: (monaco: typeof Monaco) => void): void
-        }
-    }
-}
+import { CodeEditor } from '@modrinth/ui'
+import { ref } from 'vue'
 
 const props = defineProps<{
     content: string
@@ -19,7 +8,6 @@ const props = defineProps<{
     language: string
     readOnly?: boolean
 }>()
-
 const emit = defineEmits<{
     'update:content': [content: string]
     save: []
@@ -266,20 +254,17 @@ onBeforeUnmount(() => {
 })
 
 async function formatDocument() {
-    await editor?.getAction('editor.action.formatDocument')?.run()
+    await editor.value?.formatDocument()
 }
-
 defineExpose({ formatDocument })
 </script>
 
 <template>
-    <div class="relative size-full min-h-0 min-w-0 bg-surface-2">
-        <div
-            v-if="loading"
-            class="absolute inset-0 z-[1] flex items-center justify-center text-sm text-[var(--color-text-tertiary)]"
-        >
-            {{ formatMessage(messages.loading) }}
-        </div>
-        <div ref="editorElement" class="size-full min-h-0 min-w-0" />
-    </div>
+    <CodeEditor
+        ref="editor"
+        v-bind="props"
+        @update:content="emit('update:content', $event)"
+        @save="emit('save')"
+        @blur="emit('blur')"
+    />
 </template>

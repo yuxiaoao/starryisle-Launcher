@@ -16,6 +16,32 @@ export const updaterTargets = [
     { platforms: ['windows-x86_64'], assetSuffix: '_x64-setup.nsis.zip' },
 ]
 
+// Artifacts that are not used by the updater but whose digests packaging channels
+// (for example a Scoop manifest) need published alongside it. They live in their own
+// top-level field so the updater's `platforms` contract stays untouched.
+//
+// Every release carries the portable zip, so a manifest missing it is a packaging failure,
+// not a variant. Releases published before this field existed have no way to gain one, so
+// verification skips the requirement for tags older than the release that introduced it.
+export const portableTargets = [
+    { key: 'portable', platform: 'windows-x86_64', assetSuffix: '_x64_portable.zip' },
+]
+
+// First release whose latest.json describes the portable artifact. Everything at or above it
+// is required to carry the field; older tags are exempt because their published manifests
+// cannot gain one and release workflows still re-verify them.
+export const firstTagWithArtifacts = 'v1.11.0'
+
+export function portableArtifactName(tag) {
+    return `Axolotl_Launcher_${releaseVersion(tag)}_x64_portable.zip`
+}
+
+export function requiresArtifacts(tag) {
+    // Compare core versions only: v1.11.0-beta.1 ships the field and sorts below v1.11.0.
+    const core = (value) => releaseVersion(value).split('-')[0]
+    return compareVersions(core(tag), core(firstTagWithArtifacts)) >= 0
+}
+
 export function createUpdateManifest(release, signaturesPath, tag) {
     verifyRelease(release, tag)
     const platforms = {}
@@ -47,6 +73,7 @@ export function createUpdateManifest(release, signaturesPath, tag) {
         notes: release.body ?? '',
         pub_date: release.published_at || new Date().toISOString(),
         platforms,
+        ...(Object.keys(artifacts).length > 0 ? { artifacts } : {}),
     }
 }
 

@@ -354,6 +354,7 @@ async fn write_snapshot() -> std::io::Result<()> {
     let Some(path) = PATH.get().cloned().or_else(reputation_path) else {
         return Ok(());
     };
+    // sched-order: theseus::util::download::native_reputation::REPUTATION temporary
     let mut routes = REPUTATION
         .lock()
         .iter()
@@ -368,6 +369,7 @@ async fn write_snapshot() -> std::io::Result<()> {
         std::cmp::Reverse(route.health.updated_at)
     });
     routes.truncate(MAX_ENTRIES);
+    // sched-order: theseus::util::download::native_reputation::TRANSPORT_REPUTATION temporary
     let mut transports = TRANSPORT_REPUTATION
         .lock()
         .iter()

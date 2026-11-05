@@ -13,6 +13,7 @@ const labels = {
     datapacks: 'Data Packs',
     maps: 'Maps',
     shaders: 'Shaders',
+    schematics: 'Schematics',
     servers: 'Servers',
     favorites: 'Favorites',
 }

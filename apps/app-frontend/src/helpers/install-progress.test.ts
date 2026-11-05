@@ -6,6 +6,7 @@ import {
     hasDeterminateInstallProgress,
     installProgressFraction,
     installProgressTextSource,
+    isInstallMainTrackComplete,
     preserveMonotonicProgress,
     type ProgressTextSnapshot,
 } from './install-progress.ts'

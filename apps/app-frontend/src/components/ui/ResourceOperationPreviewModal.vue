@@ -37,6 +37,8 @@ import {
 import { get_instance_worlds } from '@/helpers/worlds'
 import type { ContentAnalysisReview } from '@/providers/content-analysis'
 
+import { indexResourceOperationPreview } from './resource-operation-preview-index'
+
 const { formatMessage } = useVIntl()
 const messages = defineMessages({
     invalidPath: {
@@ -132,6 +134,19 @@ const messages = defineMessages({
     refresh: { id: 'app.resources.operation.refresh', defaultMessage: 'Refresh this preview' },
     cancel: { id: 'app.resources.operation.cancel', defaultMessage: 'Cancel' },
     apply: { id: 'app.resources.operation.apply', defaultMessage: 'Queue changes' },
+    forceInstall: {
+        id: 'app.resources.operation.force-install',
+        defaultMessage: 'Force install without dependencies',
+    },
+    forceInstallTooltip: {
+        id: 'app.resources.operation.force-install-tooltip',
+        defaultMessage: '{reason} Try installing only the selected content without dependencies.',
+    },
+    forceInstallCompatibilityTooltip: {
+        id: 'app.resources.operation.force-install-compatibility-tooltip',
+        defaultMessage:
+            '{reason} Try installing only the selected content without dependencies and accept its Minecraft or loader compatibility mismatches.',
+    },
     empty: { id: 'app.resources.operation.empty', defaultMessage: 'No file changes are needed.' },
     sourceUnavailable: {
         id: 'app.resources.operation.source-unavailable',
@@ -357,6 +372,7 @@ const error = ref<string | null>(null)
 const errorSummary = ref<string | null>(null)
 const names = ref<Record<string, { title: string; iconUrl: string | null; summary?: string }>>({})
 let controller: AbortController | null = null
+let disposed = false
 let generation = 0
 let resolveShow: ((job: InstallJobSnapshot | null) => void) | null = null
 const submittedRoots = ref<string[]>([])
@@ -654,16 +670,9 @@ function explicitRoots(node: ResourceDependencyNode): string[] {
           ? [node.id]
           : []
 }
+const previewIndex = computed(() => indexResourceOperationPreview(plan.value, name))
 function requiredBy(id: string, kind = 'required') {
-    return [
-        ...new Set(
-            (plan.value?.edges ?? [])
-                .filter((edge) => edge.child === id && edge.kind === kind)
-                .map((edge) => plan.value?.nodes.find((node) => node.id === edge.parent))
-                .filter((node): node is ResourceDependencyNode => !!node)
-                .map(name),
-        ),
-    ].join(', ')
+    return previewIndex.value.requiredBy.get(id)?.get(kind) ?? ''
 }
 async function enrich(value: ResourceOperationPlan, signal: AbortSignal, current: number) {
     const unresolved = value.selections.filter(
@@ -1171,7 +1180,10 @@ function accept(node: ResourceDependencyNode, dimension: 'gameVersion' | 'loader
         },
     })
 }
-onBeforeUnmount(hide)
+onBeforeUnmount(() => {
+    disposed = true
+    hide()
+})
 function showInstall(value: {
     analysis?: ContentAnalysisReview
     importFiles?: Record<string, string>
@@ -1336,7 +1348,7 @@ defineExpose({ show, showInstall, showInstallSelection, cancel })
                     {{ notice.text }}
                 </p>
                 <p
-                    v-for="action in plan?.actions.filter((action) => action.nodeId === node.id)"
+                    v-for="action in previewIndex.actions.get(node.id)"
                     :key="action.entryId"
                     class="m-0 break-all text-sm"
                 >
@@ -1473,7 +1485,9 @@ defineExpose({ show, showInstall, showInstallSelection, cancel })
                     :color="forceInstall ? 'orange' : 'brand'"
                     :disabled="!canApply"
                     @click="apply"
-                    >{{ formatMessage(messages.apply) }}</Button
+                    >{{
+                        formatMessage(forceInstall ? messages.forceInstall : messages.apply)
+                    }}</Button
                 >
             </div>
         </template>

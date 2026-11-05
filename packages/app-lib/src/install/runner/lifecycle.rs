@@ -1,6 +1,6 @@
 use super::*;
 
-struct CancellationRegistration<'a> {
+pub(super) struct CancellationRegistration<'a> {
     registrations:
         &'a dashmap::DashMap<Uuid, tokio_util::sync::CancellationToken>,
     id: Uuid,
@@ -8,6 +8,20 @@ struct CancellationRegistration<'a> {
 impl Drop for CancellationRegistration<'_> {
     fn drop(&mut self) {
         self.registrations.remove(&self.id);
+    }
+}
+
+pub(super) fn register_cancellation<'a>(
+    state: &'a State,
+    job_id: Uuid,
+    cancellation: &tokio_util::sync::CancellationToken,
+) -> CancellationRegistration<'a> {
+    state
+        .install_job_cancellations
+        .insert(job_id, cancellation.clone());
+    CancellationRegistration {
+        registrations: &state.install_job_cancellations,
+        id: job_id,
     }
 }
 
@@ -410,13 +424,22 @@ async fn run_owned_job(job_id: Uuid, state: &State) -> crate::Result<()> {
                 &error,
                 None,
             ));
-            let record = store::update_status(
+            // A concurrent cancel owns the terminal state: writing Interrupted
+            // over a row the cancel path already moved to Canceling would make
+            // `finish_canceling_job` return without its rollback. The
+            // conditional write makes that decision in one SQL statement, so
+            // a cancel that lands after this point still wins.
+            let Some(record) = store::update_status_if(
                 job_id,
+                InstallJobStatus::Running,
                 InstallJobStatus::Interrupted,
                 &job_state,
                 state,
             )
-            .await?;
+            .await?
+            else {
+                return Ok(());
+            };
             emit_install_job(&record.snapshot()).await?;
             return Ok(());
         }

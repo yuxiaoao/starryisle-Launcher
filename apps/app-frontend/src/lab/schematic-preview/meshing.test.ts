@@ -1,12 +1,17 @@
 import { Cull, type Identifier, Mesh, Quad, Vector } from 'deepslate'
 import { expect, it } from 'vitest'
 
+import type { SchematicBlockState } from './backend.ts'
+import type { SchematicFluidNeighborhood } from './fluid-mesh.ts'
 import {
     applySeamlessSchematicGlassUvs,
     extractSchematicNeighborFace,
+    getSchematicFluidCull,
     getSchematicMeshOcclusionFaces,
     getSchematicSpecialBlockMesh,
+    getSchematicWaterloggedFluidMesh,
     isSchematicOccluding,
+    isSchematicWaterlogged,
     isSeamlessSchematicGlassPair,
     schematicBlockAt,
     shouldCullSchematicFace,

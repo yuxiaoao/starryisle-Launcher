@@ -318,6 +318,120 @@ pub enum FeatureFlag {
     PageTransitions,
     ShowVersionEnvironmentColumn,
     AutoInstallDependencies,
+    AdvancedDownloadInfo,
+}
+
+/// The settings a database that has never been used holds.
+///
+/// The values are not chosen here: they are the `settings` table's column
+/// defaults, with the updates the migrations run on a fresh row already applied,
+/// so a column added with one default and then moved reads as the moved value.
+/// The test `default_matches_the_row_a_fresh_database_creates` replays the
+/// migrations into an empty database and diffs that row against this, which is
+/// what keeps the baseline from drifting away from the database it describes.
+impl Default for Settings {
+    fn default() -> Self {
+        Self {
+            resource_chinese_filenames: true,
+            resource_preserve_filenames: true,
+            max_concurrent_downloads: 10,
+            max_concurrent_writes: 10,
+            auto_concurrent_downloads: true,
+            minecraft_metadata_source: DownloadSourceMode::Auto,
+            minecraft_file_source: DownloadSourceMode::Auto,
+            modrinth_source: DownloadSourceMode::Auto,
+            curseforge_source: DownloadSourceMode::Auto,
+            bypass_curseforge_download_restrictions: true,
+            ignore_ssl_errors: false,
+            doh_enabled: default_doh_enabled(),
+            mojang_auth_source: DownloadSourceMode::Auto,
+            legacy_use_minecraft_mirror: None,
+            legacy_use_modrinth_mirror: None,
+            legacy_use_curseforge_mirror: None,
+            theme: Theme::Dark,
+            accent_color: AccentColor::Pink,
+            locale: String::new(),
+            default_page: DefaultPage::Home,
+            collapsed_navigation: true,
+            hide_nametag_skins_page: false,
+            nametag_uses_app_font: false,
+            advanced_rendering: true,
+            native_decorations: false,
+            toggle_sidebar: false,
+            custom_background_path: None,
+            custom_background_blur: 12,
+            custom_background_opacity: 65,
+            custom_background_component_opacity:
+                default_custom_background_component_opacity(),
+            ui_font: None,
+            mono_font: None,
+            transparent_background: false,
+            transparent_background_opacity: 55,
+            transparent_background_blur: false,
+            sidebar_instance_count: 0,
+            close_behavior: "ask".to_string(),
+            log_level: default_log_level(),
+            auto_hide_downloads_button: false,
+            home_layout: HomeLayout::Standard,
+            minimal_home_instance_id: None,
+            home_widgets: None,
+            home_widget_background_opacity:
+                default_home_widget_background_opacity(),
+            hidden_nav_items: Vec::new(),
+            custom_window_title_enabled: false,
+            default_window_title: default_window_title(),
+            terracotta_public_nodes: default_terracotta_public_nodes(),
+            telemetry: false,
+            telemetry_consent_version: 0,
+            discord_rpc: true,
+            // The column is added defaulting to on and a later migration turns
+            // it off, so a fresh row reads as off.
+            personalized_ads: false,
+            onboarded: false,
+            onboarding_version: 0,
+            // The column is added defaulting to on and a later migration copies
+            // `onboarded` into it, so a fresh row reads as off.
+            onboarding_instance_tour_completed: false,
+            extra_launch_args: Vec::new(),
+            custom_env_vars: Vec::new(),
+            memory: MemorySettings {
+                maximum: 2048,
+                // The column is added defaulting to off and a later migration
+                // turns it on for every row.
+                automatic: true,
+                optimize_before_launch: false,
+            },
+            force_fullscreen: false,
+            maximize_window: false,
+            game_resolution: WindowSize(854, 480),
+            hide_on_process_start: false,
+            enter_lightweight_mode_on_game_launch: false,
+            auto_set_java_high_performance_mode: true,
+            // The column is added defaulting to empty, which means the launcher
+            // picks the language rather than the user naming one.
+            default_game_language: String::new(),
+            hooks: Hooks::default(),
+            custom_dir: None,
+            prev_custom_dir: None,
+            backup_repository_path: None,
+            migrated: false,
+            developer_mode: false,
+            feature_flags: HashMap::new(),
+            sync_features_across_devices: false,
+            show_files_tab_in_instances: true,
+            show_worlds_tab_in_instances: true,
+            show_screenshots_tab_in_instances: false,
+            show_skin_selector_in_sidebar: true,
+            skipped_update: None,
+            pending_update_toast_for_version: None,
+            auto_download_updates: None,
+            allow_external_scheme: true,
+            allow_privileged_scheme: false,
+            // The version the column was added with, not `CURRENT_VERSION`: no
+            // migration has run over this row.
+            version: 1,
+        }
+    }
 }
 
 impl Settings {
@@ -996,7 +1110,159 @@ fn from_home_layout(layout: HomeLayout) -> StoredHomeLayout {
 #[cfg(test)]
 #[cfg(test)]
 mod tests {
+    use std::collections::BTreeSet;
+
     use super::*;
+    use crate::state::store::Collection as _;
+    use crate::state::store::tests::support::migrated_pool;
+
+    #[test]
+    fn download_diagnostics_requires_developer_mode_and_explicit_flag() {
+        let mut settings = Settings::default();
+        assert!(!settings.advanced_download_info_enabled());
+        settings
+            .feature_flags
+            .insert(FeatureFlag::AdvancedDownloadInfo, true);
+        assert!(!settings.advanced_download_info_enabled());
+        settings.developer_mode = true;
+        assert!(settings.advanced_download_info_enabled());
+        let saved = serde_json::to_value(&settings).unwrap();
+        assert_eq!(saved["feature_flags"]["advanced_download_info"], true);
+        let restored: Settings = serde_json::from_value(saved).unwrap();
+        assert!(restored.advanced_download_info_enabled());
+        settings
+            .feature_flags
+            .insert(FeatureFlag::AdvancedDownloadInfo, false);
+        assert!(!settings.advanced_download_info_enabled());
+        settings.developer_mode = false;
+        assert!(!settings.advanced_download_info_enabled());
+    }
+
+    /// The keys where two settings carry different values, written out so a
+    /// failure names them instead of printing two whole `Settings`.
+    fn differences(default: &Settings, row: &Settings) -> Vec<String> {
+        let default = as_map(default);
+        let row = as_map(row);
+        let keys: BTreeSet<&String> =
+            default.keys().chain(row.keys()).collect();
+        keys.into_iter()
+            .filter(|key| default.get(*key) != row.get(*key))
+            .map(|key| {
+                format!(
+                    "{key}: default {:?}, row {:?}",
+                    default.get(key),
+                    row.get(key)
+                )
+            })
+            .collect()
+    }
+
+    /// One settings as the keys a document would carry, with `personalized_ads`
+    /// added back: it is skipped when serializing, so a comparison that walked
+    /// the serialized form alone would never check it.
+    fn as_map(
+        settings: &Settings,
+    ) -> serde_json::Map<String, serde_json::Value> {
+        let serde_json::Value::Object(mut map) =
+            serde_json::to_value(settings).unwrap()
+        else {
+            panic!("the settings do not serialize as an object");
+        };
+        map.insert(
+            "personalized_ads".to_string(),
+            serde_json::Value::Bool(settings.personalized_ads),
+        );
+        map
+    }
+
+    /// `Settings::default()` describes the row a fresh database has, so the
+    /// migrations and this file cannot disagree about what an absent key reads
+    /// as.
+    #[tokio::test]
+    async fn default_matches_the_row_a_fresh_database_creates() {
+        let pool = migrated_pool().await;
+        let row = Settings::get(&Handle::new(pool)).await.unwrap();
+
+        let differing = differences(&Settings::default(), &row);
+        assert!(
+            differing.is_empty(),
+            "settings a fresh row disagrees with: {differing:#?}"
+        );
+    }
+
+    /// A row can hold a number below zero where the setting takes none: SQLite
+    /// does not check a column's type, so a hand edit or an older bug can leave
+    /// one. Converting it before bounding it would make it a huge unsigned
+    /// value, which the range check reads as the upper bound rather than the
+    /// lower one.
+    #[tokio::test]
+    async fn a_negative_row_value_reads_as_the_lower_bound() {
+        let pool = migrated_pool().await;
+        let handle = Handle::new(pool);
+        let mut record = StoredSettings::get(&handle, &Singleton)
+            .await
+            .unwrap()
+            .unwrap();
+        record.max_concurrent_downloads = -5;
+        record.custom_background_opacity = -5;
+        record.sidebar_instance_count = -5;
+
+        let settings = Settings::from_record(record);
+
+        assert_eq!(
+            settings.custom_background_opacity, 10,
+            "an opacity below its range reads as its lowest value"
+        );
+        assert_eq!(
+            settings.sidebar_instance_count, 0,
+            "a sidebar count below its range reads as its lowest value"
+        );
+        assert_eq!(
+            settings.max_concurrent_downloads, 1,
+            "a download count below its range reads as its lowest value"
+        );
+    }
+
+    /// The download limit's upper bound belongs to the download engine, not to
+    /// the write limit: how many writes run at once was never bounded above, so
+    /// a row holding more than the download limit keeps its value.
+    #[tokio::test]
+    async fn a_write_limit_above_the_download_bound_is_kept() {
+        let pool = migrated_pool().await;
+        let handle = Handle::new(pool);
+        let mut record = StoredSettings::get(&handle, &Singleton)
+            .await
+            .unwrap()
+            .unwrap();
+
+        record.max_concurrent_writes = 512;
+        assert_eq!(
+            Settings::from_record(record.clone()).max_concurrent_writes,
+            512,
+            "a write limit past the download limit keeps its value"
+        );
+
+        record.max_concurrent_writes = 0;
+        assert_eq!(
+            Settings::from_record(record.clone()).max_concurrent_writes,
+            1,
+            "a write limit of zero reads as its lowest value"
+        );
+
+        record.max_concurrent_writes = -5;
+        assert_eq!(
+            Settings::from_record(record).max_concurrent_writes,
+            1,
+            "a write limit below zero reads as its lowest value"
+        );
+    }
+
+    #[test]
+    fn default_game_language_normalizes_to_minecraft_code() {
+        assert_eq!(normalize_game_language("  EN-US  "), "en_us");
+        assert_eq!(normalize_game_language("zh_CN"), "zh_cn");
+        assert_eq!(normalize_game_language("   "), "");
+    }
 
     #[test]
     fn default_game_language_normalizes_to_minecraft_code() {

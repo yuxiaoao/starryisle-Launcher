@@ -40,6 +40,7 @@ const settingsComponentFiles = {
         './StorageSettings.vue',
     ],
     'privacy-data': ['./PrivacySettings.vue'],
+    'third-party-accounts': ['./ThirdPartyAccountsSettings.vue'],
     'instance-sync': ['./instances/index.vue'],
     updates: ['./UpdateSettings.vue'],
     logs: ['./LogsSettings.vue'],

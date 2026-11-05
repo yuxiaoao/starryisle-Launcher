@@ -9,6 +9,7 @@ members = [
   "packages/daedalus",
   "packages/launcher-mcp",
   "packages/path-util",
+  "third-party/tauri-plugin-http",
 ]
 
 [workspace.package]
@@ -50,12 +51,14 @@ data-url = "0.3.2"
 derive_more = "2.1.1"
 dirs = "6.0.0"
 discord-rich-presence = "1.0.0"
+dom_query = "0.27.0"
 dotenvy = "0.15.7"
 dunce = "1.0.5"
 either = "1.15.0"
 encoding_rs = "0.8.35"
 enumset = "1.1.10"
 eyre = "0.6.12"
+fast-socks5 = "1.0.0"
 flate2 = "1.1.4"
 fontdb = "0.24.0"
 fs4 = { version = "0.13.1", default-features = false }
@@ -86,6 +89,7 @@ libc = "0.2.189"
 libloading = "0.7.4"
 local-ip-address = "0.6.7"
 md5 = "0.8.0"
+minisign-verify = "0.2.5"
 native-dialog = "0.9.2"
 notify = { version = "8.2.0", default-features = false }
 notify-debouncer-mini = { version = "0.7.0", default-features = false }
@@ -101,7 +105,7 @@ quick-xml = "0.41.0"
 # Stays on 0.8 until p256 updates to 0.9. Floor at 0.8.8 (GHSA-cq8v-f236-94qc).
 rand = "0.8.8"
 regex = "1.12.2"
-reqwest = { version = "0.12.24", default-features = false }
+reqwest = { version = "0.13.4", default-features = false }
 rgb = "0.8.52"
 rmcp = { version = "3.7.0", default-features = false, features = [
   "server",
@@ -134,7 +138,7 @@ tauri-build = "2.4.1"
 tauri-plugin-deep-link = "2.4.3"
 tauri-plugin-dialog = "2.4.0"
 tauri-plugin-fs = "2.4.5"
-tauri-plugin-http = "2.5.7"
+tauri-plugin-http = { path = "third-party/tauri-plugin-http" }
 tauri-plugin-opener = "2.5.0"
 tauri-plugin-os = "2.3.1"
 tauri-plugin-single-instance = "2.3.4"
@@ -152,12 +156,17 @@ tokio-rustls = { version = "0.26.4", default-features = false, features = [
   "tls12"
 ] }
 tokio-util = "0.7.16"
-toml = "0.8.19"
+toml = { version = "1.1.3", default-features = false, features = [
+  "parse",
+  "serde",
+  "std",
+] }
+tower-service = "0.3.3"
 tracing = "0.1.41"
 tracing-error = "0.2.1"
 tracing-subscriber = "0.3.20"
 trash = "5.2.2"
-typed-path = "0.12.0"
+typed-path = "0.13.0"
 unicode-normalization = "0.1.25"
 url = "2.5.7"
 urlencoding = "2.1.3"

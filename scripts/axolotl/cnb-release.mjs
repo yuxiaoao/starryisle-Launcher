@@ -2,6 +2,7 @@ import { execFileSync } from 'node:child_process'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
+import { portableTargets } from './create-update-manifest.mjs'
 import { isExcludedRelease, selectLatestStableRelease } from './release-policy.mjs'
 import {
     assetDownloadUrl,

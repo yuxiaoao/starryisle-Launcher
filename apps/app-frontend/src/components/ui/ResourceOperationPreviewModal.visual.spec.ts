@@ -672,9 +672,7 @@ it('preserves blocking root file validation after preparing a roots-only preview
         expect(button.attributes('color')).toBe('orange')
         await button.trigger('click')
         expect(resourceQueuePlan).not.toHaveBeenCalled()
-        expect(
-            wrapper.findAll('button').some((button) => button.text().startsWith('Force install')),
-        ).toBe(false)
+        expect(button.text()).toBe('Force install without dependencies')
         await wrapper.vm.cancel()
         expect(await result).toBeNull()
     } finally {
@@ -766,7 +764,11 @@ it('combines dependency fallback with skipped files and submits only the writabl
         await queue().trigger('click')
         await flushPromises()
         expect((await result)?.activeRoots).toEqual(['writable'])
-        expect(resourceQueuePlan).toHaveBeenCalledExactlyOnceWith(reviewed.id, 2)
+        expect(resourceQueuePlan).toHaveBeenCalledExactlyOnceWith(
+            reviewed.id,
+            2,
+            expect.any(Object),
+        )
     } finally {
         wrapper.unmount()
     }
@@ -1041,7 +1043,7 @@ it('keeps compatibility exception controls and an enabled warning install button
         expect(
             wrapper
                 .findAll('button')
-                .find((button) => button.text() === 'Queue changes')!
+                .find((button) => button.text() === 'Force install without dependencies')!
                 .attributes('disabled'),
         ).toBeUndefined()
         await wrapper.vm.cancel()
@@ -1237,10 +1239,10 @@ it('discards partial revision items after failure and keeps the previously revie
         >)
         await wrapper
             .findAll('button')
-            .find((button) => button.text() === 'Queue changes')!
+            .find((button) => button.text() === 'Force install without dependencies')!
             .trigger('click')
         await flushPromises()
-        expect(resourceQueuePlan).toHaveBeenCalledExactlyOnceWith('plan', 1)
+        expect(resourceQueuePlan).toHaveBeenCalledExactlyOnceWith('plan', 1, expect.any(Object))
         expect(await result).toEqual({ job_id: 'original' })
     } finally {
         wrapper.unmount()
@@ -1302,7 +1304,7 @@ it('data packs require a real world and a failed world switch cannot queue the p
         expect(
             wrapper
                 .findAll('button')
-                .find((button) => button.text() === 'Queue changes')
+                .find((button) => button.text() === 'Force install without dependencies')
                 ?.attributes('disabled'),
         ).toBeUndefined()
         expect(resourceQueuePlan).not.toHaveBeenCalled()
@@ -1355,7 +1357,7 @@ it('allows adding a missing dependency or using the warning install button when 
         expect(
             wrapper
                 .findAll('button')
-                .find((button) => button.text() === 'Queue changes')!
+                .find((button) => button.text() === 'Force install without dependencies')!
                 .attributes('disabled'),
         ).toBeUndefined()
         vi.mocked(resourceRevisePlan).mockResolvedValue({
@@ -1431,7 +1433,7 @@ it('previews an exact path, retains the previous revision on optional failure, a
             .find((button) => button.text() === 'Queue changes')!
             .trigger('click')
         await flushPromises()
-        expect(resourceQueuePlan).toHaveBeenCalledExactlyOnceWith('plan', 2)
+        expect(resourceQueuePlan).toHaveBeenCalledExactlyOnceWith('plan', 2, expect.any(Object))
         expect(await result).toEqual({ job_id: 'job' })
         expect(wrapper.find('section').exists()).toBe(false)
     } finally {
@@ -1468,7 +1470,7 @@ it('warns about unaccepted compatibility and binds manual exceptions to exactly 
         expect(
             wrapper
                 .findAll('button')
-                .find((button) => button.text() === 'Queue changes')!
+                .find((button) => button.text() === 'Force install without dependencies')!
                 .attributes('disabled'),
         ).toBeUndefined()
         vi.mocked(resourceRevisePlan).mockResolvedValue({
@@ -1510,7 +1512,7 @@ it('warns about unaccepted compatibility and binds manual exceptions to exactly 
         expect(
             wrapper
                 .findAll('button')
-                .find((button) => button.text() === 'Queue changes')!
+                .find((button) => button.text() === 'Force install without dependencies')!
                 .attributes('disabled'),
         ).toBeUndefined()
         expect(
@@ -1709,7 +1711,7 @@ it('returns the submitted root range after a selection revision and modal closur
             job: { job_id: 'selected-job' },
             activeRoots: ['added-optional'],
         })
-        expect(resourceQueuePlan).toHaveBeenLastCalledWith('plan', 2)
+        expect(resourceQueuePlan).toHaveBeenLastCalledWith('plan', 2, expect.any(Object))
     } finally {
         wrapper.unmount()
     }

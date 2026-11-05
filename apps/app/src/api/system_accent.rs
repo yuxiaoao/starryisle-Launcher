@@ -101,7 +101,11 @@ fn start_accent_color_watcher<R: Runtime>(app: AppHandle<R>) {
             }
         };
 
-        std::thread::park();
+        while !ACCENT_COLOR_WATCHER_STOPPED
+            .load(std::sync::atomic::Ordering::Acquire)
+        {
+            std::thread::park_timeout(std::time::Duration::from_millis(250));
+        }
         let _ = settings.RemoveColorValuesChanged(token);
     });
     let _ = ACCENT_COLOR_WATCHER.set(watcher);
@@ -171,7 +175,16 @@ fn stop_accent_color_watcher() {
     });
 }
 
-#[cfg(not(target_os = "macos"))]
+#[cfg(target_os = "windows")]
+fn stop_accent_color_watcher() {
+    ACCENT_COLOR_WATCHER_STOPPED
+        .store(true, std::sync::atomic::Ordering::Release);
+    if let Some(watcher) = ACCENT_COLOR_WATCHER.get() {
+        watcher.thread.unpark();
+    }
+}
+
+#[cfg(all(not(target_os = "macos"), not(target_os = "windows")))]
 fn stop_accent_color_watcher() {}
 
 #[cfg(target_os = "linux")]

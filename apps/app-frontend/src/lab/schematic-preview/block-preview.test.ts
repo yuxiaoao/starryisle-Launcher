@@ -1,6 +1,7 @@
 import { expect, it } from 'vitest'
 
-import { projectSchematicBlockPreviewPosition } from './block-preview.ts'
+import { previewTriangles, projectSchematicBlockPreviewPosition } from './block-preview.ts'
+import type { SchematicWorkerResources } from './resources.ts'
 
 it('full block previews are not vertically compressed', () => {
     const corners = Array.from({ length: 8 }, (_, index) =>

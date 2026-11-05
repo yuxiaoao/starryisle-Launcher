@@ -8,7 +8,8 @@ import test from 'node:test'
 
 test('generate stable tagged URLs from draft assets and verify the repository and tag', () => {
     const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'axolotl-manifest-'))
-    const tag = 'v1.10.0-beta.5'
+    // At or above firstTagWithArtifacts, so the portable artifact is required.
+    const tag = 'v1.11.0-beta.1'
     const releasePath = path.join(directory, 'release.json')
     const outputPath = path.join(directory, 'latest.json')
     const signature = `${'signed-update-'.repeat(8)}\n`
@@ -17,6 +18,7 @@ test('generate stable tagged URLs from draft assets and verify the repository an
         'Axolotl.Launcher_aarch64.AppImage.tar.gz',
         'Axolotl.Launcher_amd64.AppImage.tar.gz',
         'Axolotl.Launcher_x64-setup.nsis.zip',
+        'Axolotl_Launcher_1.11.0-beta.1_x64_portable.zip',
     ]
     const platformNames = {
         'darwin-aarch64': names[0],
@@ -57,7 +59,7 @@ test('generate stable tagged URLs from draft assets and verify the repository an
             const result = generate(repository)
             assert.equal(result.status, 0, result.stderr)
             const manifest = JSON.parse(fs.readFileSync(outputPath, 'utf8'))
-            assert.equal(manifest.version, '1.10.0-beta.5')
+            assert.equal(manifest.version, '1.11.0-beta.1')
             assert.equal(manifest.notes, release.body)
             assert.equal(Object.keys(manifest.platforms).length, 5)
             assert.equal(
@@ -125,6 +127,10 @@ test('generate stable tagged URLs from draft assets and verify the repository an
                 'https://cnb.cool/axlmc/Axolotl/-/releases/download/',
             )
         }
+        cnbManifest.artifacts.portable.url = cnbManifest.artifacts.portable.url.replace(
+            'https://github.com/Axolotl-Launcher/Axolotl/releases/download/',
+            'https://cnb.cool/axlmc/Axolotl/-/releases/download/',
+        )
         fs.writeFileSync(outputPath, JSON.stringify(cnbManifest))
         const cnbResult = verify(undefined, 'cnb')
         assert.equal(cnbResult.status, 0, cnbResult.stderr)
@@ -138,7 +144,7 @@ test('generate stable tagged URLs from draft assets and verify the repository an
         fs.writeFileSync(releasePath, JSON.stringify(release))
         fs.unlinkSync(path.join(directory, `${names[0]}.sig`))
         assert.match(generate().stderr, /Missing updater signature/)
-        fs.writeFileSync(releasePath, JSON.stringify({ ...release, tag_name: 'v1.10.0-beta.4' }))
+        fs.writeFileSync(releasePath, JSON.stringify({ ...release, tag_name: 'v1.10.4-beta.1' }))
         assert.match(generate().stderr, /does not match/)
     } finally {
         fs.rmSync(directory, { recursive: true, force: true })

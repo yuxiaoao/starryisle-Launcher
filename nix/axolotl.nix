@@ -11,6 +11,7 @@
   gradle_9,
   jdk17,
   makeRustPlatform,
+  mold,
   nodejs_24,
   pkg-config,
   pnpmConfigHook,
@@ -28,24 +29,26 @@
 let
   pname = "axolotl";
   version = with builtins; (fromJSON (readFile ../apps/app-frontend/package.json)).version;
-  src = with lib.fileset; toSource {
-    root = ../.;
-    fileset = unions [
-      ../.cargo
-      ../apps
-      ../packages
-      ../patches
-      ../scripts
-      ../third-party
-      ../Cargo.lock
-      ../Cargo.toml
-      ../package.json
-      ../pnpm-lock.yaml
-      ../pnpm-workspace.yaml
-      ../rust-toolchain.toml
-      ../turbo.jsonc
-    ];
-  };
+  src =
+    with lib.fileset;
+    toSource {
+      root = ../.;
+      fileset = unions [
+        ../.cargo
+        ../apps
+        ../packages
+        ../patches
+        ../scripts
+        ../third-party
+        ../Cargo.lock
+        ../Cargo.toml
+        ../package.json
+        ../pnpm-lock.yaml
+        ../pnpm-workspace.yaml
+        ../rust-toolchain.toml
+        ../turbo.jsonc
+      ];
+    };
 
   blockbench = callPackage ./blockbench.nix { inherit inputs; };
 
@@ -65,7 +68,21 @@ let
     rustc = rustToolchain;
   };
 in
-  rustPlatform.buildRustPackage (finalAttrs: {
+rustPlatform.buildRustPackage (finalAttrs: {
+  inherit pname version src;
+  # Deps prefetch
+  cargoLock = {
+    lockFile = ../Cargo.lock;
+    outputHashes = {
+      "tauri-plugin-updater-2.10.1" = "sha256-LcnavYjT6nK0fQ/Gtb5HnkVzUuFuIL/9ewUq3PaTJTo=";
+      "tauri-plugin-window-state-2.4.1" = "sha256-WPZ5HvSY5NCwjHXVgovBK4Xvf8Zl4Z8vJinKZvRJPhQ=";
+    };
+  };
+  mitmCache = gradle_9_j17.fetchDeps {
+    pkg = finalAttrs.finalPackage;
+    data = ./mitmCache.json;
+  };
+  pnpmDeps = fetchPnpmDeps {
     inherit pname version src;
     # Deps prefetch
     cargoLock = {

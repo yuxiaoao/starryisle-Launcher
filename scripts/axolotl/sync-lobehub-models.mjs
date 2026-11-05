@@ -267,6 +267,19 @@ assertSponsoredProvidersPreserved(rustSource)
 const currentCatalog = JSON.parse(catalogText)
 const currentProviders = validateCurrentCatalog(currentCatalog, rustSource)
 const loadModels = createModelBankLoader(upstreamRoot)
+// A sponsor's outage or bad response keeps its current models instead of
+// blocking the LobeHub update; the warning is annotated on the workflow run.
+const sponsoredModels = {}
+for (const [providerId, url] of Object.entries(SPONSORED_MODEL_SOURCES)) {
+    try {
+        const models = await fetchSponsoredModels(providerId, url)
+        assertCheckModelListed(rustSource, providerId, models)
+        sponsoredModels[providerId] = models
+    } catch (error) {
+        const message = `Keeping the current ${providerId} models: ${error.message}`
+        console.warn(process.env.GITHUB_ACTIONS === 'true' ? `::warning::${message}` : message)
+    }
+}
 const { providers, synchronizedCount, upstreamChatCount } = buildCatalog(
     await loadModels(),
     currentProviders,

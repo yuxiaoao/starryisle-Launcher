@@ -8,21 +8,22 @@ import test from 'node:test'
 import { finalizeGithubRelease } from './finalize-github-release.mjs'
 import { assetDownloadUrl } from './release-utils.mjs'
 
-const tag = 'v1.10.0-beta.5'
+const tag = 'v1.11.0-beta.1'
 const names = [
     'Axolotl_universal.app.tar.gz',
     'Axolotl_aarch64.AppImage.tar.gz',
     'Axolotl_amd64.AppImage.tar.gz',
     'Axolotl_x64-setup.nsis.zip',
+    'Axolotl_Launcher_1.11.0-beta.1_x64_portable.zip',
 ]
 
-function fixture(t) {
+function fixture(t, releaseTag = tag) {
     const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'axolotl-finalize-'))
     t.after(() => fs.rmSync(directory, { recursive: true, force: true }))
     const state = {
         release: {
             id: 123,
-            tag_name: tag,
+            tag_name: releaseTag,
             draft: true,
             created_at: '2026-10-22T10:00:00Z',
             assets: names
@@ -43,7 +44,7 @@ function fixture(t) {
             return JSON.stringify(args[1].includes('?') ? [state.release] : state.release)
         }
         assert.deepEqual(args.slice(2, 5), [
-            tag,
+            releaseTag,
             '--repo',
             process.env.GITHUB_REPOSITORY || 'Axolotl-Launcher/Axolotl',
         ])
@@ -63,12 +64,11 @@ function fixture(t) {
             state.manifest = fs.readFileSync(args[5], 'utf8')
             state.release.assets.push({ name: 'latest.json' })
         } else if (args[1] === 'edit') {
-            assert(args.includes('--prerelease'))
-            assert(args.includes('--latest=false'))
+            assert.equal(args.includes('--prerelease'), releaseTag.includes('-'))
             state.release.draft = false
             state.release.published_at = '2026-10-22T12:00:00Z'
             for (const asset of state.release.assets)
-                asset.browser_download_url = assetDownloadUrl(tag, asset.name)
+                asset.browser_download_url = assetDownloadUrl(releaseTag, asset.name)
         } else {
             assert.fail(`Unexpected gh command: ${args}`)
         }
@@ -81,7 +81,7 @@ test('publish draft assets, refresh public metadata and preserve the manifest on
     const { directory, state, run } = fixture(t)
     const release = finalizeGithubRelease(tag, directory, { run })
     assert.equal(release.draft, false)
-    assert.equal(release.assets.length, 9)
+    assert.equal(release.assets.length, 11)
     assert.equal(
         JSON.parse(state.manifest).platforms['darwin-aarch64'].url,
         assetDownloadUrl(tag, names[0]),

@@ -435,10 +435,38 @@ export function useContentPipeline(config: ContentPipelineConfig) {
                 }
             }
 
-            // Use setTimeout to avoid blocking the main thread
-            setTimeout(() => {
-                fuse.setCollection(collection)
-            }, 0)
+            if (!hasContentSnapshot) fuse.setCollection(collection)
+            else {
+                // Later enrichment remains asynchronous and bounded by the pipeline batch.
+                setTimeout(() => {
+                    fuse.setCollection(collection)
+                }, 0)
+            }
+        },
+        { immediate: true },
+    )
+
+    // Publish the first snapshot before rendering; batch only subsequent enrichment.
+    watch(
+        [
+            sortedItems,
+            modpackItemsNoUpdate,
+            () => duplicateItems?.value,
+            searchQuery,
+            selectedTypeFilter,
+            selectedStatusFilters,
+        ],
+        () => {
+            if (!hasContentSnapshot) {
+                result.value = runPipeline()
+                hasContentSnapshot = searchableItemCount.value > 0
+                return
+            }
+            if (pipelineTimer) return
+            pipelineTimer = setTimeout(() => {
+                pipelineTimer = null
+                result.value = runPipeline()
+            }, 100)
         },
         { immediate: true },
     )
@@ -547,6 +575,11 @@ export function useContentPipeline(config: ContentPipelineConfig) {
             selectedTypeFilter.value = selectedTypeFilter.value.includes(filterId)
                 ? selectedTypeFilter.value.filter((id) => id !== filterId)
                 : [...selectedTypeFilter.value, filterId]
+            return
+        }
+
+        if (selectedTypeFilter.value.length === 1 && selectedTypeFilter.value[0] === filterId) {
+            selectedTypeFilter.value = []
             return
         }
 

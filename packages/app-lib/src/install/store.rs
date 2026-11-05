@@ -66,6 +66,7 @@ impl InstallJobRecord {
             details: self.state.progress.details.clone(),
             parallel: self.state.progress.parallel.clone(),
             display: self.state.display.clone(),
+            resource_names: self.state.resource_names.clone(),
             error: self.state.error.clone(),
             rollback_error: self.state.rollback_error.clone(),
             pause_reason: self.state.pause_reason.clone(),
@@ -282,16 +283,9 @@ pub async fn update_status(
     state: &InstallJobState,
     app_state: &State,
 ) -> crate::Result<InstallJobRecord> {
-    let _db_permit =
-        app_state
-            .install_db_semaphore
-            .acquire()
-            .await
-            .map_err(|_| {
-                crate::ErrorKind::OtherError(
-                    "install database semaphore closed".to_string(),
-                )
-            })?;
+    // Bounded like every other install database writer: on timeout the write
+    // is abandoned before its unit opens, so the row keeps its last commit.
+    let _db_permit = app_state.acquire_install_db_permit().await?;
     let now = Utc::now();
     let finished = status.is_finished().then_some(now.timestamp());
     let json = serde_json::to_string(state)?;
@@ -319,16 +313,9 @@ pub async fn update_status_if(
     state: &InstallJobState,
     app_state: &State,
 ) -> crate::Result<Option<InstallJobRecord>> {
-    let _db_permit =
-        app_state
-            .install_db_semaphore
-            .acquire()
-            .await
-            .map_err(|_| {
-                crate::ErrorKind::OtherError(
-                    "install database semaphore closed".to_string(),
-                )
-            })?;
+    // Bounded like every other install database writer: on timeout the write
+    // is abandoned before its unit opens, so the row keeps its last commit.
+    let _db_permit = app_state.acquire_install_db_permit().await?;
     let now = Utc::now();
     let finished = status.is_finished().then_some(now.timestamp());
     let json = serde_json::to_string(state)?;

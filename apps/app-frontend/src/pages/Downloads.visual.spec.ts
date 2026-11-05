@@ -10,6 +10,7 @@ import { preserveMonotonicProgress } from '@/helpers/install-progress'
 import Downloads from './Downloads.vue'
 
 const fixture = vi.hoisted(() => ({
+    locale: 'en-US',
     manager: {} as unknown,
     instances: [] as { id: string; name: string }[],
     clipboard: vi.fn(),
@@ -33,6 +34,9 @@ vi.mock('@/composables/use-app-event', () => ({ useAppEvent: () => {} }))
 vi.mock('@/providers/download-manager', () => ({
     injectDownloadManager: () => fixture.manager,
 }))
+vi.mock('@/store/state', () => ({
+    useTheming: () => ({ devMode: false, getFeatureFlag: () => false }),
+}))
 vi.mock('@/providers/content-install', () => ({
     injectContentInstall: () => ({ showCurseForgeManualDownloads: vi.fn() }),
 }))
@@ -47,6 +51,11 @@ vi.mock('vue-router', () => ({
 }))
 vi.mock('@modrinth/ui', async () => {
     const { defineComponent, h } = await import('vue')
+    const { default: IntlMessageFormat } = await import('intl-messageformat')
+    const catalogs = {
+        'en-US': (await import('@/locales/en-US/index.json')).default,
+        'zh-CN': (await import('@/locales/zh-CN/index.json')).default,
+    }
     const { default: ProgressBar } =
         await import('../../../../packages/ui/src/components/base/ProgressBar.vue')
     const control = defineComponent({
@@ -65,13 +74,25 @@ vi.mock('@modrinth/ui', async () => {
                 'ConfirmModal',
                 'EmptyState',
                 'NavTabs',
-                'StyledInput',
                 'TagItem',
             ].map((name) => [name, control]),
         ),
         Badge: defineComponent({
             props: ['type'],
             setup: (props) => () => h('span', { 'data-status-label': '' }, props.type),
+        }),
+        StyledInput: defineComponent({
+            props: ['modelValue', 'placeholder'],
+            emits: ['update:modelValue'],
+            setup:
+                (props, { emit }) =>
+                () =>
+                    h('input', {
+                        value: props.modelValue,
+                        placeholder: props.placeholder,
+                        onInput: (event: Event) =>
+                            emit('update:modelValue', (event.target as HTMLInputElement).value),
+                    }),
         }),
         ProgressBar,
         Button: (await import('../../../../packages/ui/src/components/base/buttons/Button.vue'))
@@ -99,12 +120,18 @@ vi.mock('@modrinth/ui', async () => {
         useFormatBytes: () => (value: number) => String(value),
         useVIntl: () => ({
             formatMessage: (
-                message: { defaultMessage: string },
+                message: { id?: string; defaultMessage: string },
                 values: Record<string, unknown> = {},
-            ) =>
-                message.defaultMessage.replace(/\{(\w+)\}/g, (_, key) =>
-                    String(values[key] ?? `{${key}}`),
-                ),
+            ) => {
+                const catalog = catalogs[fixture.locale as keyof typeof catalogs]
+                const translated = message.id
+                    ? catalog[message.id as keyof typeof catalog]?.message
+                    : undefined
+                return new IntlMessageFormat(
+                    translated ?? message.defaultMessage,
+                    fixture.locale,
+                ).format(values as Record<string, string | number>)
+            },
         }),
     }
 })

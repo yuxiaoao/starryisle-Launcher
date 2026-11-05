@@ -598,6 +598,7 @@ async fn single_stream(
     semaphore: &fetch::FetchSemaphore,
 ) -> crate::Result<DownloadResult> {
     let mut headers = request_headers(request, route);
+    let telemetry = super::telemetry::begin_h2(request, route, connection);
     headers
         .insert(ACCEPT_ENCODING, HeaderValue::from_static(IDENTITY_ENCODING));
 
@@ -738,6 +739,9 @@ async fn single_stream(
             break;
         };
         request.transfer_counters.received(chunk.len() as u64);
+        if let Some(telemetry) = &telemetry {
+            telemetry.received(chunk.len());
+        }
         file.write_chunk(&chunk).await?;
         hashers.update(&chunk);
         downloaded += chunk.len() as u64;
@@ -753,6 +757,9 @@ async fn single_stream(
         }
     }
     file.flush().await?;
+    if let Some(telemetry) = &telemetry {
+        telemetry.finish();
+    }
     request.transfer_counters.commit(0, downloaded);
     record_install_progress(request, downloaded, total_size).await;
     drop(file);
@@ -1156,7 +1163,7 @@ mod tests {
             std::future::pending::<()>().await;
         });
         let result = tokio::time::timeout(Duration::from_secs(2), async {
-            let client = reqwest::Client::builder()
+            let client = crate::util::http::client_builder()
                 .no_proxy()
                 .read_timeout(Duration::from_millis(100))
                 .build()

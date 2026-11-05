@@ -210,7 +210,7 @@ async fn scan_missing_modpack_files_in_at(
     let (_execution, _permit) =
         runner::recovery_execution_slot(&state, job_id).await?;
     let current = store::get_required(job_id, &state).await?;
-    if current.status == InstallJobStatus::WaitingForUser {
+    if slot.is_some() && current.status == InstallJobStatus::WaitingForUser {
         let concurrency = crate::util::download::task_concurrency_limit(&state)
             .unwrap_or_else(|| groups.len().max(1));
         let results =
@@ -1520,14 +1520,22 @@ mod tests {
             original_stamp.clone(),
         );
 
-        tokio::fs::remove_file(&path).await.unwrap();
-        crate::util::io::write(&path, b"correct!").await.unwrap();
+        // Replace through a second file instead of delete-then-create: tmpfs
+        // hands the released inode straight back, which would make the
+        // replacement byte-, time- and identity-identical to the original and
+        // turn this into a test of nothing. Both files exist together, so the
+        // new one is guaranteed to carry a different identity.
+        let replacement = directory.path().join("replacement.bin");
+        crate::util::io::write(&replacement, b"correct!")
+            .await
+            .unwrap();
         std::fs::File::options()
             .write(true)
-            .open(&path)
+            .open(&replacement)
             .unwrap()
             .set_modified(original_modified)
             .unwrap();
+        crate::util::io::atomically_replace_file(&replacement, &path).unwrap();
 
         let replacement = collect_download_candidates(
             job_id,

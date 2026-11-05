@@ -3,6 +3,7 @@ use super::sync_content_files::{instance_content_root, join_content_path};
 use crate::api::content_search::{
     chinese_file_title_for_modrinth_slug, localized_content_file_name,
 };
+use crate::install::critical_section;
 use crate::state::instances::{
     ContentOwnershipKind, ContentRequirement, ContentSourceKind, Instance,
     InstanceFile, PackMember, PackMemberMaterializationState,
@@ -258,6 +259,45 @@ pub(crate) async fn resolve_update_plan(
         state,
     )
     .await
+}
+
+async fn enrich_install_plan_metadata(
+    plan: &mut ResolveContentPlan,
+    cache_behaviour: Option<CacheBehaviour>,
+    state: &State,
+) -> crate::Result<()> {
+    let project_ids: Vec<ModrinthProjectId> =
+        std::iter::once(&plan.primary.project_id)
+            .chain(plan.dependencies.iter().map(|d| &d.project_id))
+            .filter_map(|id| ModrinthProjectId::new(id.clone()).ok())
+            .collect();
+
+    if !project_ids.is_empty() {
+        let projects = CachedEntry::get_project_many(
+            &project_ids,
+            cache_behaviour,
+            state.cache_pool(),
+            &state.api_semaphore,
+        )
+        .await?;
+
+        let project_map: HashMap<String, &Project> =
+            projects.iter().map(|p| (p.id.clone(), p)).collect();
+
+        let enrich = |rc: &mut ResolvedContent| {
+            let meta = rc.metadata.get_or_insert_with(Default::default);
+            if let Some(project) = project_map.get(&rc.project_id) {
+                meta.title = Some(project.title.clone());
+                meta.icon_url = project.icon_url.clone();
+            }
+        };
+
+        enrich(&mut plan.primary);
+        for dep in &mut plan.dependencies {
+            enrich(dep);
+        }
+    }
+    Ok(())
 }
 
 async fn resolve_install_plan_with_cache(
@@ -861,7 +901,7 @@ pub(crate) fn preserved_update_relative_path(
     Ok(relative_path)
 }
 
-async fn configured_update_relative_path(
+pub(crate) async fn configured_update_relative_path(
     current_path: &str,
     old_name: Option<&str>,
     new_name: &str,
@@ -950,7 +990,7 @@ pub(crate) async fn finalize_updated_project_path(
     Ok(final_path)
 }
 
-async fn rename_project_file(
+pub(crate) async fn rename_project_file(
     instance_id: &str,
     current_path: &str,
     new_path: &str,
@@ -1659,20 +1699,14 @@ pub(crate) async fn add_downloaded_project_version(
         )
         .await?;
 
-    let DownloadedProjectVersion {
-        file_name,
-        path,
-        sha1,
-        size,
-        project_type,
-        project_id,
-        version_id,
-    } = downloaded;
+    let file_name = &downloaded.file_name;
+    let project_type = downloaded.project_type;
+    let project_id = &downloaded.project_id;
     let scope = resolve_content_scope(instance_id, None, state).await?;
     let localized_candidate = if project_type == ProjectType::Mod {
         None
     } else {
-        modrinth_chinese_file_name_candidate(&project_id, &file_name, state)
+        modrinth_chinese_file_name_candidate(project_id, file_name, state)
             .await
             .map(|file_name| {
                 format!("{}/{}", project_type.get_folder(), file_name)
@@ -1689,44 +1723,17 @@ pub(crate) async fn add_downloaded_project_version(
         &instance_full_path(state, &scope.instance),
         &relative_path,
     );
-    let previous_path = materialize_project_download(&path, &full_path).await?;
-    let provider_ref = ContentProviderRef::Modrinth {
-        project_id: ModrinthProjectId::new(project_id.clone())?,
-        version_id: Some(ModrinthVersionId::new(version_id.clone())?),
-    };
-    let record_result = record_project_files_atomic_with_permit(
+    commit_downloaded_project_version(
         instance_id,
-        &[ProjectFileRecord {
-            relative_path: relative_path.clone(),
-            sha1: sha1.clone(),
-            size,
-            project_type,
-            source_kind,
-            ownership_kind,
-            provider_ref: Some(provider_ref),
-            origin: true,
-            known_modrinth_project_id: Some(project_id.clone()),
-            known_modrinth_version_id: Some(version_id.clone()),
-        }],
-        &[],
+        &relative_path,
+        &full_path,
+        downloaded,
+        source_kind,
+        ownership_kind,
         database_permit,
         state,
     )
-    .await;
-    match record_result {
-        Ok(()) => {
-            finalize_project_materialization(previous_path.as_deref()).await?
-        }
-        Err(error) => {
-            restore_project_materialization(
-                &full_path,
-                previous_path.as_deref(),
-            )
-            .await?;
-            return Err(error);
-        }
-    }
-    Ok(relative_path)
+    .await
 }
 
 pub(crate) async fn apply_downloaded_project_version_at_path(
@@ -1744,6 +1751,35 @@ pub(crate) async fn apply_downloaded_project_version_at_path(
             std::time::Duration::from_secs(20),
         )
         .await?;
+    let scope = resolve_content_scope(instance_id, None, state).await?;
+    let full_path = join_content_path(
+        &instance_full_path(state, &scope.instance),
+        relative_path,
+    );
+    commit_downloaded_project_version(
+        instance_id,
+        relative_path,
+        &full_path,
+        downloaded,
+        source_kind,
+        ownership_kind,
+        database_permit,
+        state,
+    )
+    .await
+}
+
+// The caller holds the instance lock and has already resolved the destination.
+async fn commit_downloaded_project_version(
+    instance_id: &str,
+    relative_path: &str,
+    full_path: &Path,
+    downloaded: DownloadedProjectVersion,
+    source_kind: ContentSourceKind,
+    ownership_kind: ContentOwnershipKind,
+    database_permit: Option<tokio::sync::SemaphorePermit<'_>>,
+    state: &State,
+) -> crate::Result<String> {
     let DownloadedProjectVersion {
         path,
         sha1,
@@ -1753,12 +1789,7 @@ pub(crate) async fn apply_downloaded_project_version_at_path(
         version_id,
         ..
     } = downloaded;
-    let scope = resolve_content_scope(instance_id, None, state).await?;
-    let full_path = join_content_path(
-        &instance_full_path(state, &scope.instance),
-        relative_path,
-    );
-    let previous_path = materialize_project_download(&path, &full_path).await?;
+    let previous_path = materialize_project_download(&path, full_path).await?;
     let provider_ref = ContentProviderRef::Modrinth {
         project_id: ModrinthProjectId::new(project_id.clone())?,
         version_id: Some(ModrinthVersionId::new(version_id.clone())?),
@@ -1788,7 +1819,7 @@ pub(crate) async fn apply_downloaded_project_version_at_path(
         }
         Err(error) => {
             restore_project_materialization(
-                &full_path,
+                full_path,
                 previous_path.as_deref(),
             )
             .await?;
@@ -1919,54 +1950,63 @@ pub(crate) async fn materialize_project_download_batch(
             known_modrinth_version_id: Some(download.version_id),
         });
     }
-    let _critical = crate::install::critical_section::enter();
-    let mut materialized = Vec::with_capacity(sources.len());
-    let result: crate::Result<()> = async {
-        for (source, destination) in &sources {
-            let backup =
-                materialize_project_download(source, destination).await?;
-            materialized.push((destination.clone(), backup));
-        }
-        record_project_files_atomic_with_plan(
-            instance_id,
-            &records,
-            Some(database_permit),
-            plan,
-            state,
-        )
-        .await
-    }
-    .await;
-    if let Err(error) = result {
-        let mut rollback_errors = Vec::new();
-        for (destination, backup) in materialized.iter().rev() {
-            if let Err(error) =
-                restore_project_materialization(destination, backup.as_deref())
-                    .await
-            {
-                rollback_errors.push(error.to_string());
+    let work = critical_section::SharedWork::new(
+        async |_access: critical_section::WriteAccess<'_>| -> crate::Result<Vec<String>> {
+            let mut materialized = Vec::with_capacity(sources.len());
+            let result: crate::Result<()> = async {
+                for (source, destination) in &sources {
+                    let backup =
+                        materialize_project_download(source, destination).await?;
+                    materialized.push((destination.clone(), backup));
+                }
+                record_project_files_atomic_with_plan(
+                    instance_id,
+                    &records,
+                    Some(database_permit),
+                    plan,
+                    state,
+                )
+                .await
             }
-        }
-        if !rollback_errors.is_empty() {
-            return Err(crate::ErrorKind::OtherError(format!(
-                "{error}; file rollback failed: {}",
-                rollback_errors.join("; ")
-            ))
-            .into());
-        }
-        return Err(error);
-    }
-    for (_, backup) in &materialized {
-        if let Err(error) =
-            finalize_project_materialization(backup.as_deref()).await
-        {
-            tracing::warn!(%error, "Could not remove committed content backup");
-        }
-    }
-    Ok(records
-        .into_iter()
-        .map(|record| record.relative_path)
-        .collect())
+            .await;
+            if let Err(error) = result {
+                let mut rollback_errors = Vec::new();
+                for (destination, backup) in materialized.iter().rev() {
+                    if let Err(error) =
+                        restore_project_materialization(destination, backup.as_deref())
+                            .await
+                    {
+                        rollback_errors.push(error.to_string());
+                    }
+                }
+                if !rollback_errors.is_empty() {
+                    return Err(crate::ErrorKind::OtherError(format!(
+                        "{error}; file rollback failed: {}",
+                        rollback_errors.join("; ")
+                    ))
+                    .into());
+                }
+                return Err(error);
+            }
+            for (_, backup) in &materialized {
+                if let Err(error) =
+                    finalize_project_materialization(backup.as_deref()).await
+                {
+                    tracing::warn!(%error, "Could not remove committed content backup");
+                }
+            }
+            Ok(records
+                .into_iter()
+                .map(|record| record.relative_path)
+                .collect())
+        },
+    );
+    critical_section::with_critical_section(
+        async |guard| work.run(guard.into()).await,
+        async |unscoped| work.run(unscoped.into()).await,
+        async |_closing| Err(critical_section::closing_error()),
+    )
+    .await
 }
 
 fn materialization_path_key(path: &str) -> String {
@@ -3236,6 +3276,25 @@ async fn begin_content_write(
     Ok(pool.begin_with("BEGIN IMMEDIATE").await?)
 }
 
+/// Runs the pre-section recovery of a previous file operation under a
+/// critical section, so a cancel that lands mid-rollback cannot drop it.
+async fn recover_content_files(
+    state: &State,
+    instance_id: &str,
+    base: &std::path::Path,
+) -> crate::Result<()> {
+    critical_section::with_critical_section(
+        async |_guard| {
+            content_file_operations::recover(state, instance_id, base).await
+        },
+        async |_unscoped| {
+            content_file_operations::recover(state, instance_id, base).await
+        },
+        async |_closing| Err(critical_section::closing_error()),
+    )
+    .await
+}
+
 pub(crate) async fn toggle_disable_project(
     instance_id: &str,
     project_path: &str,
@@ -3438,10 +3497,17 @@ pub(crate) async fn toggle_content_entries(
                         server_requirement: ContentRequirement::Required,
                         client_requirement: ContentRequirement::Required,
                         enabled: operation.enabled,
-                    },
+                    });
+                }
+
+                content_sets::bump_content_set_revision_in_transaction(
+                    &scope.content_set_id,
                     &mut tx,
                 )
                 .await?;
+                content_file_operations::mark_committed(instance_id, &mut tx).await?;
+                tx.commit().await?;
+                Ok(results)
             }
             pack_members::set_override_for_file_in_transaction(
                 &scope.content_set_id,
@@ -4031,7 +4097,6 @@ async fn recover_legacy_rollback_for_instance(
             value: hash.into(),
         }],
     };
-    let _critical = crate::install::critical_section::enter();
     if !backup.exists() {
         let candidate = if final_path.exists() {
             &final_path

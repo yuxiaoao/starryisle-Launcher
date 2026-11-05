@@ -1,4 +1,200 @@
 {
+  "app.schematics.source.reden": { "message": "Reden" },
+  "app.schematics.source.buildschematics": { "message": "BuildSchematics" },
+  "app.schematics.failed-sources": { "message": "{sources} could not be loaded." },
+  "app.schematics.sort.default": { "message": "Source order" },
+  "app.schematics.sort.name": { "message": "Name" },
+  "app.schematics.login-required-sources": {
+    "message": "{count, plural, one {# source requires <login-link>sign-in</login-link>} other {# sources require <login-link>sign-in</login-link>}}"
+  },
+  "app.schematics.open-source": { "message": "View on source website" },
+  "app.schematics.instances-error": {
+    "message": "Could not load your instances."
+  },
+  "app.browse.schematics-project-type": {
+    "message": "Schematics"
+  },
+  "app.schematics.source": {
+    "message": "Shimu Space"
+  },
+  "app.schematics.login-title": {
+    "message": "Connect Shimu Space"
+  },
+  "app.schematics.login-description": {
+    "message": "Sign in to browse free schematics from Shimu Space and install them into your Minecraft instances."
+  },
+  "app.schematics.login": {
+    "message": "Sign in to Shimu Space"
+  },
+  "app.schematics.waiting": {
+    "message": "Complete authorization in your browser"
+  },
+  "app.schematics.expired": {
+    "message": "Reconnect Shimu Space"
+  },
+  "app.schematics.load-error": {
+    "message": "Could not load schematics."
+  },
+  "app.schematics.account-error": {
+    "message": "Could not read your Shimu Space account."
+  },
+  "app.schematics.empty-title": {
+    "message": "No schematics found"
+  },
+  "app.schematics.empty-description": {
+    "message": "Try another page or a different search."
+  },
+  "app.schematics.loading": {
+    "message": "Loading schematics…"
+  },
+  "app.schematics.retry": {
+    "message": "Retry"
+  },
+  "app.schematics.search": {
+    "message": "Search schematics"
+  },
+  "app.schematics.sort.hot": { "message": "Popular" },
+  "app.schematics.sort.featured": { "message": "Featured" },
+  "app.schematics.author-summary": {
+    "message": "{author} · {summary}"
+  },
+  "app.schematics.select-instance": {
+    "message": "Choose an instance"
+  },
+  "app.schematics.install": {
+    "message": "Install"
+  },
+  "app.schematics.installing": {
+    "message": "Installing…"
+  },
+  "app.schematics.preview": { "message": "Preview" },
+  "app.schematics.files": { "message": "Files" },
+  "app.schematics.creator": { "message": "Creator" },
+  "app.schematics.source-heading": { "message": "Source" },
+  "app.schematics.preview-source": { "message": "Shimu Space · {fileName}" },
+  "app.schematics.installed": {
+    "message": "Installed"
+  },
+  "app.schematics.install-success": {
+    "message": "Schematic installed"
+  },
+  "app.schematics.install-failed": {
+    "message": "Could not install this schematic. Please try again."
+  },
+  "app.schematics.file-exists": {
+    "message": "A file with this name already exists in the instance. Choose another instance or rename the existing file."
+  },
+  "app.schematics.login-failed": {
+    "message": "Could not complete the connection. Please try again."
+  },
+  "app.third-party.connected-notification": {
+    "message": "Connected to Shimu Space"
+  },
+  "app.third-party.description": {
+    "message": "Connect external accounts for use in the launcher."
+  },
+  "app.third-party.shimu": {
+    "message": "Shimu Space"
+  },
+  "app.third-party.shimu-purpose": {
+    "message": "Connect your Shimu Space account."
+  },
+  "app.third-party.identity": {
+    "message": "{nickname} · {username}"
+  },
+  "app.third-party.connected": {
+    "message": "Connected"
+  },
+  "app.third-party.disconnected": {
+    "message": "Not connected"
+  },
+  "app.third-party.expired": {
+    "message": "Sign in again"
+  },
+  "app.third-party.waiting": {
+    "message": "Waiting for authorization"
+  },
+  "app.third-party.exchanging": {
+    "message": "Completing connection"
+  },
+  "app.third-party.connect": {
+    "message": "Connect"
+  },
+  "app.third-party.reconnect": {
+    "message": "Reconnect"
+  },
+  "app.third-party.cancel": {
+    "message": "Cancel"
+  },
+  "app.third-party.more": {
+    "message": "Shimu Space account options"
+  },
+  "app.third-party.check": {
+    "message": "Check connection"
+  },
+  "app.third-party.disconnect": {
+    "message": "Disconnect"
+  },
+  "app.third-party.disconnect-title": {
+    "message": "Disconnect Shimu Space?"
+  },
+  "app.third-party.disconnect-description": {
+    "message": "This removes the account credential from this launcher. To revoke the authorization at Shimu Space, manage it on their website."
+  },
+  "app.third-party.denied": {
+    "message": "Authorization was declined. You can connect again."
+  },
+  "app.third-party.timed-out": {
+    "message": "Authorization timed out. Connect again to continue."
+  },
+  "app.third-party.failed": {
+    "message": "Could not complete the connection. Please try again."
+  },
+  "app.third-party.load-failed": {
+    "message": "Could not read the account status."
+  },
+  "app.third-party.check-failed": {
+    "message": "Could not check the connection. Please try again."
+  },
+  "app.third-party.action-failed": {
+    "message": "The account operation failed. Please try again."
+  },
+  "app.third-party.retry": {
+    "message": "Retry"
+  },
+  "app.third-party.unavailable": {
+    "message": "Account connection is unavailable in this build."
+  },
+  "app.third-party.permissions": {
+    "message": "Authorization: read your profile and posts, and download resources. Authorization expires after 3 days; you will need to sign in again."
+  },
+  "app.third-party.browser": {
+    "message": "Complete the authorization in your browser."
+  },
+  "app.third-party.search": {
+    "message": "Shimu mcimg OAuth account authorization sign in connect"
+  },
+  "app.settings.tabs.third-party-accounts": {
+    "message": "Third-party accounts"
+  },
+  "app.downloads.task.install-content": {
+    "message": "Install content"
+  },
+  "app.downloads.task.install-content-named": {
+    "message": "Install content: {name}"
+  },
+  "app.downloads.task.install-content-batch": {
+    "message": "Install content: {name} ({count} items)"
+  },
+  "app.downloads.task.change-content": {
+    "message": "Change content"
+  },
+  "app.downloads.task.change-content-named": {
+    "message": "Change content: {name}"
+  },
+  "app.downloads.task.change-content-batch": {
+    "message": "Change content: {name} ({count} items)"
+  },
   "app.account.modrinth-account": {
     "message": "Modrinth account"
   },
@@ -994,6 +1190,12 @@
   },
   "app.browse.preparing-selected": {
     "message": "Preparing {completed}/{total}"
+  },
+  "app.browse.reviewing-selected": {
+    "message": "Reviewing content changes…"
+  },
+  "app.browse.queueing-selected": {
+    "message": "Adding to download queue…"
   },
   "app.browse.project-type.datapacks": {
     "message": "Data Packs"
@@ -3860,6 +4062,12 @@
   "app.instance.mods.update-added-content.description": {
     "message": "Updates only content added after the modpack was installed. Modpack files are not changed."
   },
+  "app.instance.mods.update-nothing-to-apply.body": {
+    "message": "No newer compatible version was found for the selected content, so no files were changed."
+  },
+  "app.instance.mods.update-nothing-to-apply.title": {
+    "message": "Nothing to update"
+  },
   "app.instance.never-played": {
     "message": "Never played"
   },
@@ -4040,6 +4248,12 @@
   "app.instances.edit-groups": {
     "message": "Edit groups"
   },
+  "app.instances.game-directory.managed": {
+    "message": "Axolotl data directory"
+  },
+  "app.instances.game-directory.managed-short": {
+    "message": "Axolotl"
+  },
   "app.instances.group-by": {
     "message": "Group by"
   },
@@ -4063,6 +4277,9 @@
   },
   "app.instances.group.expand": {
     "message": "Expand group"
+  },
+  "app.instances.group.game-directory": {
+    "message": "Game directory"
   },
   "app.instances.group.game-version": {
     "message": "Game version"
@@ -6219,7 +6436,7 @@
     "message": "Collapse folder {name}"
   },
   "app.lab.schematic-preview.instance-picker.empty": {
-    "message": "No .litematic or .schem files were found in this instance."
+    "message": "No schematic files were found in this instance."
   },
   "app.lab.schematic-preview.instance-picker.expand-folder": {
     "message": "Expand folder {name}"
@@ -7982,6 +8199,9 @@
   "app.lab.skin-editor.description": {
     "message": "Create and edit Minecraft player skins locally."
   },
+  "app.lab.skin-editor.discard-draft-failed": {
+    "message": "The recovery draft could not be discarded. Stay on this page and try again."
+  },
   "app.lab.skin-editor.export-skin": {
     "message": "Minecraft skin PNG"
   },
@@ -7994,11 +8214,71 @@
   "app.lab.skin-editor.loading": {
     "message": "Loading skin editor"
   },
+  "app.lab.skin-editor.recovery.body": {
+    "message": "A recovery draft was saved on {date}."
+  },
+  "app.lab.skin-editor.recovery.continue": {
+    "message": "Continue"
+  },
+  "app.lab.skin-editor.recovery.start-new": {
+    "message": "Start new"
+  },
+  "app.lab.skin-editor.recovery.title": {
+    "message": "Continue last skin?"
+  },
   "app.lab.skin-editor.retry": {
     "message": "Try again"
   },
+  "app.lab.skin-editor.save": {
+    "message": "Save PNG"
+  },
+  "app.lab.skin-editor.settings.auto-save": {
+    "message": "Automatically save a recovery draft"
+  },
+  "app.lab.skin-editor.settings.auto-save-description": {
+    "message": "Recovery drafts stay on this device and are separate from exported PNG files."
+  },
+  "app.lab.skin-editor.settings.cancel": {
+    "message": "Cancel"
+  },
+  "app.lab.skin-editor.settings.interval": {
+    "message": "Save interval (seconds)"
+  },
+  "app.lab.skin-editor.settings.interval-description": {
+    "message": "Use a value between 5 and 600 seconds."
+  },
+  "app.lab.skin-editor.settings.save": {
+    "message": "Save settings"
+  },
+  "app.lab.skin-editor.settings.title": {
+    "message": "Editor settings"
+  },
+  "app.lab.skin-editor.settings.tooltip": {
+    "message": "Skin editor settings"
+  },
+  "app.lab.skin-editor.settings.warn-before-leave": {
+    "message": "Warn before leaving with unsaved changes"
+  },
+  "app.lab.skin-editor.settings.warn-before-leave-description": {
+    "message": "When auto-save is off, this warning is always enabled to protect your work."
+  },
   "app.lab.skin-editor.title": {
     "message": "Skin editor"
+  },
+  "app.lab.skin-editor.unsaved.body": {
+    "message": "Save your skin before leaving, or discard the current changes."
+  },
+  "app.lab.skin-editor.unsaved.discard": {
+    "message": "Discard"
+  },
+  "app.lab.skin-editor.unsaved.save": {
+    "message": "Save PNG"
+  },
+  "app.lab.skin-editor.unsaved.stay": {
+    "message": "Stay"
+  },
+  "app.lab.skin-editor.unsaved.title": {
+    "message": "Unsaved skin"
   },
   "app.lab.title": {
     "message": "Lab"
@@ -8634,7 +8914,7 @@
     "message": "Possible issue: OpenJ9 is not compatible with this instance"
   },
   "app.minecraft-crash.diagnosis.out-of-memory.action": {
-    "message": "You can try increasing the instance memory allocation, or removing memory-heavy Mods and resource packs."
+    "message": "You can try increasing the instance memory allocation, or removing memory-heavy Mods and resource packs. If the log reports that the system is out of physical RAM or swap space, lower the allocation or close other programs instead."
   },
   "app.minecraft-crash.diagnosis.out-of-memory.title": {
     "message": "Possible issue: Minecraft ran out of memory"
@@ -10153,6 +10433,15 @@
   },
   "app.resources.operation.apply": {
     "message": "Queue changes"
+  },
+  "app.resources.operation.force-install": {
+    "message": "Force install without dependencies"
+  },
+  "app.resources.operation.force-install-tooltip": {
+    "message": "{reason} Try installing only the selected content without dependencies."
+  },
+  "app.resources.operation.force-install-compatibility-tooltip": {
+    "message": "{reason} Try installing only the selected content without dependencies and accept its Minecraft or loader compatibility mismatches."
   },
   "app.resources.operation.artifact": {
     "message": "{source} · release {release} · {file}"
@@ -11708,6 +11997,30 @@
   "app.settings.environment-variables.invalid-format": {
     "message": "Use NAME=value, separated by spaces. A name and an equals sign are required; the value may be empty or contain more equals signs."
   },
+  "app.settings.export.all-button": {
+    "message": "Export all settings files…"
+  },
+  "app.settings.export.all-label": {
+    "message": "All settings files"
+  },
+  "app.settings.export.exported-text": {
+    "message": "The settings archive was saved to {path}"
+  },
+  "app.settings.export.exported-title": {
+    "message": "Settings exported"
+  },
+  "app.settings.export.patch-button": {
+    "message": "Export patch…"
+  },
+  "app.settings.export.patch-description": {
+    "message": "Only keys that differ from the defaults. The archive holds one document per domain; unzip it and use it directly as a deployment config."
+  },
+  "app.settings.export.patch-label": {
+    "message": "Deployment patch"
+  },
+  "app.settings.export.title": {
+    "message": "Manage settings files"
+  },
   "app.settings.feature-flags.advanced-filters-collapsed": {
     "message": "Collapse advanced filters by default"
   },
@@ -12918,7 +13231,7 @@
     "message": "Network connections"
   },
   "app.settings.logs.export.modal.network-connections-hint": {
-    "message": "Run fresh tests for all services using launcher network settings when exporting, including a short download sample."
+    "message": "Run fresh service tests using launcher network settings, including a short download sample. Also include captured file timings, request speeds and remote addresses when advanced download information is enabled."
   },
   "app.settings.logs.export.modal.range": {
     "message": "Time range"
@@ -13132,6 +13445,12 @@
   },
   "app.settings.network.url": {
     "message": "Request URL"
+  },
+  "app.settings.override.hint": {
+    "message": "Overrides the deployed value."
+  },
+  "app.settings.override.restore": {
+    "message": "Restore deployed value"
   },
   "app.settings.privacy.data-handling": {
     "message": "Telemetry uses a random installation identifier and sends only a daily activity signal. Turning telemetry off clears pending data immediately."
@@ -13822,6 +14141,9 @@
   },
   "app.settings.storage.unknown": {
     "message": "Kept"
+  },
+  "app.settings.storage.unknownError": {
+    "message": "Unknown error"
   },
   "app.settings.storage.unknownUsage": {
     "message": "Files whose usage cannot be verified are kept."
@@ -15707,6 +16029,24 @@
   "instance.files.studio.editor-loading": {
     "message": "Loading editor..."
   },
+  "instance.files.studio.edit-deleted": {
+    "message": "This file was removed before the edit could be saved."
+  },
+  "instance.files.studio.discard-image-confirm": {
+    "message": "Discard"
+  },
+  "instance.files.studio.discard-image-description": {
+    "message": "The image has changes that have not been saved. Opening another file discards them."
+  },
+  "instance.files.studio.discard-image-keep": {
+    "message": "Keep editing"
+  },
+  "instance.files.studio.discard-image-title": {
+    "message": "Discard the image edit?"
+  },
+  "instance.files.studio.edit-conflict": {
+    "message": "This file changed on disk after it was opened. The edit was not saved."
+  },
   "instance.files.studio.empty-description": {
     "message": "Open any text file from the explorer."
   },
@@ -15767,6 +16107,9 @@
   "instance.files.studio.not-text-file": {
     "message": "This file is not a text file and cannot be opened in Studio."
   },
+  "instance.files.studio.open-in-schematic-workshop": {
+    "message": "Open with schematic workshop"
+  },
   "instance.files.studio.open-in-system": {
     "message": "Open in system"
   },
@@ -15778,6 +16121,33 @@
   },
   "instance.files.studio.paste": {
     "message": "Paste"
+  },
+  "instance.files.studio.preview-actual-size": {
+    "message": "Actual size"
+  },
+  "instance.files.studio.preview-edit": {
+    "message": "Edit"
+  },
+  "instance.files.studio.preview-failed": {
+    "message": "This file could not be previewed."
+  },
+  "instance.files.studio.preview-fit": {
+    "message": "Fit to window"
+  },
+  "instance.files.studio.preview-loading": {
+    "message": "Loading preview..."
+  },
+  "instance.files.studio.preview-save": {
+    "message": "Save"
+  },
+  "instance.files.studio.preview-tools": {
+    "message": "Image editing tools"
+  },
+  "instance.files.studio.preview-zoom-in": {
+    "message": "Zoom in"
+  },
+  "instance.files.studio.preview-zoom-out": {
+    "message": "Zoom out"
   },
   "instance.files.studio.refresh": {
     "message": "Refresh files"
@@ -17092,6 +17462,9 @@
   },
   "instance.upgrade.select.loading-fabric-versions": {
     "message": "Loading Fabric versions…"
+  },
+  "instance.upgrade.select.downgrade-unsupported": {
+    "message": "Downgrading is not supported."
   },
   "instance.upgrade.select.loading-versions": {
     "message": "Loading Minecraft versions…"
