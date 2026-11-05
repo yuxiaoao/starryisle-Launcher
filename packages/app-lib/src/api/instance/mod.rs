@@ -115,7 +115,10 @@ pub use self::screenshot_groups::{
     list_screenshot_groups, rename_screenshot_group,
     set_screenshot_group_memberships,
 };
-pub use self::screenshots::{list_screenshot_notes, set_screenshot_note, ScreenshotNote};
+pub use self::screenshots::{
+    export_instance_bundle, import_instance_bundle, list_screenshot_notes, set_screenshot_note,
+    ScreenshotNote,
+};
 #[allow(unused_imports)]
 pub use self::screenshots::{
     InstanceScreenshot, ScreenshotEditSaveMode, ScreenshotKey,

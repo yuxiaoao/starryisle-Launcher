@@ -1,7 +1,9 @@
+mod bundle;
 mod notes;
 mod operations;
 mod reconciliation;
 
+pub use self::bundle::{export_instance_bundle, import_instance_bundle};
 pub use self::notes::{list_screenshot_notes, set_screenshot_note, ScreenshotNote};
 pub use self::operations::{
     InstanceScreenshot, ScreenshotEditSaveMode, ScreenshotKey,
