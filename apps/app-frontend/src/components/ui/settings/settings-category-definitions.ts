@@ -6,6 +6,7 @@ export type SettingsCategoryId =
     | 'language-translation'
     | 'shortcut-settings'
     | 'ai'
+    | 'mcp'
     | 'launch-defaults'
     | 'instance-sync'
     | 'java-performance'
@@ -14,6 +15,7 @@ export type SettingsCategoryId =
     | 'network-connection'
     | 'storage-backups'
     | 'privacy-data'
+    | 'third-party-accounts'
     | 'updates'
     | 'about'
     | 'logs'
@@ -86,6 +88,14 @@ export const settingsCategoryDefinitions: SettingsCategoryDefinition[] = [
         onboardingId: 'settings-tab-ai',
     },
     {
+        id: 'mcp',
+        name: defineMessage({
+            id: 'app.settings.tabs.mcp',
+            defaultMessage: 'MCP',
+        }),
+        group: 'launcher',
+    },
+    {
         id: 'launch-defaults',
         name: defineMessage({
             id: 'app.settings.tabs.launch-defaults',
@@ -138,6 +148,14 @@ export const settingsCategoryDefinitions: SettingsCategoryDefinition[] = [
         }),
         group: 'data-privacy',
         onboardingId: 'settings-tab-storage-backups',
+    },
+    {
+        id: 'third-party-accounts',
+        name: defineMessage({
+            id: 'app.settings.tabs.third-party-accounts',
+            defaultMessage: 'Third-party accounts',
+        }),
+        group: 'data-privacy',
     },
     {
         id: 'privacy-data',

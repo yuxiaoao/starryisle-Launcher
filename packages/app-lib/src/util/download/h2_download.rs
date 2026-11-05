@@ -67,6 +67,7 @@ pub(crate) enum H2DownloadFailure {
     StreamReset,
     Http,
     RangeUnsupported,
+    IndependentRanges(u64),
     Integrity,
     Content,
     Io,
@@ -200,6 +201,14 @@ pub(crate) async fn try_download_via_h2(
         );
         let total_size = parse_content_range_total(headers)
             .or_else(|| parse_content_length(headers));
+        if status != StatusCode::PARTIAL_CONTENT {
+            // A server ignoring the probe may send the whole Java archive.
+            // Cancel that body before the fallback downloads it again.
+            return H2DownloadOutcome::Fallback {
+                failure: H2DownloadFailure::Http,
+                preserve_partial: false,
+            };
+        }
         // Drain the probe body so the stream slot is released.
         drain_body(&mut probe_body).await;
         drop(probe_body);
@@ -216,15 +225,23 @@ pub(crate) async fn try_download_via_h2(
                 preserve_partial: false,
             };
         }
-        if status != StatusCode::PARTIAL_CONTENT {
-            return H2DownloadOutcome::Fallback {
-                failure: H2DownloadFailure::Http,
-                preserve_partial: false,
-            };
-        }
         total_size
     };
 
+    if request.prefers_independent_ranges(total_size)
+        && route.supports_range
+        && fetch::range_splitting_allowed(route)
+    {
+        tracing::debug!(
+            url = %fetch::sanitize_url_for_log(&route.url),
+            total_size,
+            "Moving verified large file from HTTP/2 probe to independent ranges"
+        );
+        return H2DownloadOutcome::Fallback {
+            failure: H2DownloadFailure::IndependentRanges(total_size),
+            preserve_partial: false,
+        };
+    }
     if let Some(concurrency) = request.h2_range_concurrency {
         drop(connection_activity);
         let configured = fetch::configured_semaphore_limit(semaphore);
@@ -300,6 +317,7 @@ pub(crate) async fn try_download_via_h2(
         policy,
         _stream_permit,
         connection_activity,
+        semaphore,
     )
     .await;
     match result {
@@ -369,7 +387,7 @@ mod range_policy_tests {
 
     #[test]
     fn large_ranges_reserve_global_capacity_and_respect_disk_limit() {
-        assert_eq!(h2_range_limit(128 * 1024 * 1024, 16, 64, 8), 4);
+        assert_eq!(h2_range_limit(128 * 1024 * 1024, 16, 64, 8), 8);
         assert_eq!(h2_range_limit(128 * 1024 * 1024, 16, 4, 8), 2);
         assert_eq!(h2_range_limit(128 * 1024 * 1024, 16, 64, 1), 1);
         assert_eq!(h2_range_limit(1024 * 1024, 16, 64, 8), 1);
@@ -388,10 +406,7 @@ async fn connect_authority(
         route,
         reserve_native_budget,
         allow_cold_connection,
-        matches!(
-            resource,
-            fetch::ResourceClass::Modrinth | fetch::ResourceClass::Modpack
-        ),
+        resource != fetch::ResourceClass::Metadata,
     )
     .await
     {
@@ -580,8 +595,10 @@ async fn single_stream(
     policy: super::native::NativeH2Policy,
     permit: super::h2_stream_budget::H2DownloadPermit<'_>,
     connection_activity: super::h2_pool::H2StreamActivity,
+    semaphore: &fetch::FetchSemaphore,
 ) -> crate::Result<DownloadResult> {
     let mut headers = request_headers(request, route);
+    let telemetry = super::telemetry::begin_h2(request, route, connection);
     headers
         .insert(ACCEPT_ENCODING, HeaderValue::from_static(IDENTITY_ENCODING));
 
@@ -619,6 +636,8 @@ async fn single_stream(
     );
     let mut timer = tokio::time::interval(DOWNLOAD_SCHEDULER_INTERVAL);
     let mut last_endpoint_speed = 0;
+    let mut batch_tail =
+        super::h2_receive::BatchTailWindow::new(transfer_started);
     timer.tick().await;
     loop {
         let chunk = tokio::select! {
@@ -636,6 +655,25 @@ async fn single_stream(
                 }
                 let aggregate = aggregate_window.observe(connection.bytes_transferred_for_scheduler(), Instant::now());
                 let pressure = super::local_resources::pressure(part_path);
+                let can_recover_batch = request.supports_range_recovery()
+                    && !pressure.blocks_expansion()
+                    && semaphore.0.available_permits() >= super::constants::BATCH_DOWNLOAD_CONNECTION_FLOOR
+                    && super::native_budget::available(route) >= super::constants::BATCH_DOWNLOAD_CONNECTION_FLOOR;
+                if batch_tail.observe(downloaded, can_recover_batch, Instant::now())
+                    && downloaded < total_size
+                {
+                    tracing::debug!(
+                        url = %fetch::sanitize_url_for_log(&route.url),
+                        physical_connections = super::native_budget::in_use(route),
+                        active_streams = connection.active_streams(),
+                        remaining_bytes = total_size - downloaded,
+                        "Moving slow batch tail from shared HTTP/2 to an independent connection"
+                    );
+                    drop(stream);
+                    file.flush().await?;
+                    request.transfer_counters.commit(0, downloaded);
+                    return Err(crate::ErrorKind::DownloadTransferSlow.into());
+                }
                 let mut decision = slow_policy.observe_with_pressure(
                     downloaded,
                     total_size.saturating_sub(downloaded),
@@ -701,6 +739,9 @@ async fn single_stream(
             break;
         };
         request.transfer_counters.received(chunk.len() as u64);
+        if let Some(telemetry) = &telemetry {
+            telemetry.received(chunk.len());
+        }
         file.write_chunk(&chunk).await?;
         hashers.update(&chunk);
         downloaded += chunk.len() as u64;
@@ -716,6 +757,9 @@ async fn single_stream(
         }
     }
     file.flush().await?;
+    if let Some(telemetry) = &telemetry {
+        telemetry.finish();
+    }
     request.transfer_counters.commit(0, downloaded);
     record_install_progress(request, downloaded, total_size).await;
     drop(file);
@@ -834,6 +878,20 @@ enum AssetBatchItemOutcome {
     },
 }
 
+async fn complete_asset_attempt<F>(
+    item: H2BatchAsset,
+    result: crate::Result<AssetBatchItemOutcome>,
+    on_completed: &F,
+) -> (H2BatchAsset, crate::Result<AssetBatchItemOutcome>)
+where
+    F: Fn(H2BatchAsset) -> Pin<Box<dyn Future<Output = ()> + Send>>,
+{
+    if matches!(&result, Ok(AssetBatchItemOutcome::Completed { .. })) {
+        on_completed(item.clone()).await;
+    }
+    (item, result)
+}
+
 impl Clone for H2BatchAsset {
     fn clone(&self) -> Self {
         Self {
@@ -899,6 +957,161 @@ impl AssetBatchConnectionGroup {
 mod tests {
     use super::*;
 
+    #[tokio::test]
+    async fn partial_batch_reports_only_completed_objects_once() {
+        let reported = Arc::new(std::sync::atomic::AtomicU32::new(0));
+        let callback = {
+            let reported = reported.clone();
+            move |item: H2BatchAsset| -> Pin<Box<dyn Future<Output = ()> + Send>> {
+                let reported = reported.clone();
+                Box::pin(async move { reported.fetch_add(item.logical_items, std::sync::atomic::Ordering::Relaxed); })
+            }
+        };
+        let item = H2BatchAsset {
+            url: "https://assets.example/object".into(),
+            destination: "unused".into(),
+            legacy_destinations: vec![],
+            sha1: "ab".repeat(20),
+            size: 7,
+            logical_items: 3,
+        };
+        let (_, complete) = complete_asset_attempt(
+            item.clone(),
+            Ok(AssetBatchItemOutcome::Completed { downloaded: true }),
+            &callback,
+        )
+        .await;
+        assert!(matches!(
+            complete,
+            Ok(AssetBatchItemOutcome::Completed { .. })
+        ));
+        let (_, retry) = complete_asset_attempt(
+            item.clone(),
+            Err(crate::ErrorKind::NetworkError("stream reset".into()).into()),
+            &callback,
+        )
+        .await;
+        assert!(asset_transport_failure(&retry.err().unwrap()));
+        let (_, local) = complete_asset_attempt(
+            item.clone(),
+            Ok(AssetBatchItemOutcome::LocalCopyFailed {
+                downloaded: true,
+                error: std::io::Error::new(
+                    std::io::ErrorKind::PermissionDenied,
+                    "legacy readonly",
+                )
+                .into(),
+            }),
+            &callback,
+        )
+        .await;
+        assert!(matches!(
+            local,
+            Ok(AssetBatchItemOutcome::LocalCopyFailed { .. })
+        ));
+        assert_eq!(reported.load(std::sync::atomic::Ordering::Relaxed), 3);
+        // Only the unresolved transport item is sent to ordinary download;
+        // its completion adds its logical aliases, not the successful sibling.
+        let (_, completed) = complete_asset_attempt(
+            item,
+            Ok(AssetBatchItemOutcome::Completed { downloaded: true }),
+            &callback,
+        )
+        .await;
+        assert!(matches!(
+            completed,
+            Ok(AssetBatchItemOutcome::Completed { .. })
+        ));
+        assert_eq!(reported.load(std::sync::atomic::Ordering::Relaxed), 6);
+    }
+
+    #[tokio::test]
+    async fn ineligible_asset_batch_returns_all_items_without_reporting_completion()
+     {
+        for (proxy, ignore_ssl, force_http1) in [
+            (crate::util::proxy::ProxyMode::None, true, false),
+            (crate::util::proxy::ProxyMode::Custom, false, false),
+            (crate::util::proxy::ProxyMode::None, false, true),
+        ] {
+            let config = crate::util::proxy::ProxyConfig {
+                mode: proxy,
+                url: "http://127.0.0.1:9".into(),
+                ..Default::default()
+            };
+            let mut clients =
+                fetch::DownloadClients::build(&config, ignore_ssl, false)
+                    .unwrap();
+            clients.force_http1 = force_http1;
+            let route = DownloadRoute {
+                url: "https://assets.example/ab/hash".into(),
+                source: DownloadRouteSource::Official,
+                is_mirror: false,
+                allow_sensitive_headers: true,
+                supports_range: true,
+                proxy: fetch::ProxyPolicy::System,
+            };
+            let item = H2BatchAsset {
+                url: route.url.clone(),
+                destination: "unused-asset".into(),
+                legacy_destinations: vec![],
+                sha1: "ab".repeat(20),
+                size: 7,
+                logical_items: 2,
+            };
+            let pending = super::super::proxy_context::with_snapshot(
+                clients,
+                download_asset_batch_via_h2(
+                    &route,
+                    vec![item],
+                    1,
+                    true,
+                    |_| {
+                        Box::pin(async {
+                            panic!("ineligible batch cannot complete an item")
+                        })
+                    },
+                ),
+            )
+            .await
+            .unwrap();
+            assert_eq!(pending.len(), 1);
+            assert_eq!(pending[0].logical_items, 2);
+        }
+    }
+
+    #[test]
+    fn asset_fallback_only_accepts_transport_failures() {
+        assert!(asset_transport_failure(
+            &crate::ErrorKind::NetworkError("connect".into()).into()
+        ));
+        assert!(asset_transport_failure(
+            &crate::ErrorKind::HttpError {
+                status: 503,
+                method: "GET".into(),
+                url: "https://assets.example".into()
+            }
+            .into()
+        ));
+        for error in [
+            crate::ErrorKind::HashError("expected".into(), "actual".into())
+                .into(),
+            crate::ErrorKind::InputError("unsafe redirect".into()).into(),
+            crate::ErrorKind::OtherError(
+                "Incorrect SHA1 hash for download".into(),
+            )
+            .into(),
+            crate::Error::from(std::io::Error::new(
+                std::io::ErrorKind::PermissionDenied,
+                "readonly",
+            )),
+            crate::Error::from(crate::ErrorKind::ResourceError(
+                crate::resources::ResourceError::Canceled,
+            )),
+        ] {
+            assert!(!asset_transport_failure(&error));
+        }
+    }
+
     #[test]
     fn typed_transfer_recovery_is_not_a_protocol_failure() {
         for error in [
@@ -954,7 +1167,7 @@ mod tests {
             std::future::pending::<()>().await;
         });
         let result = tokio::time::timeout(Duration::from_secs(2), async {
-            let client = reqwest::Client::builder()
+            let client = crate::util::http::client_builder()
                 .no_proxy()
                 .read_timeout(Duration::from_millis(100))
                 .build()
@@ -1037,17 +1250,16 @@ mod tests {
 /// Downloads a batch of small files over a shared HTTP/2 connection group,
 /// multiplexing up to `concurrency` logical workers. Physical H2 streams are
 /// governed by the shared authority stream budget. The group begins with one
-/// connection and may add one sibling only for a sustained saturated batch;
-/// it never creates one connection per file. Items that cannot be downloaded
-/// after internal retries fail the batch instead of switching to per-file
-/// network downloads.
+/// connection and expands the shared authority pool under sustained load.
+/// Returns only unresolved transport failures for the policy-aware per-file
+/// downloader. Local I/O, integrity and cancellation errors remain failures.
 pub(crate) async fn download_asset_batch_via_h2<F>(
     route: &DownloadRoute,
     items: Vec<H2BatchAsset>,
     concurrency: usize,
     apply_native_policy: bool,
     on_completed: F,
-) -> crate::Result<()>
+) -> crate::Result<Vec<H2BatchAsset>>
 where
     F: Fn(H2BatchAsset) -> Pin<Box<dyn Future<Output = ()> + Send>>
         + Send
@@ -1070,21 +1282,34 @@ async fn download_asset_batch_inner<F>(
     concurrency: usize,
     apply_native_policy: bool,
     on_completed: F,
-) -> crate::Result<()>
+) -> crate::Result<Vec<H2BatchAsset>>
 where
     F: Fn(H2BatchAsset) -> Pin<Box<dyn Future<Output = ()> + Send>>
         + Send
         + Sync
         + 'static,
 {
+    if items.is_empty() {
+        return Ok(Vec::new());
+    }
     let concurrency = concurrency.max(1);
+    let parsed = Url::parse(&route.url)?;
+    if !fetch::is_allowed_download_redirect(&parsed)
+        && !retired_sources::is_retired(&parsed)
+    {
+        return Err(crate::ErrorKind::InputError(
+            "unsafe asset batch route".into(),
+        )
+        .into());
+    }
     if apply_native_policy
         && let Some(reason) = super::native::h2_ineligible_reason(route)
     {
-        return Err(crate::ErrorKind::NetworkError(format!(
-            "Minecraft asset route cannot use HTTP/2 batching: {reason:?}"
-        ))
-        .into());
+        tracing::debug!(
+            ?reason,
+            "Minecraft assets require the policy-aware per-file transport"
+        );
+        return Ok(items);
     }
     // Local object I/O failures are deterministic per destination; remember the
     // first one and keep draining the batch so siblings already in flight or
@@ -1114,10 +1339,11 @@ where
                     None,
                 );
             }
-            return Err(crate::ErrorKind::NetworkError(format!(
-                "Could not establish an HTTP/2 asset batch connection: {failure:?}"
-            ))
-            .into());
+            tracing::debug!(
+                ?failure,
+                "HTTP/2 asset connection unavailable; using per-file transport"
+            );
+            return Ok(items);
         }
     };
     let connections = Arc::new(AssetBatchConnectionGroup::new(
@@ -1170,13 +1396,8 @@ where
                         pass > 0,
                     )
                     .await;
-                    if matches!(
-                        &result,
-                        Ok(AssetBatchItemOutcome::Completed { .. })
-                    ) {
-                        callback(item.clone()).await;
-                    }
-                    (item, result)
+                    complete_asset_attempt(item, result, callback.as_ref())
+                        .await
                 }
             })
             .buffer_unordered(concurrency)
@@ -1203,12 +1424,11 @@ where
                         url = %fetch::sanitize_url_for_log(&item.url),
                         destination = %item.destination.display(),
                         error = %error,
-                        "Asset object is committed, but copying its legacy resource failed; retrying locally without another download"
+                        "Asset object is committed, but copying its legacy resource failed"
                     );
-                    // The ordinary fallback path sees the valid object and
-                    // performs only the outstanding local copy. Do not spend
-                    // another network retry pass on a local filesystem error.
-                    failed.push(item);
+                    if local_object_error.is_none() {
+                        local_object_error = Some(error);
+                    }
                 }
                 Ok(AssetBatchItemOutcome::LocalObjectFailed { error }) => {
                     tracing::warn!(
@@ -1222,6 +1442,12 @@ where
                     }
                 }
                 Err(error) => {
+                    if !asset_transport_failure(&error) {
+                        if local_object_error.is_none() {
+                            local_object_error = Some(error);
+                        }
+                        continue;
+                    }
                     network_failures = network_failures.saturating_add(1);
                     tracing::debug!(
                         url = %fetch::sanitize_url_for_log(&item.url),
@@ -1267,14 +1493,22 @@ where
             failed.len(),
             route.source.as_str(),
         );
-        return Err(crate::ErrorKind::NetworkError(format!(
-            "{} Minecraft assets failed in the HTTP/2 batch on route {}",
-            failed.len(),
-            route.source.as_str(),
-        ))
-        .into());
     }
-    Ok(())
+    Ok(failed)
+}
+
+fn asset_transport_failure(error: &crate::Error) -> bool {
+    matches!(
+        error.raw.as_ref(),
+        crate::ErrorKind::NetworkError(_)
+            | crate::ErrorKind::FetchError(_)
+            | crate::ErrorKind::HttpError { .. }
+            | crate::ErrorKind::DownloadH2Error(_)
+            | crate::ErrorKind::DownloadStreamStalled { .. }
+            | crate::ErrorKind::DownloadResourceWaitTimeout(_)
+            | crate::ErrorKind::DownloadEndpointChanged
+            | crate::ErrorKind::DownloadTransferSlow
+    )
 }
 
 async fn prepare_asset_part_path(
@@ -1322,19 +1556,29 @@ async fn download_asset_item(
     // never treated as correctness; an existing object is still verified.
     match tokio::fs::try_exists(&item.destination).await {
         Ok(true) => {
-            if fetch::verify_file(&item.destination, &integrity)
-                .await
-                .is_ok()
-            {
-                return Ok(match copy_asset_legacy_destinations(item).await {
-                    Ok(()) => {
-                        AssetBatchItemOutcome::Completed { downloaded: false }
-                    }
-                    Err(error) => AssetBatchItemOutcome::LocalCopyFailed {
-                        downloaded: false,
+            match fetch::verify_file(&item.destination, &integrity).await {
+                Ok(size) if size == item.size => {
+                    return Ok(
+                        match copy_asset_legacy_destinations(item).await {
+                            Ok(()) => AssetBatchItemOutcome::Completed {
+                                downloaded: false,
+                            },
+                            Err(error) => {
+                                AssetBatchItemOutcome::LocalCopyFailed {
+                                    downloaded: false,
+                                    error,
+                                }
+                            }
+                        },
+                    );
+                }
+                Ok(_) => {}
+                Err(error) if fetch::is_integrity_error(&error) => {}
+                Err(error) => {
+                    return Ok(AssetBatchItemOutcome::LocalObjectFailed {
                         error,
-                    },
-                });
+                    });
+                }
             }
         }
         Ok(false) => {}
@@ -1462,10 +1706,11 @@ async fn download_asset_item(
         fetch::retry_after_headers(response.headers()),
     );
     if !response.status().is_success() {
-        return Err(crate::ErrorKind::OtherError(format!(
-            "HTTP/2 GET failed with status {}",
-            response.status()
-        ))
+        return Err(crate::ErrorKind::HttpError {
+            status: response.status().as_u16(),
+            method: "GET".into(),
+            url: fetch::sanitize_url_for_log(&current_route.url),
+        }
         .into());
     }
 
@@ -1522,6 +1767,13 @@ async fn download_asset_item(
         }
         drop(file);
         drop(_stream_permit);
+        if downloaded != item.size {
+            return Err(crate::ErrorKind::OtherError(format!(
+                "Incorrect asset size: expected {}, received {downloaded}",
+                item.size
+            ))
+            .into());
+        }
         if downloaded == 0 {
             return Err(crate::ErrorKind::OtherError(
                 H2_DOWNLOAD_DOWNLOADED_ASSET_IS_EMPTY.to_string(),

@@ -50,7 +50,27 @@ pub fn assess_compatibility(
     target: &ipc::ResourceTarget,
     kind: ResourceType,
 ) -> CompatibilityAssessment {
-    assess_declared_compatibility(&release.compatibility, target, kind)
+    let mut assessment =
+        assess_declared_compatibility(&release.compatibility, target, kind);
+    // Minecraft loads only archives and folders from a world's datapacks
+    // directory, never jars. Projects that publish a mod build next to the
+    // datapack list that jar as a newer release of the same project.
+    if kind == ResourceType::DataPack && has_jar_primary(release) {
+        assessment.loader = CompatibilityState::Incompatible;
+        if !assessment.reasons.iter().any(|reason| reason == "loader") {
+            assessment.reasons.push("loader".into());
+        }
+    }
+    assessment
+}
+
+fn has_jar_primary(release: &ResourceRelease) -> bool {
+    release
+        .artifacts
+        .iter()
+        .filter(|artifact| artifact.role == ArtifactRole::Primary)
+        .filter_map(|artifact| artifact.file_name.as_deref())
+        .any(|name| name.to_ascii_lowercase().ends_with(".jar"))
 }
 
 pub fn assess_declared_compatibility(
@@ -125,58 +145,6 @@ fn dimension(
 
 pub fn matches_game_version(pattern: &str, version: &str) -> bool {
     assess_game_version(pattern, version) == CompatibilityState::Compatible
-}
-
-pub fn matches_release_constraint(pattern: &str, version: &str) -> bool {
-    if pattern.contains("||") {
-        return false;
-    }
-    if pattern.trim() == version {
-        return true;
-    }
-    let Some(mut actual) = numeric_version(version) else {
-        return false;
-    };
-    if actual.len() > 3 {
-        return false;
-    }
-    actual.resize(3, 0);
-    let actual = actual
-        .iter()
-        .map(u64::to_string)
-        .collect::<Vec<_>>()
-        .join(".");
-    let mut normalized = String::new();
-    let mut number = String::new();
-    for character in pattern.chars().chain(std::iter::once(' ')) {
-        if character.is_ascii_digit() || character == '.' {
-            number.push(character);
-        } else {
-            if !number.is_empty() {
-                if number.ends_with('.') {
-                    normalized.push_str(&number);
-                } else {
-                    let Some(mut parts) = numeric_version(&number) else {
-                        return false;
-                    };
-                    if parts.len() > 3 {
-                        return false;
-                    }
-                    parts.resize(3, 0);
-                    normalized.push_str(
-                        &parts
-                            .iter()
-                            .map(u64::to_string)
-                            .collect::<Vec<_>>()
-                            .join("."),
-                    );
-                }
-                number.clear();
-            }
-            normalized.push(character);
-        }
-    }
-    matches_game_version(normalized.trim(), &actual)
 }
 
 /// Unsupported range syntax is unknown rather than evidence of compatibility.
@@ -599,6 +567,40 @@ mod tests {
         );
     }
     #[test]
+    fn a_jar_is_never_a_compatible_datapack_release() {
+        let target = ipc::ResourceTarget {
+            game_versions: vec![],
+            loaders: vec!["fabric".into()],
+            channels: vec![],
+        };
+        let mut jar = release("1", SourceId::modrinth(), 1, 'a');
+        jar.compatibility.loaders = vec!["fabric".into()];
+        let mut zip = jar.clone();
+        zip.compatibility.loaders = vec!["datapack".into()];
+        zip.artifacts[0].file_name = Some("pack.ZIP".into());
+        let assessment =
+            assess_compatibility(&jar, &target, ResourceType::DataPack);
+        assert_eq!(assessment.loader, CompatibilityState::Incompatible);
+        assert!(assessment.reasons.contains(&"loader".to_string()));
+        assert_eq!(
+            assess_compatibility(&zip, &target, ResourceType::DataPack).loader,
+            CompatibilityState::Compatible
+        );
+        assert_eq!(
+            assess_compatibility(&jar, &target, ResourceType::Mod).loader,
+            CompatibilityState::Compatible
+        );
+        let mut attachment = zip.artifacts[0].clone();
+        attachment.role = ArtifactRole::Attachment;
+        attachment.file_name = Some("sources.jar".into());
+        zip.artifacts.push(attachment);
+        assert_eq!(
+            assess_compatibility(&zip, &target, ResourceType::DataPack).loader,
+            CompatibilityState::Compatible
+        );
+    }
+
+    #[test]
     fn wildcard_preserves_major_and_minor_boundaries() {
         assert!(matches_game_version("1.20.x", "1.20.4"));
         assert!(!matches_game_version("1.20.x", "1.12"));
@@ -613,7 +615,7 @@ mod tests {
     }
 
     #[test]
-    fn release_constraints_keep_numeric_precision_and_reject_unknown_syntax() {
+    fn release_constraints_keep_numeric_precision_and_pass_unknown_syntax() {
         for (constraint, version, expected) in [
             (">=1", "2", true),
             ("<3", "2", true),
@@ -623,8 +625,8 @@ mod tests {
             ("1.2.*", "1.3", false),
             ("2", "2.0.0", true),
             ("named release", "named release", true),
-            (">=unknown", "2", false),
-            ("1 || 2", "2", false),
+            (">=unknown", "2", true),
+            ("1 || 2", "2", true),
         ] {
             assert_eq!(
                 matches_release_constraint(constraint, version),

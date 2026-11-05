@@ -4,6 +4,7 @@ import { Button, defineMessages, injectNotificationManager, Toggle, useVIntl } f
 import { inject, ref, watch } from 'vue'
 
 import { useAntiPiracyStatus } from '@/composables/useAntiPiracyStatus'
+import McpDebugSettings from '@/features/mcp/McpDebugSettings.vue'
 import { get as getSettings, update as updateSettings } from '@/helpers/settings.ts'
 import { createSettingsPatchSaver } from '@/helpers/settings-patch'
 import { isDev } from '@/helpers/utils'
@@ -84,6 +85,15 @@ const messages = defineMessages({
     autoInstallDependencies: {
         id: 'app.settings.feature-flags.auto-install-dependencies',
         defaultMessage: 'Automatically install dependencies',
+    },
+    advancedDownloadInfo: {
+        id: 'app.settings.feature-flags.advanced-download-info',
+        defaultMessage: 'Advanced download information',
+    },
+    advancedDownloadInfoDescription: {
+        id: 'app.settings.feature-flags.advanced-download-info-description',
+        defaultMessage:
+            'Show file timings, request speeds and remote addresses in download details. Observations are collected while enabled and included when exporting network connections.',
     },
     announcementPreview: {
         id: 'app.settings.developer.announcement-preview',
@@ -176,6 +186,7 @@ const featureFlagLabels: Record<FeatureFlag, keyof typeof messages> = {
     page_transitions: 'pageTransitions',
     advanced_filters_collapsed: 'advancedFiltersCollapsed',
     auto_install_dependencies: 'autoInstallDependencies',
+    advanced_download_info: 'advancedDownloadInfo',
 }
 
 function setFeatureFlag(key: string, value: boolean) {
@@ -226,6 +237,11 @@ watch(
     >
         <SettingsRow v-for="option in options" :key="option">
             <template #label>{{ formatMessage(messages[featureFlagLabels[option]]) }}</template>
+            <template v-if="option === 'advanced_download_info'" #description>
+                <span id="settings-target-advanced-download-info">
+                    {{ formatMessage(messages.advancedDownloadInfoDescription) }}
+                </span>
+            </template>
             <template #control>
                 <div class="flex items-center gap-2">
                     <Button
@@ -259,6 +275,8 @@ watch(
             </Button>
         </div>
     </SettingsSection>
+
+    <McpDebugSettings />
 
     <SettingsSection v-if="(themeStore.devMode || isDevEnvironment) && previewRemoteAnnouncement">
         <template #header>

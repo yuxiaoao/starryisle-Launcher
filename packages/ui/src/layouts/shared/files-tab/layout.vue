@@ -153,7 +153,6 @@
                     v-else
                     ref="fileEditorRef"
                     :file="ctx.editingFile.value"
-                    :editor-component="editorComponent"
                     @close="handleEditorClose"
                 />
             </div>
@@ -171,7 +170,7 @@
                     v-tooltip="isBusy ? busyTooltip : undefined"
                     type="colored"
                     color="brand"
-                    :disabled="isBusy"
+                    :disabled="isBusy || fileEditorRef?.saving"
                     @click="fileEditorRef?.saveFileContent(false)"
                     ><SaveIcon /> {{ formatMessage(commonMessages.saveButton) }}
                 </Button>
@@ -218,8 +217,7 @@ import {
     SaveIcon,
     TrashIcon,
 } from '@modrinth/assets'
-import type { Component } from 'vue'
-import { computed, onMounted, onUnmounted, ref, shallowRef, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 
 import Button from '#ui/components/base/buttons/Button.vue'
 import FloatingActionBar from '#ui/components/base/FloatingActionBar.vue'
@@ -299,16 +297,6 @@ defineProps<{
 const { addNotification } = injectNotificationManager()
 const ctx = injectFileManager()
 
-const editorComponent = shallowRef<Component | null>(null)
-import('vue3-ace-editor')
-    .then(async (mod) => {
-        await Promise.all([import('#ui/utils/ace-theme'), import('#ui/utils/ace-mode-log.ts')])
-        editorComponent.value = mod.VAceEditor
-    })
-    .catch((error) => {
-        console.error('Failed to load the code editor:', error)
-    })
-
 const baseId = `files-${Math.random().toString(36).slice(2, 9)}`
 
 const items = computed(() => ctx.items.value)
@@ -384,15 +372,18 @@ const unsavedChangesModal = ref<InstanceType<typeof FileUnsavedChangesModal>>()
 
 const hasUnsavedChanges = computed(() => fileEditorRef.value?.hasUnsavedChanges ?? false)
 
+/**
+ * Leaves only after the edits are discarded, or saved with nothing typed while
+ * the save ran. A failed save asks again and keeps the edits.
+ */
 async function confirmDiscardChanges(): Promise<boolean> {
-    if (!hasUnsavedChanges.value) return true
-    const result = await unsavedChangesModal.value?.prompt()
-    if (result === 'save') {
-        if (isBusy.value) return false
+    while (hasUnsavedChanges.value) {
+        const result = await unsavedChangesModal.value?.prompt()
+        if (result === 'discard') return true
+        if (result !== 'save' || isBusy.value) return false
         await fileEditorRef.value?.saveFileContent(false)
-        return true
     }
-    return result === 'discard'
+    return true
 }
 
 // Navigation

@@ -36,6 +36,8 @@ const allowedUntranslatedMessages = new Set([
     'Mr Pack',
     'TNT',
     'CurseForge',
+    'Reden',
+    'BuildSchematics',
     'BBCode',
     'mclo.gs',
     'CMI',
@@ -59,6 +61,8 @@ const allowedUntranslatedMessages = new Set([
     'Minecraft EULA',
     'server.properties',
     '{type} · {version}',
+    '{author} · {summary}',
+    '{nickname} · {username}',
     '{value} MB',
     '> {command}',
     'Beta',
@@ -70,6 +74,8 @@ const allowedUntranslatedMessages = new Set([
     '{name} {number} · {x}, {z}',
     '{biome} · {name}',
     '{degrees}°',
+    'MCP',
+    '/give @p minecraft:white_banner[minecraft:banner_patterns=[…]] 1',
 ])
 
 function messageText(value) {

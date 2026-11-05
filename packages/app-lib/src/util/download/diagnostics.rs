@@ -15,7 +15,8 @@ use crate::util::download::constants::{
     DIAGNOSTICS_N_OLDER_DIAGNOSTIC_DETAILS_OMITTED, DIAGNOSTICS_NETWORK,
     DIAGNOSTICS_NO_GAIN, DIAGNOSTICS_NO_RESPONSE_RECEIVED, DIAGNOSTICS_OTHER,
     DIAGNOSTICS_PROTOCOL, DIAGNOSTICS_PROXY_INELIGIBLE, DIAGNOSTICS_RANGE,
-    DIAGNOSTICS_RANGE_UNSUPPORTED, DIAGNOSTICS_RESOLVE, DIAGNOSTICS_ROLLBACK,
+    DIAGNOSTICS_RANGE_UNSUPPORTED, DIAGNOSTICS_RESOLVE,
+    DIAGNOSTICS_RESOURCE_WAIT, DIAGNOSTICS_ROLLBACK,
     DIAGNOSTICS_RULE_INELIGIBLE, DIAGNOSTICS_SELECTED,
     DIAGNOSTICS_SERVER_COOLDOWN, DIAGNOSTICS_SLOW, DIAGNOSTICS_SSL,
     DIAGNOSTICS_STALE_EPOCH, DIAGNOSTICS_STALL, DIAGNOSTICS_STREAM_RESET,
@@ -146,6 +147,7 @@ pub(crate) fn download_error_category(error: &crate::Error) -> &'static str {
                 DIAGNOSTICS_NETWORK
             }
         }
+        ErrorKind::DownloadResourceWaitTimeout(_) => DIAGNOSTICS_RESOURCE_WAIT,
         ErrorKind::LabrinthError(_) | ErrorKind::HttpError { .. } => {
             HTTP_SCHEME
         }
@@ -320,7 +322,7 @@ mod tests {
         let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
         let address = listener.local_addr().unwrap();
         drop(listener);
-        let error = reqwest::Client::builder()
+        let error = crate::util::http::client_builder()
             .no_proxy()
             .connect_timeout(std::time::Duration::from_secs(10))
             .build()

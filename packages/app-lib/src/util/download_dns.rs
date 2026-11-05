@@ -157,7 +157,7 @@ impl Default for DownloadDnsResolver {
             doh_enabled: false,
             doh_endpoints: Arc::new(vec![Arc::from(BUILTIN_DOH_SERVERS[0])]),
             doh_clients: Arc::new(vec![
-                reqwest::Client::builder()
+                crate::util::http::client_builder()
                     .no_proxy()
                     .timeout(DOH_REQUEST_TIMEOUT)
                     .connect_timeout(DOH_CONNECT_TIMEOUT)
@@ -202,8 +202,10 @@ impl DownloadDnsResolver {
         let mut doh_clients = Vec::with_capacity(endpoints.len());
         for _ in &endpoints {
             let builder = match proxy {
-                Some(proxy) => proxy.apply(reqwest::Client::builder())?,
-                None => reqwest::Client::builder().no_proxy(),
+                Some(proxy) => {
+                    proxy.apply(crate::util::http::client_builder())?
+                }
+                None => crate::util::http::client_builder().no_proxy(),
             };
             doh_clients.push(
                 builder
@@ -238,15 +240,20 @@ impl DownloadDnsResolver {
     ) -> Result<(), &'static str> {
         let host = normalize_host(host)?;
         let resolver_host = normalize_host(resolver_host)?;
+        // sched-order: theseus::util::download_dns::DownloadDnsResolver.host_overrides
         let mut overrides = self.host_overrides.lock();
         if host == resolver_host {
             overrides.remove(&host);
         } else {
             overrides.insert(host.clone(), resolver_host);
         }
+        // sched-order-release: theseus::util::download_dns::DownloadDnsResolver.host_overrides
         drop(overrides);
+        // sched-order: theseus::util::download_dns::DownloadDnsResolver.last_resolved temporary
         self.last_resolved.lock().remove(&host);
+        // sched-order: theseus::util::download_dns::DownloadDnsResolver.last_failed temporary
         self.last_failed.lock().remove(&host);
+        // sched-order: theseus::util::download_dns::DownloadDnsResolver.candidate_snapshots temporary
         self.candidate_snapshots.lock().remove(&host);
         Ok(())
     }
@@ -254,9 +261,13 @@ impl DownloadDnsResolver {
     #[allow(dead_code)]
     pub fn clear_host_override(&self, host: &str) -> Result<(), &'static str> {
         let host = normalize_host(host)?;
+        // sched-order: theseus::util::download_dns::DownloadDnsResolver.host_overrides temporary
         self.host_overrides.lock().remove(&host);
+        // sched-order: theseus::util::download_dns::DownloadDnsResolver.last_resolved temporary
         self.last_resolved.lock().remove(&host);
+        // sched-order: theseus::util::download_dns::DownloadDnsResolver.last_failed temporary
         self.last_failed.lock().remove(&host);
+        // sched-order: theseus::util::download_dns::DownloadDnsResolver.candidate_snapshots temporary
         self.candidate_snapshots.lock().remove(&host);
         Ok(())
     }
@@ -278,14 +289,17 @@ impl DownloadDnsResolver {
     }
 
     pub fn record_host_success(&self, host: &str, address: IpAddr) {
+        // sched-order: theseus::util::download_dns::DownloadDnsResolver.last_resolved
         let mut cached = self.last_resolved.lock();
         if let Some(entry) = cached
             .get_mut(host)
             .filter(|entry| entry.addresses.contains(&address))
         {
             entry.consecutive_connection_failures = 0;
+            // sched-order-release: theseus::util::download_dns::DownloadDnsResolver.last_resolved
             drop(cached);
             self.record_result(address, 0.5);
+            // sched-order: theseus::util::download_dns::DownloadDnsResolver.successful_addresses
             let mut successful = self.successful_addresses.lock();
             let addresses = successful.entry(host.to_string()).or_default();
             addresses.retain(|_, timestamp| {
@@ -610,6 +624,7 @@ impl DownloadDnsResolver {
                 return Ok(answers);
             }
             let host_lock = {
+                // sched-order: theseus::util::download_dns::DownloadDnsResolver.candidate_hosts
                 let mut hosts = self.candidate_hosts.lock();
                 if hosts.len() >= MAX_METADATA_HOSTS {
                     hosts.retain(|_, lock| Arc::strong_count(lock) > 1);
@@ -655,6 +670,7 @@ impl DownloadDnsResolver {
                 let now = Instant::now();
                 // System lookup has no authoritative TTL. Reuse the age of
                 // the existing cache rather than refreshing it on every call.
+                // sched-order: theseus::util::download_dns::DownloadDnsResolver.last_resolved temporary
                 let expires_at = self
                     .last_resolved
                     .lock()
@@ -681,6 +697,7 @@ impl DownloadDnsResolver {
                 return Ok(vec![answer]);
             }
 
+            // sched-order: theseus::util::download_dns::DownloadDnsResolver.dns_answers temporary
             let mut answers = self
                 .dns_answers
                 .lock()
@@ -870,6 +887,22 @@ impl DownloadDnsResolver {
             .insert(host.to_string(), addresses);
     }
 
+    /// The port a test fixture listens on, when the test address set for
+    /// `host` names one. Loopback fixtures bind an ephemeral port while the
+    /// routed URL carries the scheme default, so a connect path that falls
+    /// back to the URL's port would reach 443 and never the fixture.
+    #[cfg(test)]
+    pub(crate) fn test_port(&self, host: &str) -> Option<u16> {
+        let host = normalize_host(host).ok()?;
+        let resolution_host = self.resolution_host(&host);
+        self.test_addresses
+            .lock()
+            .get(&resolution_host)
+            .and_then(|addresses| addresses.first())
+            .map(SocketAddr::port)
+            .filter(|port| *port != 0)
+    }
+
     #[cfg(test)]
     fn set_test_lookup_delay(&self, host: &str, delay: Duration) {
         self.test_lookup_delays
@@ -956,11 +989,10 @@ impl DownloadDnsResolver {
 fn doh_query(host: &str, record_type: RecordType) -> std::io::Result<Message> {
     let mut name = DnsName::from_ascii(host).map_err(std::io::Error::other)?;
     name.set_fqdn(true);
-    let mut message = Message::new();
-    message
-        .set_id(rand::random())
-        .set_recursion_desired(true)
-        .add_query(Query::query(name, record_type));
+    let mut message = Message::query();
+    message.metadata.id = rand::random();
+    message.metadata.recursion_desired = true;
+    message.add_query(Query::query(name, record_type));
     Ok(message)
 }
 
@@ -984,17 +1016,17 @@ fn parse_doh_metadata(
         ));
     }
     let response = Message::from_vec(bytes).map_err(std::io::Error::other)?;
-    if response.id() != query.id()
-        || response.message_type() != MessageType::Response
-        || response.queries() != query.queries()
-        || response.truncated()
-        || response.response_code() != ResponseCode::NoError
+    if response.metadata.id != query.metadata.id
+        || response.metadata.message_type != MessageType::Response
+        || response.queries != query.queries
+        || response.metadata.truncation
+        || response.metadata.response_code != ResponseCode::NoError
     {
         return Err(std::io::Error::other(
             DOWNLOAD_DNS_INVALID_OR_UNSUCCESSFUL_DOH_DNS_RESPONSE,
         ));
     }
-    let question = query.query().ok_or_else(|| {
+    let question = query.queries.first().ok_or_else(|| {
         std::io::Error::other(DOWNLOAD_DNS_MISSING_DNS_QUESTION)
     })?;
     let now = Instant::now();
@@ -1009,27 +1041,26 @@ fn parse_doh_metadata(
             ));
         }
         let mut next = None;
-        for answer in response.answers().iter().filter(|answer| {
-            answer.name() == &name
-                && answer.dns_class() == question.query_class()
+        for answer in response.answers.iter().filter(|answer| {
+            answer.name == name && answer.dns_class == question.query_class()
         }) {
-            if let RData::CNAME(alias) = answer.data() {
+            if let RData::CNAME(alias) = &answer.data {
                 if next.as_ref().is_some_and(|target| target != &alias.0) {
                     return Err(std::io::Error::other(
                         DOWNLOAD_DNS_CONFLICTING_DOH_CNAME_ANSWERS,
                     ));
                 }
                 next = Some(alias.0.clone());
-                chain_ttl = chain_ttl.min(answer.ttl());
+                chain_ttl = chain_ttl.min(answer.ttl);
             }
         }
         let Some(next) = next else {
             break;
         };
-        if response.answers().iter().any(|record| {
-            record.name() == &name
-                && record.dns_class() == question.query_class()
-                && matches!(record.data(), RData::A(_) | RData::AAAA(_))
+        if response.answers.iter().any(|record| {
+            record.name == name
+                && record.dns_class == question.query_class()
+                && matches!(record.data, RData::A(_) | RData::AAAA(_))
         }) {
             return Err(std::io::Error::other(
                 DOWNLOAD_DNS_DOH_CNAME_OWNER_ALSO_CONTAINS_ADDRESS_RECORDS,
@@ -1039,15 +1070,15 @@ fn parse_doh_metadata(
         name = next;
     }
     let mut addresses = response
-        .answers()
+        .answers
         .iter()
         .filter(|record| {
-            record.name() == &name
+            record.name == name
                 && record.record_type() == question.query_type()
-                && record.dns_class() == question.query_class()
+                && record.dns_class == question.query_class()
         })
         .filter_map(|record| {
-            let ip = match record.data() {
+            let ip = match &record.data {
                 RData::A(address) => IpAddr::V4(address.0),
                 RData::AAAA(address) => IpAddr::V6(address.0),
                 _ => return None,
@@ -1055,7 +1086,7 @@ fn parse_doh_metadata(
             Some(DnsAddress {
                 ip,
                 expires_at: now
-                    + Duration::from_secs(record.ttl().min(chain_ttl) as u64),
+                    + Duration::from_secs(record.ttl.min(chain_ttl) as u64),
             })
         })
         .collect::<Vec<_>>();
@@ -1134,11 +1165,19 @@ impl Resolve for DownloadDnsResolver {
         let host = name.as_str().to_string();
         let resolver = self.clone();
         Box::pin(async move {
+            // reqwest pairs each resolved address with the URL's port, so the
+            // port here is a placeholder for production. Tests point a host at
+            // a loopback fixture on an ephemeral port and cannot use 443, so
+            // hand back the port the test address was set with.
+            #[cfg(test)]
+            let test_port = resolver.test_port(&host);
+            #[cfg(not(test))]
+            let test_port = None;
             let addresses = resolver
                 .refresh(&host)
                 .await?
                 .into_iter()
-                .map(|address| SocketAddr::new(address, 0))
+                .map(|address| SocketAddr::new(address, test_port.unwrap_or(0)))
                 .collect::<Vec<_>>();
             Ok(Box::new(addresses.into_iter()) as Addrs)
         })
@@ -1180,7 +1219,10 @@ mod tests {
         resolver.doh_endpoints =
             Arc::new(vec![Arc::from(format!("http://{address}/dns-query"))]);
         resolver.doh_clients = Arc::new(vec![
-            reqwest::Client::builder().no_proxy().build().unwrap(),
+            crate::util::http::client_builder()
+                .no_proxy()
+                .build()
+                .unwrap(),
         ]);
         let addresses = tokio::time::timeout(
             DNS_LOOKUP_TIMEOUT,
@@ -1204,10 +1246,13 @@ mod tests {
         resolver.doh_endpoints =
             Arc::new(vec![Arc::from(format!("http://{address}/dns-query"))]);
         resolver.doh_clients = Arc::new(vec![
-            reqwest::Client::builder().no_proxy().build().unwrap(),
+            crate::util::http::client_builder()
+                .no_proxy()
+                .build()
+                .unwrap(),
         ]);
         let (port, server) = spawn_ipv4_server().await;
-        let response = reqwest::Client::builder()
+        let response = crate::util::http::client_builder()
             .no_proxy()
             .connect_timeout(DNS_LOOKUP_TIMEOUT)
             .dns_resolver(Arc::new(resolver))
@@ -1242,7 +1287,10 @@ mod tests {
             let mut resolver = DownloadDnsResolver::with_doh(true).unwrap();
             resolver.doh_endpoints = Arc::new(vec![endpoint.clone()]);
             resolver.doh_clients = Arc::new(vec![
-                reqwest::Client::builder().no_proxy().build().unwrap(),
+                crate::util::http::client_builder()
+                    .no_proxy()
+                    .build()
+                    .unwrap(),
             ]);
             resolver.remember_answer(
                 "localhost",
@@ -1298,7 +1346,10 @@ mod tests {
             listener.local_addr().unwrap()
         ))]);
         resolver.doh_clients = Arc::new(vec![
-            reqwest::Client::builder().no_proxy().build().unwrap(),
+            crate::util::http::client_builder()
+                .no_proxy()
+                .build()
+                .unwrap(),
         ]);
         let addresses = tokio::time::timeout(
             DNS_LOOKUP_TIMEOUT,
@@ -1320,8 +1371,8 @@ mod tests {
         for record_type in [RecordType::A, RecordType::AAAA] {
             let query = doh_query("cdn.example", record_type).unwrap();
             let decoded = Message::from_vec(&query.to_vec().unwrap()).unwrap();
-            assert_eq!(decoded.queries(), query.queries());
-            assert!(decoded.recursion_desired());
+            assert_eq!(decoded.queries, query.queries);
+            assert!(decoded.metadata.recursion_desired);
             let alias = DnsName::from_ascii("edge.example").unwrap();
             let ip = if record_type == RecordType::A {
                 IpAddr::V4(Ipv4Addr::new(192, 0, 2, 1))
@@ -1333,10 +1384,10 @@ mod tests {
                 IpAddr::V6(ip) => RData::AAAA(AAAA(ip)),
             };
             let mut response = query.clone();
+            response.metadata.message_type = MessageType::Response;
             response
-                .set_message_type(MessageType::Response)
                 .add_answer(Record::from_rdata(
-                    query.query().unwrap().name().clone(),
+                    query.queries.first().unwrap().name().clone(),
                     60,
                     RData::CNAME(CNAME(alias.clone())),
                 ))
@@ -1346,7 +1397,7 @@ mod tests {
                     .unwrap(),
                 vec![SocketAddr::new(ip, 0)]
             );
-            response.set_id(query.id().wrapping_add(1));
+            response.metadata.id = query.metadata.id.wrapping_add(1);
             assert!(
                 parse_doh_response(&response.to_vec().unwrap(), &query)
                     .is_err()
@@ -1495,7 +1546,7 @@ mod tests {
         host: &str,
         port: u16,
     ) -> String {
-        reqwest::Client::builder()
+        crate::util::http::client_builder()
             .no_proxy()
             .connect_timeout(Duration::from_secs(2))
             .dns_resolver(Arc::new(resolver))
@@ -1695,7 +1746,7 @@ mod tests {
         let listener = tokio::net::TcpListener::bind(address).await.unwrap();
         let refused = listener.local_addr().unwrap();
         drop(listener);
-        let error = reqwest::Client::builder()
+        let error = crate::util::http::client_builder()
             .no_proxy()
             .resolve("redirect-target.test", refused)
             .timeout(Duration::from_secs(2))

@@ -23,8 +23,8 @@ const isFixedRender = computed(
     () => route.name === 'MultiplayerServerDetail' || route.name === 'MultiplayerServerFileStudio',
 )
 const tabLinks = computed(() => [
-    { label: formatMessage(messages.serversTab), href: '/multiplayer/servers', icon: ServerIcon },
     { label: formatMessage(messages.roomsTab), href: '/multiplayer/rooms', icon: UsersIcon },
+    { label: formatMessage(messages.serversTab), href: '/multiplayer/servers', icon: ServerIcon },
 ])
 
 function handleTabClick(index: number) {
@@ -47,15 +47,15 @@ function handleTabClick(index: number) {
                 {{ formatMessage(messages.title) }}
             </h1>
             <!--
-				This bar drives routes rather than panels, so it has no tabpanel of
-				its own: the outlet below renders child routes, and the detail and
-				rooms views own their own tablists. Navigation mode would fit the
-				routes but renders links rather than buttons, which normalise
-				underlines, so the switch waits on a visual review.
-			-->
+                This bar drives routes rather than panels, so it has no tabpanel of
+                its own: the outlet below renders child routes, and the detail and
+                rooms views own their own tablists. Navigation mode would fit the
+                routes but renders links rather than buttons, which normalise
+                underlines, so the switch waits on a visual review.
+            -->
             <NavTabs
                 mode="local"
-                :active-index="activeTab === 'rooms' ? 1 : 0"
+                :active-index="activeTab === 'rooms' ? 0 : 1"
                 :links="tabLinks"
                 @tab-click="handleTabClick"
             />

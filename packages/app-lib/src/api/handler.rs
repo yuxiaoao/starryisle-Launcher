@@ -68,9 +68,9 @@ async fn join_payload(
 ) -> crate::Result<CommandPayload> {
     if server.is_none() && singleplayer_world.is_none() {
         return Err(crate::ErrorKind::InputError(
-			"Join command requires a server or singleplayer_world query parameter".to_string(),
-		)
-		.into());
+            "Join command requires a server or singleplayer_world query parameter".to_string(),
+        )
+        .into());
     }
     launch_payload(id, server, singleplayer_world).await
 }
@@ -94,6 +94,7 @@ fn valid_project_type(value: &str) -> bool {
             | "shader"
             | "plugin"
             | "server"
+            | "schematic"
     )
 }
 
@@ -411,7 +412,7 @@ fn settings_params(
 // 特权双闸：两开关均开启才放行，取不到状态时拒绝
 async fn require_privileged() -> crate::Result<()> {
     let allowed = match crate::State::get().await {
-        Ok(state) => match Settings::get(&state.pool).await {
+        Ok(state) => match Settings::get(&state.data).await {
             Ok(settings) => {
                 settings.allow_external_scheme
                     && settings.allow_privileged_scheme
@@ -454,6 +455,7 @@ fn valid_privileged_setting(key: &str, value: &str) -> bool {
         "collapsed_navigation"
         | "toggle_sidebar"
         | "hide_nametag_skins_page"
+        | "nametag_uses_app_font"
         | "advanced_rendering"
         | "native_decorations"
         | "auto_hide_downloads_button"
@@ -511,6 +513,16 @@ fn valid_privileged_setting(key: &str, value: &str) -> bool {
         | "transparent_background_opacity" => in_range(value, 0, 100),
         "locale" | "default_window_title" => {
             !value.trim().is_empty() && value.len() <= 128 && no_control(value)
+        }
+        "default_game_language" => {
+            value.len() <= 32
+                && no_control(value)
+                && (value.trim().is_empty()
+                    || value.bytes().all(|byte| {
+                        byte.is_ascii_alphanumeric()
+                            || byte == b'_'
+                            || byte == b'-'
+                    }))
         }
         // 空串表示清空
         "hooks_pre_launch"
@@ -585,7 +597,7 @@ fn decoded(raw: &str) -> String {
 
 async fn external_scheme_allowed() -> bool {
     match crate::State::get().await {
-        Ok(state) => match Settings::get(&state.pool).await {
+        Ok(state) => match Settings::get(&state.data).await {
             Ok(settings) => settings.allow_external_scheme,
             Err(_) => true,
         },
@@ -596,6 +608,20 @@ async fn external_scheme_allowed() -> bool {
 pub async fn parse_command(
     command_string: &str,
 ) -> crate::Result<CommandPayload> {
+    if crate::third_party_accounts::is_callback(command_string) {
+        crate::third_party_accounts::handle_callback(command_string).await?;
+        return Ok(CommandPayload::OpenSettings {
+            tab: Some("third-party-accounts".to_string()),
+            entry: None,
+        });
+    }
+    if crate::third_party_accounts::is_callback_candidate(command_string) {
+        tracing::debug!("Parsing command: [invalid OAuth callback]");
+        return Err(crate::ErrorKind::InputError(
+            "Invalid OAuth callback URL".to_string(),
+        )
+        .into());
+    }
     tracing::debug!("Parsing command: {}", &command_string);
     if let Some(sublink) = command_string.strip_prefix("axolotl://") {
         if !external_scheme_allowed().await {
@@ -638,13 +664,29 @@ mod tests {
     use super::*;
 
     #[tokio::test]
+    async fn invalid_oauth_callback_shapes_never_open_account_settings() {
+        for command in [
+            "axolotl://oauth/other?code=secret",
+            "axolotl://oauth/callback/extra?code=secret",
+            "axolotl://oauth/callback?code=secret#fragment",
+        ] {
+            let error = parse_command(command)
+                .await
+                .err()
+                .expect("invalid callback");
+            assert!(error.to_string().contains("Invalid OAuth callback URL"));
+            assert!(!error.to_string().contains("secret"));
+        }
+    }
+
+    #[tokio::test]
     async fn parses_launch_query_command() {
         let command =
-			parse_command(
-				"axolotl://launch?instance_id=example%20instance&server=example.org%3A25565",
-			)
-			.await
-			.unwrap();
+            parse_command(
+                "axolotl://launch?instance_id=example%20instance&server=example.org%3A25565",
+            )
+            .await
+            .unwrap();
         assert!(matches!(
             command,
             CommandPayload::LaunchInstance { id, server: Some(server), singleplayer_world: None }

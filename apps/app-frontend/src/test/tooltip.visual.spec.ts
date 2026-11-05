@@ -1,3 +1,5 @@
+import '@modrinth/ui/directives/tooltip-styles.ts'
+
 import { tooltipDirective } from '@modrinth/ui/directives/tooltip.ts'
 import { afterEach, expect, it, vi } from 'vitest'
 import { createApp, defineComponent, h, nextTick, ref, withDirectives } from 'vue'
@@ -440,6 +442,29 @@ it('keeps a tooltip open while another enabled trigger remains active', async ()
 
     trigger.blur()
     await waitFor(() => !popper(), { label: 'the tooltip to hide after focus leaves' })
+    unmount()
+})
+
+it('hides a tooltip when its focused trigger is clicked', async () => {
+    const value = ref<unknown>('Open settings')
+    const { trigger, unmount } = mountTrigger(value)
+    applyTheme('dark')
+    await nextTick()
+
+    trigger.focus()
+    trigger.dispatchEvent(new MouseEvent('mouseenter'))
+    await waitFor(() => !!popper(), { label: 'the focused tooltip' })
+
+    trigger.click()
+    await waitFor(() => !popper(), { label: 'the clicked tooltip to hide' })
+
+    // The trigger can remain focused while its dialog is open. A later render
+    // must not resurrect the tooltip over that dialog.
+    value.value = 'Updated settings'
+    await nextTick()
+    await new Promise((resolve) => setTimeout(resolve, 250))
+    expect(popper()).toBeNull()
+
     unmount()
 })
 
