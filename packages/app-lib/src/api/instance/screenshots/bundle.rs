@@ -107,7 +107,8 @@ pub async fn export_instance_bundle(
     }
     if let Some(selected) = file_names {
         if !selected.is_empty() {
-            let allowed: std::collections::HashSet<String> = selected.into_iter().collect();
+            let allowed: std::collections::HashSet<String> =
+                selected.into_iter().collect();
             files.retain(|(name, _)| allowed.contains(name));
         }
     }
@@ -138,17 +139,26 @@ pub async fn export_instance_bundle(
     tokio::task::spawn_blocking(move || -> crate::Result<()> {
         let file = std::fs::File::create(&export_path)?;
         let mut writer = ZipWriter::new(file);
-        let options =
-            SimpleFileOptions::default().compression_method(CompressionMethod::Deflated);
+        let options = SimpleFileOptions::default()
+            .compression_method(CompressionMethod::Deflated);
 
-        writer.start_file(MANIFEST_ENTRY, options).map_err(std::io::Error::from)?;
-        writer.write_all(serde_json::to_string_pretty(&manifest)?.as_bytes())?;
+        writer
+            .start_file(MANIFEST_ENTRY, options)
+            .map_err(std::io::Error::from)?;
+        writer
+            .write_all(serde_json::to_string_pretty(&manifest)?.as_bytes())?;
 
-        writer.start_file(NOTES_ENTRY, options).map_err(std::io::Error::from)?;
-        writer.write_all(serde_json::to_string_pretty(&note_entries)?.as_bytes())?;
+        writer
+            .start_file(NOTES_ENTRY, options)
+            .map_err(std::io::Error::from)?;
+        writer.write_all(
+            serde_json::to_string_pretty(&note_entries)?.as_bytes(),
+        )?;
 
         for (name, path) in files {
-            writer.start_file(format!("{SHOTS_PREFIX}{name}"), options).map_err(std::io::Error::from)?;
+            writer
+                .start_file(format!("{SHOTS_PREFIX}{name}"), options)
+                .map_err(std::io::Error::from)?;
             let mut source = std::fs::File::open(&path)?;
             std::io::copy(&mut source, &mut writer)?;
         }
@@ -192,19 +202,22 @@ pub async fn import_instance_bundle(
         let dir = dir.clone();
         move || -> crate::Result<(BundleImportReport, Vec<BundleNoteEntry>)> {
             let file = std::fs::File::open(&archive_path)?;
-            let mut archive = ZipArchive::new(file).map_err(std::io::Error::from)?;
+            let mut archive =
+                ZipArchive::new(file).map_err(std::io::Error::from)?;
 
             let manifest_text = {
-                let mut entry = archive.by_name(MANIFEST_ENTRY).map_err(|_| {
-                    crate::ErrorKind::InputError(
-                        "Archive is missing manifest.json".to_string(),
-                    )
-                })?;
+                let mut entry =
+                    archive.by_name(MANIFEST_ENTRY).map_err(|_| {
+                        crate::ErrorKind::InputError(
+                            "Archive is missing manifest.json".to_string(),
+                        )
+                    })?;
                 let mut text = String::new();
                 entry.read_to_string(&mut text)?;
                 text
             };
-            let manifest: BundleManifest = serde_json::from_str(&manifest_text)?;
+            let manifest: BundleManifest =
+                serde_json::from_str(&manifest_text)?;
             if manifest.format != BUNDLE_FORMAT {
                 return Err(crate::ErrorKind::InputError(
                     "Archive was not exported by StarryIsle".to_string(),
@@ -233,7 +246,8 @@ pub async fn import_instance_bundle(
             };
 
             for index in 0..archive.len() {
-                let mut entry = archive.by_index(index).map_err(std::io::Error::from)?;
+                let mut entry =
+                    archive.by_index(index).map_err(std::io::Error::from)?;
                 let Ok(raw_name) = entry.name() else {
                     continue;
                 };
@@ -256,14 +270,20 @@ pub async fn import_instance_bundle(
                         }
                         ConflictPolicy::Overwrite => report.overwritten += 1,
                         ConflictPolicy::Rename => {
-                            let stem = name.file_stem().unwrap_or_default().to_string_lossy();
+                            let stem = name
+                                .file_stem()
+                                .unwrap_or_default()
+                                .to_string_lossy();
                             let ext = name
                                 .extension()
-                                .map(|value| value.to_string_lossy().to_string())
+                                .map(|value| {
+                                    value.to_string_lossy().to_string()
+                                })
                                 .unwrap_or_else(|| "png".to_string());
                             let mut counter = 1;
                             loop {
-                                let candidate = dir.join(format!("{stem} ({counter}).{ext}"));
+                                let candidate = dir
+                                    .join(format!("{stem} ({counter}).{ext}"));
                                 if !candidate.exists() {
                                     target = candidate;
                                     break;
@@ -283,11 +303,12 @@ pub async fn import_instance_bundle(
                 report.imported += 1;
             }
 
-            let candidates: Vec<BundleNoteEntry> = if notes_text.trim().is_empty() {
-                Vec::new()
-            } else {
-                serde_json::from_str(&notes_text).unwrap_or_default()
-            };
+            let candidates: Vec<BundleNoteEntry> =
+                if notes_text.trim().is_empty() {
+                    Vec::new()
+                } else {
+                    serde_json::from_str(&notes_text).unwrap_or_default()
+                };
             let mut pending = Vec::new();
             for note in candidates {
                 if dir.join(&note.file_name).exists() {
@@ -313,7 +334,11 @@ pub async fn import_instance_bundle(
         report.notes_written += 1;
     }
 
-    super::reconciliation::reconcile_screenshots_with_state(instance_id, &state).await?;
+    super::reconciliation::reconcile_screenshots_with_state(
+        instance_id,
+        &state,
+    )
+    .await?;
 
     Ok(report)
 }

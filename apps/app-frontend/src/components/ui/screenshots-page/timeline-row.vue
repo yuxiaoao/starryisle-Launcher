@@ -22,9 +22,9 @@ const emit = defineEmits<{
     (e: 'toggle-select', screenshot: InstanceScreenshot): void
 }>()
 
-const { formatMessage: _formatMessage } = useVIntl()
+const { formatMessage: formatMessage } = useVIntl()
 
-const _messages = defineMessages({
+const messages = defineMessages({
     addNote: { id: 'app.screenshots.note.placeholder', defaultMessage: 'Add a note…' },
 })
 

@@ -32,7 +32,8 @@ pub async fn set_screenshot_note(
     note: &str,
 ) -> crate::Result<()> {
     let state = State::get().await?;
-    set_screenshot_note_with_pool(instance_id, file_name, note, &state.pool).await
+    set_screenshot_note_with_pool(instance_id, file_name, note, &state.pool)
+        .await
 }
 
 pub(crate) async fn set_screenshot_note_with_pool(
@@ -121,7 +122,9 @@ pub(crate) async fn delete_notes_for_keys(
 }
 
 /// Removes notes whose screenshot no longer exists in the index.
-pub(crate) async fn prune_orphan_notes(pool: &SqlitePool) -> crate::Result<u64> {
+pub(crate) async fn prune_orphan_notes(
+    pool: &SqlitePool,
+) -> crate::Result<u64> {
     let result = sqlx::query(
         "DELETE FROM screenshot_notes
          WHERE NOT EXISTS (

@@ -22,9 +22,9 @@ const emit = defineEmits<{
     (e: 'cancel-note' | 'clear-selection'): void
 }>()
 
-const { formatMessage: _formatMessage } = useVIntl()
+const { formatMessage: formatMessage } = useVIntl()
 
-const _messages = defineMessages({
+const messages = defineMessages({
     dayLabel: { id: 'app.screenshots.timeline.day', defaultMessage: '{date} · {count}' },
     empty: { id: 'app.screenshots.timeline.empty', defaultMessage: 'Nothing to show yet' },
 })

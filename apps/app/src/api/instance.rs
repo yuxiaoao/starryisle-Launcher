@@ -1517,11 +1517,15 @@ pub async fn instance_import_screenshot_bundle(
         &conflict,
     )
     .await?)
-}#[tauri::command]
+}
+#[tauri::command]
 pub async fn instance_list_screenshot_notes(
     instance_id: Option<String>,
 ) -> Result<Vec<theseus::instance::ScreenshotNote>> {
-    Ok(theseus::instance::list_screenshot_notes(instance_id.as_deref()).await?)
+    Ok(
+        theseus::instance::list_screenshot_notes(instance_id.as_deref())
+            .await?,
+    )
 }
 #[tauri::command]
 pub async fn instance_set_screenshot_note(
@@ -1529,8 +1533,12 @@ pub async fn instance_set_screenshot_note(
     file_name: String,
     note: String,
 ) -> Result<()> {
-    Ok(theseus::instance::set_screenshot_note(&instance_id, &file_name, &note).await?)
-}#[tauri::command]
+    Ok(
+        theseus::instance::set_screenshot_note(&instance_id, &file_name, &note)
+            .await?,
+    )
+}
+#[tauri::command]
 pub async fn instance_list_screenshot_groups()
 -> Result<Vec<theseus::instance::ScreenshotGroup>> {
     Ok(theseus::instance::list_screenshot_groups().await?)
