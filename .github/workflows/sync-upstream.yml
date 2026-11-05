@@ -1,7 +1,7 @@
 name: Sync upstream
 
-# Adopts the upstream Axolotl history into this fork so GitHub stops reporting the
-# branch as N commits behind, without touching the files this fork edited on purpose.
+# Merges the upstream Axolotl branch into this fork for real: the merge commit
+# records upstream/main as a parent, so later syncs are ordinary merges.
 # Run it from the Actions tab; it never runs on push, so it cannot start a build.
 on:
   workflow_dispatch:
@@ -11,7 +11,7 @@ on:
         required: false
         default: Axolotl-Launcher/Axolotl
       strategy:
-        description: Conflict resolution for files both sides changed
+        description: Which side wins when both changed the same lines
         required: false
         default: ours
         type: choice
@@ -52,24 +52,30 @@ jobs:
 
           echo "### Before merge"
           git rev-list --count HEAD..upstream/main | sed 's/^/commits behind: /'
-          echo "files differing from upstream:"
-          git diff --stat HEAD upstream/main | tail -n 25
 
           if git merge-base --is-ancestor upstream/main HEAD; then
             echo "already up to date; nothing to merge"
             exit 0
           fi
 
-          # The fork already carries the upstream content (a previous sync applied it
-          # file by file), so recording the ancestry without re-applying the diff is
-          # what keeps the tree identical while the branch stops looking "behind".
-          git merge --no-ff -s ours \
+          if [ "${STRATEGY}" = "theirs" ]; then
+            MERGE_ARGS="-X theirs"
+          else
+            MERGE_ARGS="-X ours"
+          fi
+
+          # A real merge: upstream content lands in the tree, our side wins only
+          # where the two edits overlap.
+          if ! git merge --no-ff ${MERGE_ARGS} \
             -m "chore(sync): merge upstream main into the StarryIsle fork" \
-            upstream/main
+            upstream/main; then
+            echo "merge conflicted; aborting without pushing"
+            git merge --abort || true
+            exit 1
+          fi
 
           echo "### After merge"
           git rev-list --count HEAD..upstream/main | sed 's/^/commits behind: /'
-          echo "files still differing from upstream (our intentional changes):"
           git diff --stat upstream/main HEAD | tail -n 40
 
           git push origin HEAD:main
@@ -78,12 +84,7 @@ jobs:
         if: always()
         run: |
           {
-            echo "## Sync upstream"
-            echo ""
+            echo "### Sync result"
             echo "- upstream: \`${{ inputs.upstream }}\`"
             echo "- strategy: \`${{ inputs.strategy }}\`"
-            echo ""
-            echo '```'
-            git log --oneline -n 5
-            echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
