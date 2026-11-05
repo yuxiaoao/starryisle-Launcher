@@ -52,6 +52,12 @@ export const utilityRoutes: RouteRecordRaw[] = [
         meta: { breadcrumb: [{ name: 'Screenshots' }] },
     },
     {
+        path: '/stats',
+        name: 'Stats',
+        component: () => import('@/pages/Stats.vue'),
+        meta: { breadcrumb: [{ name: 'Statistics' }] },
+    },
+    {
         path: '/help/drop',
         name: 'DropHelp',
         component: () => import('@/pages/help/DropHelp.vue'),

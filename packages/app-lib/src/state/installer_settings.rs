@@ -1,7 +1,7 @@
 #[cfg(target_os = "windows")]
 mod windows {
     use super::super::{DirectoryInfo, Settings};
-    use sqlx::SqlitePool;
+    use crate::state::store::Handle;
     use std::path::{Path, PathBuf};
     use winreg::RegKey;
     use winreg::enums::{HKEY_CURRENT_USER, KEY_READ, KEY_SET_VALUE};
@@ -94,7 +94,7 @@ mod windows {
 
     pub async fn apply_pending_installer_directory(
         settings: &mut Settings,
-        pool: &SqlitePool,
+        handle: &Handle,
         app_identifier: &str,
     ) -> crate::Result<()> {
         if std::env::var_os("THESEUS_CONFIG_DIR").is_some() {
@@ -140,7 +140,7 @@ mod windows {
                 );
                 settings.custom_dir = Some(custom_dir);
                 settings.prev_custom_dir = Some(prev_custom_dir);
-                settings.update(pool).await?;
+                settings.update(handle).await?;
                 clear_pending_directory(&key)?;
             }
             PendingDirectoryDecision::Clear => {
@@ -157,7 +157,7 @@ mod windows {
         use super::*;
 
         fn default_directory() -> PathBuf {
-            PathBuf::from(r"C:\Users\Test\AppData\Roaming\red.ghs.axolotl")
+            PathBuf::from(r"C:\Users\Test\AppData\Roaming\com.starryisle.launcher")
         }
 
         #[test]
@@ -182,7 +182,7 @@ mod windows {
         fn clears_a_default_installer_directory() {
             assert_eq!(
                 decide_pending_directory(
-                    Some(r"C:\Users\Test\AppData\Roaming\red.ghs.axolotl\"),
+                    Some(r"C:\Users\Test\AppData\Roaming\com.starryisle.launcher\"),
                     &default_directory(),
                     false,
                     false,
@@ -258,7 +258,7 @@ pub use windows::apply_pending_installer_directory;
 #[cfg(not(target_os = "windows"))]
 pub async fn apply_pending_installer_directory(
     _settings: &mut super::Settings,
-    _pool: &sqlx::SqlitePool,
+    _handle: &crate::state::store::Handle,
     _app_identifier: &str,
 ) -> crate::Result<()> {
     Ok(())

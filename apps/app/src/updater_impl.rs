@@ -15,9 +15,13 @@ use theseus::{
 use tokio::time::Instant;
 use url::Url;
 
-const UPDATE_SERVER_LATEST_URL: &str = "https://update.axlmc.org/latest";
-const UPDATE_SERVER_API: &str = "https://update.axlmc.org/api/versions";
-const UPDATE_SERVER_BASE: &str = "https://update.axlmc.org/";
+// StarryIsle publishes its own updater manifest next to each GitHub release, so
+// updates never point at the upstream Axolotl services.
+const UPDATE_SERVER_LATEST_URL: &str =
+    "https://github.com/yuxiaoao/starryisle-Launcher/releases/latest/download/latest.json";
+const UPDATE_SERVER_API: &str =
+    "https://github.com/yuxiaoao/starryisle-Launcher/releases/latest/download/latest.json";
+const UPDATE_SERVER_BASE: &str = "https://github.com/yuxiaoao/starryisle-Launcher/releases/";
 
 // The updater plugin builds `Update` with no request timeout, so a stalled
 // connection would hang the download forever. Bound the whole download.
@@ -285,7 +289,18 @@ pub async fn check_app_update<R: Runtime>(
     webview: Webview<R>,
     channel: String,
 ) -> Result<Option<UpdateMetadata>> {
-    check_with_updater(&webview, &channel).await
+    // Only the StarryIsle manifest is queried; the upstream Axolotl service is
+    // never contacted, so this fork can never be replaced by that product.
+    //
+    // A failed lookup (offline, blocked network, missing manifest) must not
+    // surface as an error notification: it simply means no update is available.
+    match check_with_updater(&webview, &channel).await {
+        Ok(update) => Ok(update),
+        Err(error) => {
+            tracing::warn!("Skipped launcher update check: {error}");
+            Ok(None)
+        }
+    }
 }
 
 // Reimplementation of Update::download mostly, minus the actual download part

@@ -61,6 +61,7 @@ pub fn init<R: tauri::Runtime>() -> tauri::plugin::TauriPlugin<R> {
             instance_plan_content_updates,
             instance_apply_content_update_plan,
             instance_plan_upgrade,
+            instance_cancel_upgrade_planning,
             instance_get_upgrade_plan,
             instance_discard_upgrade_plan,
             instance_update_upgrade_resolution,
@@ -121,6 +122,14 @@ pub fn init<R: tauri::Runtime>() -> tauri::plugin::TauriPlugin<R> {
             instance_import_screenshot_groups,
             instance_delete_screenshots,
             instance_export_screenshots,
+            instance_list_worlds,
+            instance_world_advancements,
+            instance_advancement_catalog,
+            stats_overview,
+            instance_export_screenshots_bundle,
+            instance_import_screenshots_bundle,
+            instance_set_screenshot_note,
+            instance_list_screenshot_notes,
             instance_move_screenshots,
             instance_open_screenshot,
             instance_get_synced_options,
@@ -1128,23 +1137,100 @@ pub async fn instance_plan_content_updates(
 pub async fn instance_apply_content_update_plan(
     plan_id: &str,
     resolutions: Vec<theseus::data::ContentUpdateResolution>,
-) -> Result<theseus::data::InstanceContentSnapshot> {
+) -> Result<theseus::instance::ContentUpdateApplyResult> {
     Ok(
         theseus::instance::apply_content_update_plan(plan_id, resolutions)
             .await?,
     )
 }
 
+/// Upgrade plans being created, by the request ID their caller chose, so the
+/// caller can stop one it no longer waits for.
+static UPGRADE_PLANNING: std::sync::LazyLock<
+    DashMap<String, tokio_util::sync::CancellationToken>,
+> = std::sync::LazyLock::new(DashMap::new);
+/// Cancels that arrived before their planning request was registered.
+static EARLY_UPGRADE_PLANNING_CANCELS: std::sync::LazyLock<
+    DashMap<String, std::time::Instant>,
+> = std::sync::LazyLock::new(DashMap::new);
+const EARLY_CANCEL_TTL: std::time::Duration =
+    std::time::Duration::from_secs(30);
+
+struct UpgradePlanningRequest(String);
+
+impl UpgradePlanningRequest {
+    fn register(
+        id: String,
+        cancel: &tokio_util::sync::CancellationToken,
+    ) -> Self {
+        UPGRADE_PLANNING.insert(id.clone(), cancel.clone());
+        if EARLY_UPGRADE_PLANNING_CANCELS
+            .remove(&id)
+            .is_some_and(|(_, at)| at.elapsed() < EARLY_CANCEL_TTL)
+        {
+            cancel.cancel();
+        }
+        Self(id)
+    }
+}
+
+impl Drop for UpgradePlanningRequest {
+    fn drop(&mut self) {
+        UPGRADE_PLANNING.remove(&self.0);
+    }
+}
+
 #[tauri::command]
-pub async fn instance_plan_upgrade(
+pub async fn instance_plan_upgrade<R: Runtime>(
+    webview: tauri::Webview<R>,
     instance_id: &str,
     target_environment: theseus::data::InstanceUpgradeEnvironment,
+    request_id: Option<String>,
+    on_progress: Option<tauri::ipc::JavaScriptChannelId>,
 ) -> Result<theseus::data::InstanceUpgradePlan> {
+    let cancel = tokio_util::sync::CancellationToken::new();
+    let _request =
+        request_id.map(|id| UpgradePlanningRequest::register(id, &cancel));
+    let progress = on_progress.map(|id| {
+        let channel = id
+            .channel_on::<_, theseus::data::InstanceUpgradePlanningProgress>(
+                webview,
+            );
+        std::sync::Arc::new(
+            move |value: theseus::data::InstanceUpgradePlanningProgress| {
+                let _ = channel.send(value);
+            },
+        )
+            as std::sync::Arc<
+                dyn Fn(theseus::data::InstanceUpgradePlanningProgress)
+                    + Send
+                    + Sync,
+            >
+    });
     Ok(theseus::instance::plan_instance_upgrade(
         instance_id,
         target_environment,
+        cancel,
+        progress,
     )
     .await?)
+}
+
+#[tauri::command]
+pub fn instance_cancel_upgrade_planning(request_id: String) {
+    if let Some(cancel) = UPGRADE_PLANNING.get(&request_id) {
+        cancel.cancel();
+        return;
+    }
+    EARLY_UPGRADE_PLANNING_CANCELS
+        .retain(|_, at| at.elapsed() < EARLY_CANCEL_TTL);
+    if EARLY_UPGRADE_PLANNING_CANCELS.len() < 64 {
+        EARLY_UPGRADE_PLANNING_CANCELS
+            .insert(request_id.clone(), std::time::Instant::now());
+    }
+    if let Some(cancel) = UPGRADE_PLANNING.get(&request_id) {
+        cancel.cancel();
+    }
 }
 
 #[tauri::command]
@@ -1447,6 +1533,76 @@ pub async fn instance_delete_screenshots(
 ) -> Result<()> {
     Ok(theseus::instance::delete_screenshots(&keys).await?)
 }
+#[tauri::command]
+pub async fn instance_set_screenshot_note(
+    instance_id: String,
+    file_name: String,
+    note: String,
+) -> Result<()> {
+    Ok(theseus::instance::set_screenshot_note(&instance_id, &file_name, &note).await?)
+}
+
+#[tauri::command]
+pub async fn instance_list_screenshot_notes(
+    instance_id: Option<String>,
+) -> Result<Vec<theseus::instance::ScreenshotNote>> {
+    Ok(theseus::instance::list_screenshot_notes(instance_id.as_deref()).await?)
+}
+
+#[tauri::command]
+pub async fn instance_export_screenshots_bundle(
+    instance_id: String,
+    file_names: Option<Vec<String>>,
+    path: PathBuf,
+) -> Result<theseus::instance::BundleExportReport> {
+    Ok(theseus::instance::export_instance_bundle(&instance_id, file_names, path).await?)
+}
+
+#[tauri::command]
+pub async fn instance_import_screenshots_bundle(
+    instance_id: String,
+    path: PathBuf,
+    conflict: String,
+) -> Result<theseus::instance::BundleImportReport> {
+    Ok(theseus::instance::import_instance_bundle(&instance_id, path, &conflict).await?)
+}
+
+#[tauri::command]
+pub async fn stats_overview(
+    year: Option<i32>,
+    force: Option<bool>,
+) -> Result<theseus::stats::StatsOverview> {
+    Ok(theseus::stats::overview(year, force.unwrap_or(false)).await?)
+}
+
+#[tauri::command]
+pub async fn instance_list_worlds(
+    instance_id: String,
+) -> Result<Vec<theseus::instance::WorldSummary>> {
+    Ok(theseus::instance::list_worlds(&instance_id).await?)
+}
+
+#[tauri::command]
+pub async fn instance_world_advancements(
+    instance_id: String,
+    world: String,
+    player: Option<String>,
+) -> Result<theseus::instance::WorldAdvancements> {
+    Ok(theseus::instance::world_advancements(
+        &instance_id,
+        &world,
+        player.as_deref(),
+    )
+    .await?)
+}
+
+#[tauri::command]
+pub async fn instance_advancement_catalog(
+    instance_id: Option<String>,
+) -> Result<Vec<theseus::instance::AdvancementDef>> {
+    Ok(theseus::instance::advancement_catalog(instance_id).await?)
+}
+
 #[tauri::command]
 pub async fn instance_export_screenshots(
     keys: Vec<theseus::instance::ScreenshotKey>,

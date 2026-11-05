@@ -55,6 +55,7 @@ import {
     hexToHsl,
     type HomeLayout,
     hslToHex,
+    hueTintSwatches,
     parseCustomAccentColor,
 } from '@/store/theme.ts'
 
@@ -72,6 +73,45 @@ const props = withDefaults(
 const themeStore = useTheming()
 const { formatMessage } = useVIntl()
 const { handleError } = injectNotificationManager()
+
+function toggleHueTint(enabled: boolean) {
+    themeStore.setHueTint(enabled ? 180 : null)
+}
+
+const hueSwatch = computed(() => hueTintSwatches(themeStore.hueTint ?? 180))
+
+const isLightTheme = computed(() => {
+    const theme = themeStore.selectedTheme
+    if (theme === 'light') return true
+    if (theme === 'system' && typeof window !== 'undefined') {
+        return window.matchMedia('(prefers-color-scheme: light)').matches
+    }
+    return false
+})
+
+function applyHueTheme(theme: 'light' | 'dark') {
+    themeStore.setThemeState(theme)
+    settings.value.theme = theme
+    // Re-run the tint against the new surface colours.
+    themeStore.setHueTint(themeStore.hueTint ?? 180)
+}
+
+const currentHueHex = computed(() =>
+    isLightTheme.value ? hueSwatch.value.lightHex : hueSwatch.value.darkHex,
+)
+
+const hueHexInput = ref(currentHueHex.value)
+
+watch(currentHueHex, (value) => {
+    hueHexInput.value = value
+})
+
+function onHueHexInput(value: string) {
+    hueHexInput.value = value
+    const match = /^#?([0-9a-f]{6})$/i.exec(value.trim())
+    if (!match) return
+    themeStore.setHueTint(Math.round(hexToHsl(`#${match[1].toLowerCase()}`).h))
+}
 
 themeStore.showScrollTop = getShowScrollTop()
 
@@ -100,7 +140,39 @@ const messages = defineMessages({
     },
     colorThemeDescription: {
         id: 'app.appearance-settings.color-theme.description',
-        defaultMessage: 'Select your preferred color theme for Axolotl Launcher.',
+        defaultMessage: 'Select your preferred color theme for StarryIsle Launcher.',
+    },
+    hueTintTitle: {
+        id: 'app.appearance-settings.hue-tint.title',
+        defaultMessage: 'Interface hue',
+    },
+    hueTintDescription: {
+        id: 'app.appearance-settings.hue-tint.description',
+        defaultMessage: 'Re-tints the launcher surfaces without touching icons.',
+    },
+    hueTintReset: {
+        id: 'app.appearance-settings.hue-tint.reset',
+        defaultMessage: 'Reset',
+    },
+    hueTintEnable: {
+        id: 'app.appearance-settings.hue-tint.enable',
+        defaultMessage: 'Enable interface hue',
+    },
+    hueTintEnableDescription: {
+        id: 'app.appearance-settings.hue-tint.enable-description',
+        defaultMessage: 'Tints the nav rail, title bar and window frame with the selected hue.',
+    },
+    hueTintHex: {
+        id: 'app.appearance-settings.hue-tint.hex',
+        defaultMessage: 'Hex',
+    },
+    hueTintLightTheme: {
+        id: 'app.appearance-settings.hue-tint.light-theme',
+        defaultMessage: 'Light theme',
+    },
+    hueTintDarkTheme: {
+        id: 'app.appearance-settings.hue-tint.dark-theme',
+        defaultMessage: 'Dark theme',
     },
     accentColorTitle: {
         id: 'app.appearance-settings.accent-color.title',
@@ -284,6 +356,15 @@ const messages = defineMessages({
         id: 'app.appearance-settings.hide-nametag.description',
         defaultMessage: 'Disables the nametag above your player on the skins page.',
     },
+    nametagUsesAppFontTitle: {
+        id: 'app.appearance-settings.nametag-uses-app-font.title',
+        defaultMessage: 'Role name tag uses the app font',
+    },
+    nametagUsesAppFontDescription: {
+        id: 'app.appearance-settings.nametag-uses-app-font.description',
+        defaultMessage:
+            'Shows your role name tag on the skins page in your interface font instead of the Minecraft pixel font.',
+    },
     nativeDecorationsTitle: {
         id: 'app.appearance-settings.native-decorations.title',
         defaultMessage: 'Native decorations',
@@ -294,7 +375,7 @@ const messages = defineMessages({
     },
     closeBehaviorTitle: {
         id: 'app.appearance-settings.close-behavior.title',
-        defaultMessage: 'Choose how to close Axolotl Launcher',
+        defaultMessage: 'Choose how to close StarryIsle Launcher',
     },
     closeBehaviorDescription: {
         id: 'app.appearance-settings.close-behavior.description',
@@ -446,6 +527,7 @@ const messages = defineMessages({
         defaultMessage: 'Discover content',
     },
     navScreenshots: { id: 'app.navigation.screenshots', defaultMessage: 'Screenshots' },
+    navStats: { id: 'app.navigation.stats', defaultMessage: 'Statistics' },
     navLibrary: { id: 'app.navigation.library', defaultMessage: 'Library' },
     navWorlds: { id: 'app.navigation.worlds', defaultMessage: 'Worlds' },
     navMultiplayer: { id: 'app.navigation.multiplayer', defaultMessage: 'Multiplayer' },
@@ -536,6 +618,7 @@ const NAV_TREE_ITEMS: NavTreeItem[] = [
     { id: 'discover', label: messages.navDiscover, group: 'browse' },
     { id: 'screenshots', label: messages.navScreenshots, group: 'browse' },
     { id: 'library', label: messages.navLibrary, group: 'play' },
+    { id: 'stats', label: messages.navStats, group: 'play' },
     { id: 'worlds', label: messages.navWorlds, group: 'play' },
     { id: 'multiplayer', label: messages.navMultiplayer, group: 'play' },
     { id: 'skins', label: messages.navSkins, group: 'play' },
@@ -566,6 +649,10 @@ function navItemLockReason(id: string): MessageDescriptor | null {
     return null
 }
 
+/// Marker that records an explicit navigation choice. Without it the backend
+/// keeps statistics hidden by default, so user preferences need a non-empty list.
+const NAV_CHOICE_MARKER = 'nav_prefs_touched'
+
 function isNavItemVisible(id: string) {
     return !settings.value.hidden_nav_items.includes(id)
 }
@@ -574,6 +661,7 @@ function setNavItemVisible(id: string, visible: boolean) {
     if (navItemLockReason(id)) return
 
     const hidden = new Set(settings.value.hidden_nav_items)
+    hidden.delete(NAV_CHOICE_MARKER)
     if (visible) {
         hidden.delete(id)
     } else {
@@ -582,8 +670,8 @@ function setNavItemVisible(id: string, visible: boolean) {
     // Boundary guard: never persist core items as hidden.
     for (const locked of LOCKED_NAV_ITEM_IDS) hidden.delete(locked)
 
-    settings.value.hidden_nav_items = [...hidden]
-    themeStore.hiddenNavItems = settings.value.hidden_nav_items
+    settings.value.hidden_nav_items = [...hidden, NAV_CHOICE_MARKER]
+    themeStore.hiddenNavItems = [...hidden]
 }
 const customBackgroundPreview = computed(() =>
     settings.value.custom_background_path
@@ -935,6 +1023,124 @@ watch(
                     :theme-options="themeStore.getThemeOptions()"
                     system-theme-color="system"
                 />
+            </div>
+        </SettingsSection>
+
+        <SettingsSection v-if="props.scope === 'interface'">
+            <template #header>
+                <h2
+                    id="settings-target-appearance-hue-tint"
+                    tabindex="-1"
+                    class="m-0 text-lg font-semibold text-[var(--color-text-primary)]"
+                >
+                    {{ formatMessage(messages.hueTintTitle) }}
+                </h2>
+                <p class="m-0 mt-1 text-sm leading-relaxed text-[var(--color-text-tertiary)]">
+                    {{ formatMessage(messages.hueTintDescription) }}
+                </p>
+            </template>
+
+            <div class="flex flex-col gap-4 p-4">
+                <div
+                    class="flex items-center justify-between gap-4 border-0 border-b-[1px] border-solid border-[--brand-gradient-border] pb-3"
+                >
+                    <div class="flex flex-col gap-0.5">
+                        <span class="text-sm font-semibold text-[var(--color-text-primary)]">
+                            {{ formatMessage(messages.hueTintEnable) }}
+                        </span>
+                        <span class="text-xs text-[var(--color-text-tertiary)]">
+                            {{ formatMessage(messages.hueTintEnableDescription) }}
+                        </span>
+                    </div>
+                    <Toggle
+                        :model-value="themeStore.hueTint !== null"
+                        @update:model-value="toggleHueTint"
+                    />
+                </div>
+
+                <div
+                    class="flex items-center gap-3"
+                    :class="{ 'opacity-40 pointer-events-none': themeStore.hueTint === null }"
+                >
+                    <input
+                        type="range"
+                        min="0"
+                        max="359"
+                        step="1"
+                        class="hue-slider min-w-0 flex-1"
+                        :value="themeStore.hueTint ?? 0"
+                        :style="{ '--hue-thumb': hueSwatch.dark }"
+                        :aria-label="formatMessage(messages.hueTintTitle)"
+                        :disabled="themeStore.hueTint === null"
+                        @input="
+                            themeStore.setHueTint(Number(($event.target as HTMLInputElement).value))
+                        "
+                    />
+                </div>
+
+                <div
+                    class="flex flex-wrap items-center gap-x-6 gap-y-3"
+                    :class="{ 'opacity-40': themeStore.hueTint === null }"
+                >
+                    <label class="flex items-center gap-2">
+                        <span class="text-sm font-semibold text-[var(--color-text-primary)]">
+                            {{ formatMessage(messages.hueTintHex) }}
+                        </span>
+                        <input
+                            type="text"
+                            maxlength="7"
+                            spellcheck="false"
+                            :value="hueHexInput"
+                            class="w-28"
+                            @input="onHueHexInput(($event.target as HTMLInputElement).value)"
+                            @blur="hueHexInput = currentHueHex"
+                        />
+                    </label>
+                    <button
+                        type="button"
+                        class="flex cursor-pointer items-center gap-2 border-none bg-transparent p-0"
+                        :aria-pressed="isLightTheme"
+                        @click="applyHueTheme('light')"
+                    >
+                        <span
+                            class="size-6 shrink-0 rounded-full"
+                            :class="isLightTheme ? 'ring-2 ring-brand' : 'ring-2 ring-white/20'"
+                            :style="{ backgroundColor: hueSwatch.light }"
+                        />
+                        <span
+                            class="text-sm"
+                            :class="
+                                isLightTheme
+                                    ? 'font-semibold text-[var(--color-text-primary)]'
+                                    : 'text-[var(--color-text-tertiary)]'
+                            "
+                        >
+                            {{ formatMessage(messages.hueTintLightTheme) }}
+                        </span>
+                    </button>
+                    <button
+                        type="button"
+                        class="flex cursor-pointer items-center gap-2 border-none bg-transparent p-0"
+                        :aria-pressed="!isLightTheme"
+                        @click="applyHueTheme('dark')"
+                    >
+                        <span
+                            class="size-6 shrink-0 rounded-full"
+                            :class="!isLightTheme ? 'ring-2 ring-brand' : 'ring-2 ring-white/20'"
+                            :style="{ backgroundColor: hueSwatch.dark }"
+                        />
+                        <span
+                            class="text-sm"
+                            :class="
+                                !isLightTheme
+                                    ? 'font-semibold text-[var(--color-text-primary)]'
+                                    : 'text-[var(--color-text-tertiary)]'
+                            "
+                        >
+                            {{ formatMessage(messages.hueTintDarkTheme) }}
+                        </span>
+                    </button>
+                </div>
             </div>
         </SettingsSection>
 
@@ -1743,6 +1949,28 @@ watch(
                     />
                 </template>
             </SettingsRow>
+            <SettingsRow>
+                <template #label>
+                    <span id="settings-target-appearance-nametag-uses-app-font" tabindex="-1">
+                        {{ formatMessage(messages.nametagUsesAppFontTitle) }}
+                    </span>
+                </template>
+                <template #description>{{
+                    formatMessage(messages.nametagUsesAppFontDescription)
+                }}</template>
+                <template #control>
+                    <Toggle
+                        id="nametag-uses-app-font"
+                        :model-value="themeStore.nametagUsesAppFont"
+                        @update:model-value="
+                            (e) => {
+                                themeStore.nametagUsesAppFont = !!e
+                                settings.nametag_uses_app_font = themeStore.nametagUsesAppFont
+                            }
+                        "
+                    />
+                </template>
+            </SettingsRow>
         </SettingsSection>
 
         <SettingsSection
@@ -1853,7 +2081,7 @@ watch(
     cursor: pointer;
 
     &:focus-visible {
-        outline: 2px solid var(--color-focus-ring);
+        outline: 2px solid var(--hue-thumb, var(--color-focus-ring));
         outline-offset: 2px;
     }
 
@@ -1862,7 +2090,7 @@ watch(
         width: 1.25rem;
         height: 1.25rem;
         border-radius: 50%;
-        background: var(--color-brand);
+        background: var(--hue-thumb, var(--color-brand));
         border: 0.1875rem solid var(--surface-4);
         box-shadow: var(--shadow-button);
     }
@@ -1871,7 +2099,7 @@ watch(
         width: 1.25rem;
         height: 1.25rem;
         border-radius: 50%;
-        background: var(--color-brand);
+        background: var(--hue-thumb, var(--color-brand));
         border: 0.1875rem solid var(--surface-4);
         box-shadow: var(--shadow-button);
     }

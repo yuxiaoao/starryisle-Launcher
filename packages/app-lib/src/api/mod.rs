@@ -11,6 +11,7 @@ pub mod google_ip;
 pub mod handler;
 pub mod hongshi;
 pub mod instance;
+pub mod stats;
 pub mod jre;
 pub(crate) mod loader_metadata;
 pub mod logs;
@@ -57,15 +58,16 @@ pub mod data {
         InstanceUpgradeDependencyChange, InstanceUpgradeDependencyChangeKind,
         InstanceUpgradeEnvironment, InstanceUpgradeFixedConstraint,
         InstanceUpgradeIssue, InstanceUpgradeIssueCode, InstanceUpgradeItem,
-        InstanceUpgradeItemStatus, InstanceUpgradePlan,
-        InstanceUpgradeResolution, InstanceUpgradeResolutionBatchResult,
-        InstanceUpgradeResolutionResult, InstanceUpgradeSelection,
-        InstanceUpgradeSolution, InstanceUpgradeSolutionChoice,
-        InstanceUpgradeSolutionKind, JavaVersion, LinkedModpackInfo,
-        LoaderComponent, LoaderComponentKind, LoaderComponentRole,
-        ManualDownloadOperationKind, ManualDownloadState, MemorySettings,
-        ModLoader, ModrinthCredentials, Organization, OwnerType,
-        PackMemberMaterializationState, PackMemberOverrideKind,
+        InstanceUpgradeItemProgress, InstanceUpgradeItemStatus,
+        InstanceUpgradePlan, InstanceUpgradePlanningPhase,
+        InstanceUpgradePlanningProgress, InstanceUpgradeResolution,
+        InstanceUpgradeResolutionBatchResult, InstanceUpgradeResolutionResult,
+        InstanceUpgradeSelection, InstanceUpgradeSolution,
+        InstanceUpgradeSolutionChoice, InstanceUpgradeSolutionKind,
+        JavaVersion, LinkedModpackInfo, LoaderComponent, LoaderComponentKind,
+        LoaderComponentRole, ManualDownloadOperationKind, ManualDownloadState,
+        MemorySettings, ModLoader, ModrinthCredentials, Organization,
+        OwnerType, PackMemberMaterializationState, PackMemberOverrideKind,
         PendingManualDownload, PrivacySettings, ProcessMetadata, Project,
         ProjectType, ProjectV3, SearchResult, SearchResults, SearchResultsV3,
         Settings, ShaderRuntime, TeamMember, Theme, User, UserFriend, Version,

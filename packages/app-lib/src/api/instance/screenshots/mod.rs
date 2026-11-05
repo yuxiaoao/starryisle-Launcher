@@ -1,3 +1,5 @@
+mod bundle;
+mod notes;
 mod operations;
 mod reconciliation;
 
@@ -7,6 +9,12 @@ pub use self::operations::{
     list_all_screenshots, list_all_screenshots_with_warnings, list_screenshots,
     list_synced_screenshots, move_screenshots, save_edited_screenshot,
 };
+pub use self::bundle::{
+    BundleExportReport, BundleImportReport, BundleManifest, export_instance_bundle,
+    import_instance_bundle,
+};
+pub use self::notes::{ScreenshotNote, list_screenshot_notes, set_screenshot_note};
+pub(crate) use self::notes::{delete_notes_for_keys, prune_orphan_notes};
 pub(crate) use self::reconciliation::{
     reconcile_screenshots, reconcile_screenshots_with_state,
 };

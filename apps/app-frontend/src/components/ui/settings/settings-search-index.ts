@@ -18,6 +18,44 @@ const message = (id: string, defaultMessage: string): MessageDescriptor => ({ id
 
 export const settingsSearchEntries: SettingsSearchEntry[] = [
     {
+        id: 'mcp-authentication',
+        categoryId: 'mcp',
+        targetId: 'settings-target-mcp-access',
+        label: message('app.mcp.require-auth', 'Require authentication'),
+        description: message(
+            'app.mcp.require-auth-description',
+            'Require clients to provide a connection token. Changing this setting disconnects the current session.',
+        ),
+    },
+    {
+        id: 'mcp-enabled',
+        categoryId: 'mcp',
+        targetId: 'settings-target-mcp-enabled',
+        label: message('app.mcp.enabled', 'Enable MCP'),
+    },
+    {
+        id: 'mcp-access',
+        categoryId: 'mcp',
+        targetId: 'settings-target-mcp-access',
+        label: message('app.mcp.full-access', 'Full access mode'),
+        description: message(
+            'app.mcp.full-access-description',
+            'Allow connections without approval, deletion tools, and direct control of the launcher interface.',
+        ),
+    },
+    {
+        id: 'mcp-clients',
+        categoryId: 'mcp',
+        targetId: 'settings-target-mcp-clients',
+        label: message('app.mcp.setup-title', 'Connect your AI client'),
+        keywords: [
+            message(
+                'app.mcp.client-search',
+                'MCP Model Context Protocol Codex Claude Code Cursor VS Code installation connection agent',
+            ),
+        ],
+    },
+    {
         id: 'network-tests',
         categoryId: 'network-connection',
         targetId: 'settings-target-network-tests',
@@ -36,7 +74,7 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
         label: message('app.appearance-settings.color-theme.title', 'Color theme'),
         description: message(
             'app.appearance-settings.color-theme.description',
-            'Select your preferred color theme for Axolotl Launcher.',
+            'Select your preferred color theme for StarryIsle Launcher.',
         ),
     },
     {
@@ -140,6 +178,22 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
             'app.appearance-settings.sidebar-instance-count.title',
             'Sidebar instance limit',
         ),
+    },
+    {
+        id: 'defaults-game-language',
+        categoryId: 'launch-defaults',
+        targetId: 'settings-target-defaults-game-language',
+        label: message('app.settings.defaults.game-language.title', 'Default game language'),
+        description: message(
+            'app.settings.defaults.game-language.description',
+            'Used the first time an instance launches. Instances that have already been played keep their in-game language.',
+        ),
+        keywords: [
+            message(
+                'app.settings.defaults.game-language.search',
+                'Minecraft game language locale language region',
+            ),
+        ],
     },
     {
         id: 'defaults-window-title',
@@ -364,7 +418,7 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
         targetId: 'settings-target-appearance-close-behavior',
         label: message(
             'app.appearance-settings.close-behavior.title',
-            'Choose how to close Axolotl Launcher',
+            'Choose how to close StarryIsle Launcher',
         ),
         keywords: [
             message('app.appearance-settings.close-behavior.close', 'Close directly'),
@@ -398,6 +452,19 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
         categoryId: 'interface',
         targetId: 'settings-target-appearance-hide-nametag',
         label: message('app.appearance-settings.hide-nametag.title', 'Hide nametag'),
+    },
+    {
+        id: 'appearance-nametag-uses-app-font',
+        categoryId: 'interface',
+        targetId: 'settings-target-appearance-nametag-uses-app-font',
+        label: message(
+            'app.appearance-settings.nametag-uses-app-font.title',
+            'Role name tag uses the app font',
+        ),
+        description: message(
+            'app.appearance-settings.nametag-uses-app-font.description',
+            'Shows your role name tag on the skins page in your interface font instead of the Minecraft pixel font.',
+        ),
     },
     {
         id: 'appearance-unknown-pack-warning',
@@ -513,7 +580,7 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
         label: message('app.settings.privacy.external-scheme', 'Allow external links'),
         description: message(
             'app.settings.privacy.external-scheme-description',
-            'Respond to axolotl:// links from browsers and other apps.',
+            'Respond to starryisle:// links from browsers and other apps.',
         ),
     },
     {
@@ -523,7 +590,7 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
         label: message('app.settings.privacy.privileged-scheme', 'Allow privileged link actions'),
         description: message(
             'app.settings.privacy.privileged-scheme-description',
-            'Let axolotl:// links change settings and stop game processes.',
+            'Let starryisle:// links change settings and stop game processes.',
         ),
     },
     // The instance-sync category had no entries at all, so none of its rows
@@ -744,7 +811,7 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
         id: 'storage-app-directory',
         categoryId: 'storage-backups',
         targetId: 'settings-target-storage-app-directory',
-        label: message('app.settings.resources.axolotl-data-directory', 'Axolotl data directory'),
+        label: message('app.settings.resources.axolotl-data-directory', 'StarryIsle data directory'),
     },
     {
         id: 'storage-minecraft-directories',

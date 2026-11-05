@@ -55,6 +55,7 @@ import {
     duplicateUpdateAnchor,
     visibleDuplicateGroups,
 } from './composables/content-duplicates'
+import { getContentTabMap } from './composables/content-tab-memory'
 import { injectContentManager } from './providers/content-manager'
 import type { ContentCardTableItem, ContentItem, ContentWorldGroupMeta } from './types'
 
@@ -186,15 +187,6 @@ const messages = defineMessages({
 const ctx = injectContentManager()
 const skipNonEssentialWarnings = computed(() => ctx.skipNonEssentialWarnings?.value ?? false)
 
-// window 级内存（导航切换保留，关软件丢弃）
-const memory: Record<string, Map<string, unknown>> = ((
-    window as unknown as { __ctMemory?: Record<string, Map<string, unknown>> }
-).__ctMemory ??= {})
-function getMap<K, V>(namespace: string): Map<K, V> {
-    if (!memory[namespace]) memory[namespace] = new Map<string, unknown>()
-    return memory[namespace] as Map<K, V>
-}
-
 function getItemId(item: ContentItem) {
     return ctx.getItemId?.(item) ?? item.file_path ?? item.file_name ?? item.id
 }
@@ -213,7 +205,7 @@ function findContentItem(id: string): ContentItem | undefined {
     return contentItemsById.value.get(id)
 }
 
-const viewStateMemory = getMap<string, Partial<ContentViewState>>('viewState')
+const viewStateMemory = getContentTabMap<string, Partial<ContentViewState>>('viewState')
 const initialPinnedView = ctx.instanceId ? getPinnedContentViewPreferences(ctx.instanceId) : null
 const pinnedView = ref(initialPinnedView !== null)
 const initialViewState = ctx.instanceId ? viewStateMemory.get(ctx.instanceId) : undefined
@@ -226,13 +218,19 @@ function updateSessionViewState(patch: Partial<ContentViewState>) {
     })
 }
 
-const sortMemory = getMap<string, ContentSortMode>('sort')
+const sortMemory = getContentTabMap<string, ContentSortMode>('sort')
 const sortMode = ref<ContentSortMode>(
     initialPinnedView?.sortMode ??
         (ctx.instanceId
             ? (sortMemory.get(ctx.instanceId) ?? 'project-name-asc')
             : 'project-name-asc'),
 )
+const sortRevision = ref(0)
+
+function selectSort(mode: ContentSortMode) {
+    sortMode.value = mode
+    sortRevision.value += 1
+}
 
 watch(sortMode, (val) => {
     if (ctx.instanceId) sortMemory.set(ctx.instanceId, val)
@@ -286,6 +284,7 @@ const {
     modpackItems: ctx.modpackItems,
     duplicateItems: ctx.duplicateItems,
     sortItems,
+    sortKey: computed(() => JSON.stringify([sortMode.value, locale.value, sortRevision.value])),
     getItemId,
     showTypeFilters: true,
     showUpdateFilter: ctx.hasUpdateSupport,
@@ -365,9 +364,10 @@ const bulkStatusMessage = ref<string | null>(null)
 const bulkItemCount = ref(0)
 
 // 整合包分组展开状态（导航切换保留，关软件丢弃）
-const expandedGroupsMemory = getMap<string, Set<string>>('expandedGroups')
+const expandedGroupsMemory = getContentTabMap<string, Set<string>>('expandedGroups')
 
-const refreshing = ref(false)
+const refreshSubmitting = ref(false)
+const refreshing = computed(() => refreshSubmitting.value || !!ctx.refreshStatus?.value)
 
 const expandedGroups = ref<Set<string>>(
     ctx.instanceId
@@ -419,7 +419,7 @@ function togglePinnedView() {
 }
 
 function resetView() {
-    sortMode.value = 'project-name-asc'
+    selectSort('project-name-asc')
     searchQuery.value = ''
     selectedTypeFilter.value = []
     selectedStatusFilters.value = []
@@ -532,11 +532,11 @@ onBeforeUnmount(() => {
 
 async function handleRefresh() {
     if (refreshing.value) return
-    refreshing.value = true
+    refreshSubmitting.value = true
     try {
         await ctx.refresh()
     } finally {
-        refreshing.value = false
+        refreshSubmitting.value = false
     }
 }
 
@@ -1146,6 +1146,7 @@ const confirmUnlinkModal = ref<InstanceType<typeof ConfirmUnlinkModal>>()
                     :disable-add-content="ctx.disableAddContent?.value"
                     :disable-add-content-tooltip="ctx.disableAddContentTooltip"
                     :refreshing="refreshing"
+                    :refresh-status="ctx.refreshStatus?.value"
                     :view-dependencies="!!ctx.viewDependencies"
                     @browse="ctx.browse"
                     @refresh="handleRefresh"
@@ -1250,7 +1251,7 @@ const confirmUnlinkModal = ref<InstanceType<typeof ConfirmUnlinkModal>>()
                                 formatMessage(messages.updateAll)
                             "
                             :is-bulk-operating="isBulkOperating"
-                            @select-sort="(mode) => (sortMode = mode)"
+                            @select-sort="selectSort"
                             @toggle-pin="togglePinnedView"
                             @reset-view="resetView"
                             @update-all="promptUpdateAll"
@@ -1268,6 +1269,7 @@ const confirmUnlinkModal = ref<InstanceType<typeof ConfirmUnlinkModal>>()
                 :busy="ctx.isBusy.value"
                 :busy-tooltip="ctx.busyMessage?.value"
                 :refreshing="refreshing"
+                :refresh-status="ctx.refreshStatus?.value"
                 :disable-add-content="ctx.disableAddContent?.value"
                 :disable-add-content-tooltip="ctx.disableAddContentTooltip"
                 @browse="ctx.browse"

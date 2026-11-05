@@ -1,5 +1,7 @@
 //! Theseus instance management interface
 
+mod advancement_catalog;
+mod advancements;
 mod backup;
 mod content;
 mod core_components;
@@ -24,6 +26,11 @@ mod synced_packs_axolotl;
 pub(crate) mod synced_servers;
 mod upgrade;
 
+pub use self::advancement_catalog::{AdvancementDef, advancement_catalog};
+pub use self::advancements::{
+    CompletedAdvancement, PlayerRef, WorldAdvancements, WorldSummary, list_worlds,
+    version_jar, world_advancements, world_completed_all_players,
+};
 pub use self::backup::{
     BackupDeleteSummary, BackupExclusion, BackupExclusionKind, BackupOperation,
     BackupOperationState, BackupOperationType, BackupRepositoryStatus,
@@ -54,12 +61,13 @@ pub(crate) use self::backup::{
 };
 pub(crate) use self::content::resolve_content_change_actions;
 pub use self::content::{
-    apply_content_update_plan, get_content_items, get_content_items_by_paths,
-    get_content_snapshot, get_content_snapshot_for_display,
-    get_dependencies_as_content_items, get_install_candidates,
-    get_installed_project_ids, get_linked_modpack_content,
-    get_linked_modpack_info, get_projects, list_content_sets,
-    plan_content_updates, refresh_content, sync_content_files,
+    ContentUpdateApplyResult, apply_content_update_plan, get_content_items,
+    get_content_items_by_paths, get_content_snapshot,
+    get_content_snapshot_for_display, get_dependencies_as_content_items,
+    get_install_candidates, get_installed_project_ids,
+    get_linked_modpack_content, get_linked_modpack_info, get_projects,
+    list_content_sets, plan_content_updates, refresh_content,
+    sync_content_files,
 };
 pub(crate) use self::core_components::assemble_for_launch;
 pub use self::core_components::{
@@ -101,10 +109,13 @@ pub use self::screenshot_groups::{
     set_screenshot_group_memberships,
 };
 pub use self::screenshots::{
-    InstanceScreenshot, ScreenshotEditSaveMode, ScreenshotKey,
+    BundleExportReport, BundleImportReport, BundleManifest,
+    InstanceScreenshot, ScreenshotEditSaveMode, ScreenshotKey, ScreenshotNote,
+    export_instance_bundle, import_instance_bundle,
     delete_screenshots, export_screenshots, get_screenshot_path,
     list_all_screenshots, list_all_screenshots_with_warnings, list_screenshots,
-    list_synced_screenshots, move_screenshots, save_edited_screenshot,
+    list_screenshot_notes, list_synced_screenshots, move_screenshots,
+    save_edited_screenshot, set_screenshot_note,
 };
 pub(crate) use self::screenshots::{
     reconcile_screenshots, reconcile_screenshots_with_state,

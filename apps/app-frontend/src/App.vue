@@ -10,6 +10,7 @@ import {
     FolderOpenIcon,
     HomeIcon,
     ImagesIcon,
+    ChartColumnBigIcon,
     LibraryIcon,
     LogInIcon,
     LogOutIcon,
@@ -108,6 +109,8 @@ import { minecraftLaunchErrorKey } from '@/composables/useMinecraftLaunchError'
 import { setupMojangAuthMonitor, useMojangAuthStatus } from '@/composables/useMojangAuth'
 import { useNetworkStatus } from '@/composables/useNetworkStatus'
 import { AxolotlBrandConfig, config, getOfficialLabrinthBaseUrl } from '@/config'
+import McpConnectionOverlay from '@/features/mcp/McpConnectionOverlay.vue'
+import { startMcpStateSync } from '@/features/mcp/runtime'
 import { trackEvent } from '@/helpers/analytics'
 import { get_user, get_version } from '@/helpers/cache.js'
 import { configureCurseForgeManualDownloadWatcher } from '@/helpers/curseforge'
@@ -202,11 +205,26 @@ import { setupAuthProvider } from '@/providers/setup/auth'
 import { setupLoadingStateProvider } from '@/providers/setup/loading-state'
 import { useError } from '@/store/error.js'
 import { useTheming } from '@/store/state'
+import { applyBarTint, HUE_TINT_STORAGE_KEY } from '@/store/theme'
 
 import { AppNotificationManager } from './providers/app-notifications'
 import { AppPopupNotificationManager } from './providers/app-popup-notifications'
 
 const themeStore = useTheming()
+
+try {
+    const storedHue = localStorage.getItem(HUE_TINT_STORAGE_KEY)
+    if (storedHue !== null) themeStore.setHueTint(Number(storedHue))
+} catch {
+    // ignore unavailable storage
+}
+
+applyBarTint(themeStore.hueTint)
+
+watch(
+    () => themeStore.selectedTheme,
+    () => applyBarTint(themeStore.hueTint),
+)
 /** While a dialog is open no shortcut fires, including the one being recorded. */
 const { hasModal } = useModalStack()
 const router = useRouter()
@@ -308,14 +326,6 @@ providePopupNotificationManager(popupNotificationManager)
 const { addPopupNotification } = popupNotificationManager
 
 const appVersion = getVersion()
-const isBetaBuild = ref(false)
-void appVersion
-    .then((version) => {
-        isBetaBuild.value = version.includes('-beta')
-    })
-    .catch((error) => {
-        console.warn('Failed to read the app version for the Beta label', error)
-    })
 const tauriApiClient = new TauriModrinthClient({
     userAgent: async () => AxolotlBrandConfig.userAgent(await appVersion, await getOsType()),
     labrinthBaseUrl: config.labrinthBaseUrl,
@@ -370,6 +380,8 @@ const {
 
 const { offline } = useNetworkStatus()
 
+// Upstream keeps automatic tours paused while manual replay stays available.
+const autoStartOnboarding = false
 const showOnboarding = ref(false)
 const onboardingMode = ref('main')
 const onboardingSettings = ref(null)
@@ -424,6 +436,7 @@ watch(
 )
 
 const stateInitialized = ref(false)
+let stopMcpStateSync: (() => void) | undefined
 const privacyConsentModal = ref<InstanceType<typeof PrivacyConsentModal>>()
 const privacyConsentPending = ref(false)
 const titlebar = ref<InstanceType<typeof AppTitlebar>>()
@@ -874,6 +887,7 @@ function startDirectLinkSync() {
 }
 
 onUnmounted(async () => {
+    stopMcpStateSync?.()
     appUnmounted = true
     windowAppearance.dispose()
     stopNativeEditMenu?.()
@@ -1020,7 +1034,7 @@ const messages = defineMessages({
     runningAsAdmin: {
         id: 'app.warning.running-as-admin',
         defaultMessage:
-            'Axolotl is running as administrator. Drag-and-drop file import is disabled in this mode; please restart the launcher without administrator privileges.',
+            'StarryIsle is running as administrator. Drag-and-drop file import is disabled in this mode; please restart the launcher without administrator privileges.',
     },
     restarting: {
         id: 'app.restarting',
@@ -1028,7 +1042,7 @@ const messages = defineMessages({
     },
     closeLauncherTitle: {
         id: 'app.close-launcher.title',
-        defaultMessage: 'Choose how to close Axolotl Launcher',
+        defaultMessage: 'Choose how to close StarryIsle Launcher',
     },
     closeLauncherDirect: {
         id: 'app.close-launcher.direct',
@@ -1094,6 +1108,10 @@ const messages = defineMessages({
     downloads: {
         id: 'app.navigation.downloads',
         defaultMessage: 'Downloads',
+    },
+    stats: {
+        id: 'app.navigation.stats',
+        defaultMessage: 'Statistics',
     },
     screenshots: {
         id: 'app.navigation.screenshots',
@@ -1418,6 +1436,7 @@ async function applyThemeFromSettings(s: Awaited<ReturnType<typeof getSettings>>
     themeStore.collapsedNavigation = s.collapsed_navigation
     themeStore.advancedRendering = s.advanced_rendering
     themeStore.hideNametagSkinsPage = s.hide_nametag_skins_page
+    themeStore.nametagUsesAppFont = s.nametag_uses_app_font
     themeStore.toggleSidebar = s.toggle_sidebar
     themeStore.customBackgroundPath = s.custom_background_path
     themeStore.customBackgroundBlur = s.custom_background_blur
@@ -1451,6 +1470,7 @@ async function setupApp() {
         discord_rpc,
         collapsed_navigation,
         hide_nametag_skins_page,
+        nametag_uses_app_font,
         advanced_rendering,
         onboarded,
         default_page,
@@ -1501,7 +1521,7 @@ async function setupApp() {
     const dev = await isDev()
     isDevEnvironment.value = dev
     pendingUpdateAnnouncementVersion.value = pending_update_toast_for_version
-    if (!onboarded && route.path !== '/') await router.replace('/')
+    if (autoStartOnboarding && !onboarded && route.path !== '/') await router.replace('/')
     privacyConsentPending.value = telemetry_consent_version < 1
     showOnboarding.value = false
     onboardingSettings.value = initialSettings
@@ -1515,6 +1535,7 @@ async function setupApp() {
     themeStore.collapsedNavigation = collapsed_navigation
     themeStore.advancedRendering = advanced_rendering
     themeStore.hideNametagSkinsPage = hide_nametag_skins_page
+    themeStore.nametagUsesAppFont = nametag_uses_app_font
     themeStore.toggleSidebar = toggle_sidebar
     themeStore.customBackgroundPath = custom_background_path
     themeStore.customBackgroundBlur = custom_background_blur
@@ -1535,6 +1556,7 @@ async function setupApp() {
     await applyWindowAppearance()
     themeStore.homeWidgetBackgroundOpacity = home_widget_background_opacity ?? 100
     themeStore.setHomeWidgetBackgroundOpacity()
+    // Statistics is hidden by default; the backend adds it to an untouched list.
     themeStore.hiddenNavItems = hidden_nav_items ?? []
     themeStore.sidebarInstanceCount = sidebar_instance_count
     themeStore.autoHideDownloadsButton = auto_hide_downloads_button
@@ -1552,6 +1574,9 @@ async function setupApp() {
     themeStore.shortcutBindings = resolveAllBindings()
     await localePreparation
     stateInitialized.value = true
+    const stopMcpSync = await startMcpStateSync()
+    if (appUnmounted) stopMcpSync()
+    else stopMcpStateSync = stopMcpSync
     if (privacyConsentPending.value) {
         await nextTick()
         privacyConsentModal.value?.show({
@@ -1560,7 +1585,7 @@ async function setupApp() {
             consent_version: telemetry_consent_version,
         })
     } else {
-        showOnboarding.value = !onboarded
+        showOnboarding.value = autoStartOnboarding && !onboarded
     }
 
     unlistenWindowResize = await getCurrentWindow().onResized(() => {
@@ -1728,7 +1753,7 @@ async function handlePrivacyConsentSaved(privacy: PrivacySettings) {
         onboardingSettings.value.discord_rpc = privacy.discord_rpc
         onboardingSettings.value.telemetry_consent_version = privacy.consent_version
     }
-    if (!onboardingSettings.value?.onboarded) {
+    if (autoStartOnboarding && !onboardingSettings.value?.onboarded) {
         startOnboarding('main')
     } else {
         await scheduleStartupDialogs()
@@ -2076,6 +2101,7 @@ watch(
     () => route.path,
     (path) => {
         if (
+            autoStartOnboarding &&
             path.startsWith('/instance/') &&
             onboardingSettings.value?.onboarded &&
             !onboardingSettings.value?.onboarding_instance_tour_completed &&
@@ -2518,11 +2544,11 @@ const updatePopupMessages = defineMessages({
     },
     meteredBody: {
         id: 'app.update-popup.body.metered',
-        defaultMessage: `Axolotl Launcher v{version} is available now! Since you're on a metered network, we didn't automatically download it.`,
+        defaultMessage: `StarryIsle Launcher v{version} is available now! Since you're on a metered network, we didn't automatically download it.`,
     },
     downloadedBody: {
         id: 'app.update-popup.body.download-complete',
-        defaultMessage: `Axolotl Launcher v{version} has finished downloading. Reload to update now, or automatically when you close Axolotl Launcher.`,
+        defaultMessage: `StarryIsle Launcher v{version} has finished downloading. Reload to update now, or automatically when you close StarryIsle Launcher.`,
     },
     reload: {
         id: 'app.update-popup.reload',
@@ -2873,11 +2899,11 @@ provideAppUpdateDownloadProgress(appUpdateDownload)
 <template>
     <SplashScreen v-if="!stateFailed" ref="splashScreen" data-tauri-drag-region />
     <!--
-		A failed initialization never renders the app shell, so this framed window
-		ends up with no title bar and no controls at all. This strip keeps the
-		window draggable and offers a way to quit that does not depend on the
-		parts which failed to load.
-	-->
+        A failed initialization never renders the app shell, so this framed window
+        ends up with no title bar and no controls at all. This strip keeps the
+        window draggable and offers a way to quit that does not depend on the
+        parts which failed to load.
+    -->
     <div
         v-if="stateFailed && !stateInitialized"
         data-tauri-drag-region
@@ -2916,6 +2942,15 @@ provideAppUpdateDownloadProgress(appUpdateDownload)
             'has-css-window-border': cssWindowBorder,
         }"
     >
+        <McpConnectionOverlay
+            :rounded="
+                !isMaximized &&
+                !!(
+                    (themeStore.customBackgroundPath && !themeStore.transparentBackground) ||
+                    (themeStore.transparentBackground && !nativeDecorations)
+                )
+            "
+        />
         <Transition name="fade">
             <div
                 v-if="restarting"
@@ -2951,7 +2986,7 @@ provideAppUpdateDownloadProgress(appUpdateDownload)
         />
         <UnknownPackWarningModal ref="unknownPackWarningModal" />
         <div
-            class="app-grid-navbar bg-surface-bar flex flex-col p-[0.5rem] pt-0 gap-[0.5rem] w-[--left-bar-width] overflow-hidden"
+            class="app-grid-navbar flex flex-col p-[0.5rem] pt-0 gap-[0.5rem] w-[--left-bar-width] overflow-hidden"
         >
             <NavRail>
                 <NavButton
@@ -3021,6 +3056,14 @@ provideAppUpdateDownloadProgress(appUpdateDownload)
                     "
                 >
                     <LibraryIcon />
+                </NavButton>
+                <NavButton
+                    v-if="!themeStore.isNavItemHidden('stats')"
+                    v-tooltip.right="formatMessage(messages.stats)"
+                    to="/stats"
+                    :is-primary="(r) => r.path.startsWith('/stats')"
+                >
+                    <ChartColumnBigIcon />
                 </NavButton>
                 <NavButton
                     v-if="!themeStore.isNavItemHidden('lab')"
@@ -3106,7 +3149,7 @@ provideAppUpdateDownloadProgress(appUpdateDownload)
         </div>
         <AppTitlebar
             ref="titlebar"
-            class="app-grid-statusbar bg-surface-bar h-[--top-bar-height]"
+            class="app-grid-statusbar h-[--top-bar-height]"
             :is-beta-build="isBetaBuild"
         >
             <div class="flex min-w-0 mr-3">
@@ -3170,10 +3213,10 @@ provideAppUpdateDownloadProgress(appUpdateDownload)
             <div class="page-transition-grid grid min-h-full">
                 <RouterView v-slot="{ Component, route: pageRoute }">
                     <!--
-						Enter animation is keyed only on the route (see getPageTransitionKey).
-						The layer mounts as soon as the URL changes — not when the async page
-						Suspense resolves — so nav switches stay smooth while data loads.
-					-->
+                        Enter animation is keyed only on the route (see getPageTransitionKey).
+                        The layer mounts as soon as the URL changes — not when the async page
+                        Suspense resolves — so nav switches stay smooth while data loads.
+                    -->
                     <Transition
                         name="page-slide"
                         :css="themeStore.getFeatureFlag('page_transitions') && !onSettingsPage"
@@ -3590,7 +3633,7 @@ provideAppUpdateDownloadProgress(appUpdateDownload)
     grid-template-rows: auto 1fr;
     position: relative;
     //z-index: 0;
-    background-color: var(--surface-3);
+    background-color: var(--app-shell-bg, var(--surface-3));
     height: 100vh;
 }
 
@@ -3633,13 +3676,10 @@ provideAppUpdateDownloadProgress(appUpdateDownload)
     background-color: transparent;
 }
 
-.app-grid-layout.has-custom-background,
-.app-grid-layout.has-transparent-background:not(.has-native-decorations) {
-    &:not(.is-maximized) {
-        border-radius: 8px;
-        clip-path: inset(0 round 8px);
-        overflow: hidden;
-    }
+.app-grid-layout:not(.has-native-decorations):not(.is-maximized) {
+    border-radius: 8px;
+    clip-path: inset(0 round 8px);
+    overflow: hidden;
 }
 
 .app-grid-layout.has-custom-background {
@@ -3651,6 +3691,14 @@ provideAppUpdateDownloadProgress(appUpdateDownload)
 
         backdrop-filter: none;
         -webkit-backdrop-filter: none;
+    }
+
+    .app-grid-navbar {
+        background-color: var(--app-nav-bg, var(--surface-3)) !important;
+    }
+
+    .app-grid-statusbar {
+        background-color: var(--app-top-bg, var(--surface-3)) !important;
     }
 }
 
@@ -4044,5 +4092,14 @@ body.modrinth-console-fullscreen-active .app-sidebar {
     .profile-card {
         right: 8rem;
     }
+}
+
+/* Interface hue paints the nav rail and title bar. */
+.app-grid-navbar {
+    background-color: var(--app-nav-bg, var(--surface-bar));
+}
+
+.app-grid-statusbar {
+    background-color: var(--app-top-bg, var(--surface-bar));
 }
 </style>

@@ -66,7 +66,7 @@
     "message": "Gelişmiş işleme"
   },
   "app.appearance-settings.color-theme.description": {
-    "message": "Axolotl Launcher için tercih ettiğiniz temayı seçin."
+    "message": "StarryIsle Launcher için tercih ettiğiniz temayı seçin."
   },
   "app.appearance-settings.color-theme.title": {
     "message": "Tema Rengi"
@@ -486,10 +486,10 @@
     "message": "Giriş Yap"
   },
   "app.skins.sign-in.description": {
-    "message": "Axolotl Launcher'daki skin yönetim özelliklerini kullanmak için lütfen Minecraft hesabınıza giriş yapın."
+    "message": "StarryIsle Launcher'daki skin yönetim özelliklerini kullanmak için lütfen Minecraft hesabınıza giriş yapın."
   },
   "app.skins.sign-in.axolotl-alt": {
-    "message": "Axolotl Launcher"
+    "message": "StarryIsle Launcher"
   },
   "app.skins.sign-in.title": {
     "message": "Lütfen giriş yapın"
@@ -498,10 +498,10 @@
     "message": "Skin seçici"
   },
   "app.update-popup.body.download-complete": {
-    "message": "Axolotl Launcher v{version} indirildi. Güncellemek için yeniden başlatın veya Axolotl Launcher’i kapattığınızda otomatik olarak güncellenecektir."
+    "message": "StarryIsle Launcher v{version} indirildi. Güncellemek için yeniden başlatın veya StarryIsle Launcher’i kapattığınızda otomatik olarak güncellenecektir."
   },
   "app.update-popup.body.metered": {
-    "message": "Axolotl Launcher v{version} mevcut! Kısıtlı bağlantıda olduğunuzdan otomatik olarak indirmedik."
+    "message": "StarryIsle Launcher v{version} mevcut! Kısıtlı bağlantıda olduğunuzdan otomatik olarak indirmedik."
   },
   "app.update-popup.changelog": {
     "message": "Yama Notları"

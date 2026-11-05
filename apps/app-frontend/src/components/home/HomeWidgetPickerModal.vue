@@ -11,6 +11,7 @@ import {
     LinkIcon,
     SearchIcon,
     ServerIcon,
+    SunIcon,
     UserIcon,
 } from '@modrinth/assets'
 import { Button, defineMessages, NewModal, StyledInput, useVIntl } from '@modrinth/ui'
@@ -74,6 +75,11 @@ const messages = defineMessages({
     calendarDescription: {
         id: 'app.home.widgets.calendar-description',
         defaultMessage: 'See the month and your play activity at a glance.',
+    },
+    weather: { id: 'app.home.widgets.weather', defaultMessage: 'Weather' },
+    weatherDescription: {
+        id: 'app.home.widgets.weather-description',
+        defaultMessage: 'Current conditions for a city you pick. Uses Open-Meteo.',
     },
     pinnedInstances: {
         id: 'app.home.widgets.pinned-instances',
@@ -141,10 +147,10 @@ const catalogSections = computed(() => [
                 icon: HistoryIcon,
             },
             {
-                kind: 'calendar' as const,
-                label: formatMessage(messages.calendar),
-                description: formatMessage(messages.calendarDescription),
-                icon: CalendarIcon,
+                kind: 'weather' as const,
+                label: formatMessage(messages.weather),
+                description: formatMessage(messages.weatherDescription),
+                icon: SunIcon,
             },
         ],
     },

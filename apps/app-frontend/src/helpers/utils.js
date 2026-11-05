@@ -62,7 +62,7 @@ export async function showLauncherLogsFolder() {
 
 export async function exportErrorLogs(
     errorMessage,
-    fileNamePrefix = 'Axolotl Launcher error logs',
+    fileNamePrefix = 'StarryIsle Launcher error logs',
 ) {
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
     const outputPath = await save({
@@ -87,7 +87,7 @@ export async function exportLauncherLogs({
     includeInstanceLogs = false,
     includeCrashAnalysis = false,
     includeNetworkConnections = false,
-    fileNamePrefix = 'Axolotl Launcher logs',
+    fileNamePrefix = 'StarryIsle Launcher logs',
 } = {}) {
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
     const outputPath = await save({
@@ -116,7 +116,7 @@ export async function exportLauncherLogs({
 
 export async function createInstanceShortcut(instanceName, instanceId, options = {}) {
     const outputPath = await save({
-        defaultPath: `Axolotl - ${instanceName}`,
+        defaultPath: `StarryIsle - ${instanceName}`,
     })
 
     if (!outputPath) return null
