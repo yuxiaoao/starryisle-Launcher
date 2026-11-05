@@ -65,13 +65,22 @@ jobs:
           fi
 
           # A real merge: upstream content lands in the tree, our side wins only
-          # where the two edits overlap.
+          # where the two edits overlap. Modify/delete conflicts cannot be resolved
+          # by -X, so every remaining conflict is settled explicitly for our side.
           if ! git merge --no-ff ${MERGE_ARGS} \
             -m "chore(sync): merge upstream main into the StarryIsle fork" \
             upstream/main; then
-            echo "merge conflicted; aborting without pushing"
-            git merge --abort || true
-            exit 1
+            echo "### Conflicts (kept on our side)"
+            git diff --name-only --diff-filter=U | tee /tmp/conflicts.txt
+            while IFS= read -r path; do
+              [ -z "$path" ] && continue
+              if git checkout --ours -- "$path" 2>/dev/null; then
+                git add -- "$path"
+              else
+                git rm -q --force --ignore-unmatch -- "$path" || true
+              fi
+            done < /tmp/conflicts.txt
+            git commit -m "chore(sync): merge upstream main into the StarryIsle fork"
           fi
 
           echo "### After merge"
