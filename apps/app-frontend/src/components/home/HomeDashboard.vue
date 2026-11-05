@@ -690,7 +690,10 @@ defineExpose({ openWidgetPicker, setLayout })
                                 :city="widget.options?.weatherCity"
                                 :dashboard-size="effectiveSize(widget)"
                                 @change-city="
-                                    emit('change', setHomeWeatherCity(props.config, widget.id, $event))
+                                    emit(
+                                        'change',
+                                        setHomeWeatherCity(props.config, widget.id, $event),
+                                    )
                                 "
                             />
                             <HomeShortcutWidget

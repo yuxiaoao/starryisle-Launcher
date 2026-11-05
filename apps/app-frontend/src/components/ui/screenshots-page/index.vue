@@ -390,10 +390,7 @@ function noteFor(screenshot: InstanceScreenshot): string | undefined {
     )
 }
 function editingFor(screenshot: InstanceScreenshot): boolean {
-    return (
-        editingNoteKey.value ===
-        screenshotNoteKey(screenshot.instance_id, screenshot.file_name)
-    )
+    return editingNoteKey.value === screenshotNoteKey(screenshot.instance_id, screenshot.file_name)
 }
 async function saveScreenshotNote(screenshot: InstanceScreenshot, note: string) {
     await setScreenshotNote(screenshot.instance_id, screenshot.file_name, note)
@@ -1219,7 +1216,8 @@ function showScreenshotOptions(screenshot: InstanceScreenshot, event: MouseEvent
                       label: formatMessage(messages.copy),
                       icon: ClipboardCopyIcon,
                       action: () => void copyScreenshot(screenshot),
-                  },                  {
+                  },
+                  {
                       id: 'edit-note',
                       label: formatMessage(messages.editNote),
                       icon: EditIcon,
@@ -1767,9 +1765,7 @@ onBeforeUnmount(() => {
                             gridHeight,
                             renderedScreenshots,
                             virtualGridTop,
-                        } in viewMode === 'grid'
-                            ? virtualizedScreenshotGroups
-                            : []"
+                        } in viewMode === 'grid' ? virtualizedScreenshotGroups : []"
                         :key="id"
                     >
                         <ScreenshotGroupSection

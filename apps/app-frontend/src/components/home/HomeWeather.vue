@@ -499,7 +499,8 @@ function searchChinaCities(rawQuery: string): HomeWeatherCity[] {
     const bare = rawQuery.replace(/(省|市|自治区|特别行政区)$/, '')
     const target = PROVINCE_CAPITALS[bare] ?? bare
     const exact = CHINA_CITIES.filter((city) => city.name === target)
-    const matches = exact.length > 0 ? exact : CHINA_CITIES.filter((city) => city.name.startsWith(target))
+    const matches =
+        exact.length > 0 ? exact : CHINA_CITIES.filter((city) => city.name.startsWith(target))
     return matches.slice(0, 5).map((city) => ({
         id: `cn:${city.name}`,
         name: city.name,
@@ -537,9 +538,7 @@ async function fetchCities(name: string, country?: string): Promise<HomeWeatherC
     for (const result of (payload.results ?? []) as GeoResult[]) {
         if (!deduped.has(result.id)) deduped.set(result.id, result)
     }
-    const results = [...deduped.values()].sort(
-        (a, b) => (b.population ?? 0) - (a.population ?? 0),
-    )
+    const results = [...deduped.values()].sort((a, b) => (b.population ?? 0) - (a.population ?? 0))
 
     // A translated Chinese name is ambiguous ("巴黎" is also a village in Guangxi and
     // two towns in the US), so keep only the country the alias points at.
@@ -617,9 +616,9 @@ watch(
 onMounted(() => {
     loadWeather()
     refreshTimer = setInterval(() => {
-            // No point polling while the window is in the background.
-            if (!document.hidden) void loadWeather()
-        }, HOME_WEATHER_REFRESH_MS)
+        // No point polling while the window is in the background.
+        if (!document.hidden) void loadWeather()
+    }, HOME_WEATHER_REFRESH_MS)
     document.addEventListener('pointerdown', handleDocumentPointerDown, true)
 })
 
@@ -684,7 +683,9 @@ onUnmounted(() => {
                     @click="selectCity(result)"
                 >
                     <span>{{ result.name }}</span>
-                    <span v-if="result.region" class="home-weather-region">{{ result.region }}</span>
+                    <span v-if="result.region" class="home-weather-region">{{
+                        result.region
+                    }}</span>
                 </button>
             </div>
         </Teleport>

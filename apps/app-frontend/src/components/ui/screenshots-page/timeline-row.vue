@@ -75,10 +75,7 @@ function commit() {
                 :alt="screenshot.file_name"
                 class="aspect-video w-96 shrink-0 rounded-lg object-cover"
             />
-            <div
-                v-else
-                class="aspect-video w-96 shrink-0 animate-pulse rounded-lg bg-surface-3"
-            />
+            <div v-else class="aspect-video w-96 shrink-0 animate-pulse rounded-lg bg-surface-3" />
             <button
                 class="absolute right-2 top-2 z-[3] flex size-6 cursor-pointer items-center justify-center rounded-full border-2 border-solid border-white/70 bg-black/30 text-transparent transition-all group-hover/row:opacity-100"
                 :class="
@@ -97,10 +94,7 @@ function commit() {
             <span class="text-xl font-semibold text-[var(--color-text-primary)]">
                 {{ formatTime(new Date(screenshot.created_at)) }}
             </span>
-            <span
-                v-if="showInstance"
-                class="truncate text-base text-[var(--color-text-tertiary)]"
-            >
+            <span v-if="showInstance" class="truncate text-base text-[var(--color-text-tertiary)]">
                 {{ screenshot.instance_name }}
             </span>
             <span class="truncate text-sm text-[var(--color-text-tertiary)]">
@@ -109,10 +103,7 @@ function commit() {
         </div>
 
         <template v-if="note || editing">
-            <span
-                class="h-16 w-px shrink-0 self-center bg-surface-5"
-                aria-hidden="true"
-            />
+            <span class="h-16 w-px shrink-0 self-center bg-surface-5" aria-hidden="true" />
             <div class="flex min-w-0 flex-1 flex-col">
                 <input
                     v-if="editing"

@@ -189,11 +189,7 @@ const visibleItems = computed(() => {
 </script>
 
 <template>
-    <div
-        ref="root"
-        class="flex min-h-0 w-full flex-1 flex-col"
-        @click="emit('clear-selection')"
-    >
+    <div ref="root" class="flex min-h-0 w-full flex-1 flex-col" @click="emit('clear-selection')">
         <p v-if="items.length === 0" class="m-0 text-[var(--color-text-tertiary)]">
             {{ formatMessage(messages.empty) }}
         </p>
