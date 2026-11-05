@@ -49,6 +49,7 @@ import {
     setHomeDashboardLayout,
     setHomeGreetingOptions,
     setHomeRecentLimit,
+    setHomeWeatherCity,
     setHomeWidgetPosition,
 } from '@/components/home/home-dashboard'
 import { provideHomeDashboardRuntime } from '@/components/home/home-dashboard-runtime'
@@ -60,6 +61,7 @@ import HomePinnedServers from '@/components/home/HomePinnedServers.vue'
 import HomePinnedWorlds from '@/components/home/HomePinnedWorlds.vue'
 import HomeRecentWorlds from '@/components/home/HomeRecentWorlds.vue'
 import HomeShortcutWidget from '@/components/home/HomeShortcutWidget.vue'
+import HomeWeather from '@/components/home/HomeWeather.vue'
 import HomeWidgetPickerModal from '@/components/home/HomeWidgetPickerModal.vue'
 import type { GameInstance } from '@/helpers/types'
 
@@ -682,6 +684,14 @@ defineExpose({ openWidgetPicker, setLayout })
                                 :instances="instances"
                                 :dashboard-size="effectiveSize(widget)"
                                 dashboard
+                            />
+                            <HomeWeather
+                                v-else-if="widget.kind === 'weather'"
+                                :city="widget.options?.weatherCity"
+                                :dashboard-size="effectiveSize(widget)"
+                                @change-city="
+                                    emit('change', setHomeWeatherCity(props.config, widget.id, $event))
+                                "
                             />
                             <HomeShortcutWidget
                                 v-else
