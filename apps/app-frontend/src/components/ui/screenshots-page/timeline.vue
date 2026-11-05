@@ -18,9 +18,8 @@ const props = defineProps<{
 const emit = defineEmits<{
     (e: 'activate' | 'contextmenu', screenshot: InstanceScreenshot, event: MouseEvent): void
     (e: 'save-note', screenshot: InstanceScreenshot, note: string): void
-    (e: 'cancel-note'): void
     (e: 'toggle-select', screenshot: InstanceScreenshot): void
-    (e: 'clear-selection'): void
+    (e: 'cancel-note' | 'clear-selection'): void
 }>()
 
 const { formatMessage: _formatMessage } = useVIntl()

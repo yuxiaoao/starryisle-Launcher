@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { CheckIcon } from '@modrinth/assets'
-import { MAX_SCREENSHOT_NOTE_LENGTH } from '@/helpers/screenshot-notes'
-import { useImageThumbnail } from '@/composables/use-image-thumbnail'
-import type { InstanceScreenshot } from '@/helpers/instance'
 import { defineMessages, useFormatDateTime, useVIntl } from '@modrinth/ui'
 import { nextTick, ref, watch } from 'vue'
+
+import { useImageThumbnail } from '@/composables/use-image-thumbnail'
+import type { InstanceScreenshot } from '@/helpers/instance'
+import { MAX_SCREENSHOT_NOTE_LENGTH } from '@/helpers/screenshot-notes'
 
 const props = defineProps<{
     screenshot: InstanceScreenshot
@@ -21,9 +22,9 @@ const emit = defineEmits<{
     (e: 'toggle-select', screenshot: InstanceScreenshot): void
 }>()
 
-const { formatMessage } = useVIntl()
+const { formatMessage: _formatMessage } = useVIntl()
 
-const messages = defineMessages({
+const _messages = defineMessages({
     addNote: { id: 'app.screenshots.note.placeholder', defaultMessage: 'Add a note…' },
 })
 
