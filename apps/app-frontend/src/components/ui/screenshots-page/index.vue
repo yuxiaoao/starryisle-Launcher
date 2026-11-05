@@ -85,13 +85,13 @@ import {
 import ScreenshotDragGather from './drag-gather.vue'
 import ScreenshotDragPreview from './drag-preview.vue'
 import ScreenshotGroupSection from './group.vue'
-import ScreenshotTimeline from './timeline.vue'
 import { screenshotRenderWindows } from './screenshot-render-window'
 import {
     createScreenshotSelection,
     isSelectionModifier,
     screenshotGridTargets,
 } from './screenshot-selection'
+import ScreenshotTimeline from './timeline.vue'
 import ScreenshotToolbar from './toolbar.vue'
 import { type ActiveScreenshotDrag, useScreenshotDragGather } from './use-screenshot-drag-gather'
 import { useScreenshotMarquee } from './use-screenshot-marquee'
