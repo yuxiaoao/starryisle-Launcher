@@ -89,7 +89,7 @@ jobs:
 
           # Scheduled workflows may land a commit on main while this job runs; the
           # merge commit here is the authoritative result, so publish it directly.
-          git push --force origin HEAD:main
+          git push --force origin HEAD:refs/heads/sync/merge-result
 
       - name: Summary
         if: always()
