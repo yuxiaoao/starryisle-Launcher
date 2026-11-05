@@ -1,6 +1,31 @@
 {
   "entries": [
     {
+      "file": "packages/app-lib/src/api/instance/screenshots/bundle.rs",
+      "form": "spawn_blocking",
+      "count": 2,
+      "reason": "ported screenshot bundle export/import: zip work offloaded to the blocking pool; not yet routed through the governed scheduler",
+      "sites": [
+        "export_instance_bundle: tokio::task::spawn_blocking(move || -> crate::Result<()> {",
+        "import_instance_bundle: let (mut report, pending_notes) = tokio::task::spawn_blocking({"
+      ]
+    },
+    {
+      "file": "packages/app-lib/src/api/instance/screenshots/bundle.rs",
+      "form": "std::fs",
+      "count": 7,
+      "reason": "ported screenshot bundle export/import: reads and writes the instance screenshots directory directly",
+      "sites": [
+        "export_instance_bundle: for entry in std::fs::read_dir(&dir)? {",
+        "export_instance_bundle: let file = std::fs::File::create(&export_path)?;",
+        "export_instance_bundle: let mut source = std::fs::File::open(&path)?;",
+        "import_instance_bundle: std::fs::create_dir_all(&dir)?;",
+        "import_instance_bundle: let file = std::fs::File::open(&archive_path)?;",
+        "import_instance_bundle: std::fs::create_dir_all(parent)?;",
+        "import_instance_bundle: let mut out = std::fs::File::create(&target)?;"
+      ]
+    },
+    {
       "file": "apps/app/src/api/auth.rs",
       "form": "tokio::spawn",
       "count": 1,
