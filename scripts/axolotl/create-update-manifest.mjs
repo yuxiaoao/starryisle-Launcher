@@ -1,6 +1,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 
+import { compareVersions } from './aliyunoss-release.mjs'
 import {
     assetDownloadUrl,
     assetSha256,
@@ -67,6 +68,25 @@ export function createUpdateManifest(release, signaturesPath, tag) {
         // Draft release metadata can contain temporary untagged download URLs.
         const url = assetDownloadUrl(tag, asset.name)
         for (const platform of target.platforms) platforms[platform] = { signature, url, sha256 }
+    }
+    const artifacts = {}
+    for (const target of portableTargets) {
+        if (!requiresArtifacts(tag)) continue
+        // Matching on the versioned filename keeps a stale zip from another release out.
+        const expectedName = portableArtifactName(tag)
+        const matches = release.assets.filter((asset) => asset.name === expectedName)
+        if (matches.length !== 1) {
+            throw new Error(
+                `Expected one release asset named ${expectedName} for ${target.key}, found ${matches.length}`,
+            )
+        }
+        const asset = matches[0]
+        artifacts[target.key] = {
+            platform: target.platform,
+            name: asset.name,
+            sha256: assetSha256(asset),
+            url: assetDownloadUrl(tag, asset.name),
+        }
     }
     return {
         version: releaseVersion(tag),

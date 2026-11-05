@@ -159,6 +159,42 @@ test('a published manifest with a divergent SHA-256 is rejected', (t) => {
     assert(!state.calls.some((args) => ['upload', 'edit'].includes(args[1])))
 })
 
+test('a published manifest with a divergent portable artifact is rejected', (t) => {
+    const { directory, state, run } = fixture(t)
+    finalizeGithubRelease(tag, directory, { run })
+    const manifest = JSON.parse(state.manifest)
+    assert.equal(manifest.artifacts.portable.name, names[4])
+    manifest.artifacts.portable.sha256 = createHash('sha256').update('other').digest('hex')
+    state.manifest = JSON.stringify(manifest)
+    state.calls.length = 0
+    assert.throws(() => finalizeGithubRelease(tag, directory, { run }), /does not match/)
+    assert(!state.calls.some((args) => ['upload', 'edit'].includes(args[1])))
+})
+
+test('a release older than the artifact field keeps verifying without it', (t) => {
+    const { directory, state, run } = fixture(t, 'v1.10.4')
+    state.release.assets = state.release.assets.filter((asset) => !asset.name.includes('portable'))
+    finalizeGithubRelease('v1.10.4', directory, { run })
+    assert.equal(JSON.parse(state.manifest).artifacts, undefined)
+    state.calls.length = 0
+    finalizeGithubRelease('v1.10.4', directory, { run })
+    assert(!state.calls.some((args) => ['upload', 'edit'].includes(args[1])))
+})
+
+test('a release at or above the artifact field must publish it', (t) => {
+    const { directory, state, run } = fixture(t)
+    finalizeGithubRelease(tag, directory, { run })
+    const published = JSON.parse(state.manifest)
+    assert.ok(published.artifacts)
+    delete published.artifacts
+    state.manifest = JSON.stringify(published)
+    state.calls.length = 0
+    assert.throws(
+        () => finalizeGithubRelease(tag, directory, { run }),
+        /is missing the portable artifact|does not match/,
+    )
+})
+
 test('excluded or malformed tags cannot issue GitHub commands', (t) => {
     const { directory, state, run } = fixture(t)
     for (const value of [

@@ -107,6 +107,29 @@ async fn run_cycle(
     Ok(())
 }
 
+/// Startup reconciliation of the telemetry cycle. The cycle's writes are not
+/// one transaction, so a previous session can stop between them: the identity
+/// may exist without today's heartbeat, error events from older clients may
+/// remain, and the outbox may be only partly trimmed. Each step is atomic on
+/// its own (the heartbeat and its day are one unit) or idempotent (the trims),
+/// so running them once more converges.
+pub(crate) async fn reconcile(state: &State) -> crate::Result<()> {
+    let _database_permit = state.acquire_install_db_permit().await?;
+    if !is_enabled(state).await? {
+        TelemetryOutbox::set_all(&state.data, &[]).await?;
+        return Ok(());
+    }
+    ensure_identity(state).await?;
+    TelemetryOutbox::set_scoped(
+        &state.data,
+        &TelemetryOutboxScope::Kind(TelemetryEventType::Error),
+        &[],
+    )
+    .await?;
+    enqueue_heartbeat(state).await?;
+    cleanup_outbox(state).await
+}
+
 async fn is_enabled(state: &State) -> crate::Result<bool> {
     let settings = Settings::get(&state.data).await?;
     Ok(settings.telemetry && settings.telemetry_consent_version > 0)

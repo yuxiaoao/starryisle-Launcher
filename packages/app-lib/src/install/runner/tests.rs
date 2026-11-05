@@ -1,5 +1,168 @@
 use super::*;
 
+fn resource_names_plan() -> crate::resources::ResourceOperationPlan {
+    use crate::resources::*;
+
+    let node =
+        |id: &str, source: SourceId, project: &str| ResourceDependencyNode {
+            id: SelectionId::new(id).unwrap(),
+            root_selection_ids: vec![],
+            resource_type: Some(ResourceType::Mod),
+            resource: ResourceRef::Source {
+                project: SourceProjectRef {
+                    source,
+                    project_id: SourceProjectId::new(project).unwrap(),
+                },
+            },
+            scope: InstallScope::Instance,
+            state: DependencyNodeState::Install,
+            artifact: None,
+            installed_entries: vec![],
+            compatibility: CompatibilityAssessment {
+                game_version: CompatibilityState::Compatible,
+                loader: CompatibilityState::Compatible,
+                reasons: vec![],
+            },
+            declared_compatibility: None,
+        };
+    let nodes = vec![
+        node("root", SourceId::modrinth(), "shared"),
+        node("same-project", SourceId::modrinth(), "shared"),
+        node("other-provider", SourceId::curseforge(), "shared"),
+        node("optional", SourceId::modrinth(), "optional"),
+        node("unchanged", SourceId::modrinth(), "unchanged"),
+        node("filename", SourceId::modrinth(), "filename"),
+    ];
+    let actions = [
+        (0, ResourceActionKind::Install),
+        (1, ResourceActionKind::Replace),
+        (2, ResourceActionKind::Enable),
+        (4, ResourceActionKind::Keep),
+        (5, ResourceActionKind::Install),
+    ]
+    .into_iter()
+    .map(|(index, kind)| {
+        let ResourceRef::Source { project } = &nodes[index].resource else {
+            unreachable!()
+        };
+        ResourceEntryAction {
+            entry_id: InstalledEntryId::new(format!("entry-{index}")).unwrap(),
+            node_id: nodes[index].id.clone(),
+            kind,
+            current: None,
+            target: ResourceArtifact {
+                reference: SourceArtifactRef {
+                    release: SourceReleaseRef {
+                        project: project.clone(),
+                        release_id: SourceReleaseId::new("version").unwrap(),
+                    },
+                    artifact_id: SourceArtifactId::new("artifact").unwrap(),
+                },
+                file_name: Some("manually-renamed-1.2.jar".into()),
+                role: ArtifactRole::Primary,
+                available: Some(true),
+                integrity: ArtifactIntegrity {
+                    size: None,
+                    hashes: vec![],
+                },
+                acquisition: ArtifactAcquisition::Unavailable,
+                dependencies: vec![],
+            },
+            target_relative_path: format!("mods/{index}.jar"),
+        }
+    })
+    .collect();
+    ResourceOperationPlan {
+        schema_version: ResourceContractVersion,
+        id: PlanId::new("resource-names-plan").unwrap(),
+        revision: 1,
+        instance_id: "instance".into(),
+        instance_revision: 1,
+        intent: ResourceOperationIntent::Install,
+        selections: vec![],
+        active_roots: vec![],
+        nodes,
+        edges: vec![],
+        actions,
+        issues: vec![],
+        exceptions: vec![],
+        selection_reasons: vec![],
+    }
+}
+
+#[test]
+fn resource_names_follow_executed_actions_and_provider_identity() {
+    let plan = resource_names_plan();
+    let names = HashMap::from([
+        ("root".into(), "  Same display name  ".into()),
+        ("same-project".into(), "Duplicate file".into()),
+        ("other-provider".into(), "Same display name".into()),
+        ("optional".into(), "Not selected".into()),
+        ("unchanged".into(), "Already installed".into()),
+        ("filename".into(), "  ".into()),
+        ("unknown-node".into(), "Not in plan".into()),
+    ]);
+    assert_eq!(
+        resource_plan_names(&plan, &names),
+        [
+            "Same display name",
+            "Same display name",
+            "manually-renamed-1.2.jar"
+        ]
+    );
+}
+
+#[test]
+fn resource_names_survive_frozen_job_persistence_and_snapshot_round_trip() {
+    let plan = resource_names_plan();
+    let names = HashMap::from([("root".into(), "Actual project title".into())]);
+    let mut job = InstallJobState::new(InstallRequest::InstallContentBatch {
+        instance_id: "instance".into(),
+        items: vec![InstallContentBatchItem::FrozenResource {
+            plan: plan.clone(),
+        }],
+        display_title: "Install resources".into(),
+        display_icon: None,
+    });
+    job.resource_names = resource_plan_names(&plan, &names);
+    let serialized = serde_json::to_value(&job).unwrap();
+    let restored: InstallJobState =
+        serde_json::from_value(serialized.clone()).unwrap();
+    assert_eq!(restored.resource_names, job.resource_names);
+    assert_eq!(restored.clone().resource_names, job.resource_names);
+    let now = chrono::Utc::now();
+    let record = store::InstallJobRecord {
+        id: Uuid::new_v4(),
+        instance_id: Some("instance".into()),
+        kind: restored.request.kind(),
+        status: InstallJobStatus::Queued,
+        state: restored,
+        created: now,
+        modified: now,
+        finished: None,
+        dismissed: false,
+    };
+    let snapshot = record.snapshot();
+    assert_eq!(snapshot.resource_names, job.resource_names);
+    let restored_snapshot: InstallJobSnapshot =
+        serde_json::from_value(serde_json::to_value(&snapshot).unwrap())
+            .unwrap();
+    assert_eq!(restored_snapshot.resource_names, job.resource_names);
+
+    let mut legacy_job = serialized;
+    legacy_job.as_object_mut().unwrap().remove("resource_names");
+    let legacy: InstallJobState = serde_json::from_value(legacy_job).unwrap();
+    assert!(legacy.resource_names.is_empty());
+    let mut legacy_snapshot = serde_json::to_value(snapshot).unwrap();
+    legacy_snapshot
+        .as_object_mut()
+        .unwrap()
+        .remove("resource_names");
+    let legacy: InstallJobSnapshot =
+        serde_json::from_value(legacy_snapshot).unwrap();
+    assert!(legacy.resource_names.is_empty());
+}
+
 #[tokio::test]
 async fn cancel_cleanup_retries_a_request_received_during_a_failed_attempt() {
     use std::sync::Arc;
@@ -74,6 +237,83 @@ async fn cancel_cleanup_registration_is_released_when_the_worker_is_aborted() {
     let successor = CancelCleanupRegistration::request(job_id).unwrap();
     drop(successor);
     assert!(!CANCEL_CLEANUPS.contains_key(&job_id));
+}
+
+fn writer_timeout() -> crate::Error {
+    ErrorKind::InputError(
+        "Timed out waiting for the install database writer".into(),
+    )
+    .into()
+}
+
+#[tokio::test]
+async fn cancel_cleanup_retries_a_failed_final_write_without_a_new_request() {
+    use std::sync::atomic::{AtomicU32, Ordering};
+
+    let job_id = Uuid::new_v4();
+    let registration = CancelCleanupRegistration::request(job_id).unwrap();
+    let attempts = AtomicU32::new(0);
+    run_cancel_cleanup(registration, || async {
+        // The rollback finished, but the Canceling -> Canceled write timed
+        // out waiting for the writer once.
+        if attempts.fetch_add(1, Ordering::SeqCst) == 0 {
+            return Err(writer_timeout());
+        }
+        Ok(())
+    })
+    .await;
+    assert_eq!(attempts.load(Ordering::SeqCst), 2);
+    assert!(!CANCEL_CLEANUPS.contains_key(&job_id));
+}
+
+#[tokio::test]
+async fn cancel_cleanup_gives_up_after_bounded_attempts() {
+    use std::sync::atomic::{AtomicU32, Ordering};
+
+    let job_id = Uuid::new_v4();
+    let registration = CancelCleanupRegistration::request(job_id).unwrap();
+    let attempts = AtomicU32::new(0);
+    run_cancel_cleanup(registration, || async {
+        attempts.fetch_add(1, Ordering::SeqCst);
+        Err(writer_timeout())
+    })
+    .await;
+    assert_eq!(attempts.load(Ordering::SeqCst), RECOVERY_ATTEMPTS);
+    assert!(
+        CancelCleanupRegistration::request(job_id).is_some(),
+        "a later cancel request can start a fresh cleanup"
+    );
+}
+
+#[tokio::test]
+async fn recovery_is_retried_when_its_write_also_times_out() {
+    use std::sync::atomic::{AtomicU32, Ordering};
+
+    let attempts = AtomicU32::new(0);
+    let result = retry_recovery(Uuid::new_v4(), || async {
+        // The worker already failed; the first recovery write times out too.
+        if attempts.fetch_add(1, Ordering::SeqCst) == 0 {
+            return Err(writer_timeout());
+        }
+        Ok(())
+    })
+    .await;
+    assert!(result.is_ok());
+    assert_eq!(attempts.load(Ordering::SeqCst), 2);
+
+    let attempts = AtomicU32::new(0);
+    let result = retry_recovery(Uuid::new_v4(), || async {
+        attempts.fetch_add(1, Ordering::SeqCst);
+        Err(writer_timeout())
+    })
+    .await;
+    assert!(
+        result
+            .unwrap_err()
+            .to_string()
+            .contains("install database writer")
+    );
+    assert_eq!(attempts.load(Ordering::SeqCst), RECOVERY_ATTEMPTS);
 }
 
 #[test]

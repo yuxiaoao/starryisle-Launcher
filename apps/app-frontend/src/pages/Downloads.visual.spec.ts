@@ -161,6 +161,71 @@ function downloadingJob(provider: InstallJobSnapshot['provider']): InstallJobSna
     }
 }
 
+it('localizes batch titles, finds every resource, and shows terminal status instead of a stale phase', async () => {
+    fixture.locale = 'zh-CN'
+    fixture.route = reactive({ query: { tab: 'history' } as Record<string, unknown> })
+    const job = {
+        ...downloadingJob('application'),
+        kind: 'install_content',
+        status: 'succeeded',
+        phase: 'finalizing',
+        display: { title: 'Install resources' },
+        resource_names: ['Sodium', 'Iris', 'AppleSkin'],
+        items: [
+            {
+                id: 'sodium.jar',
+                name: 'sodium-0.5.8.jar',
+                status: 'completed',
+                bytes_downloaded: 10,
+            },
+            { id: 'iris.jar', name: 'iris-1.7.2.jar', status: 'completed', bytes_downloaded: 10 },
+            {
+                id: 'apple.jar',
+                name: 'appleskin-2.5.1.jar',
+                status: 'completed',
+                bytes_downloaded: 10,
+            },
+        ],
+    } as InstallJobSnapshot
+    const jobs = ref([job])
+    fixture.manager = {
+        initializationState: ref('ready'),
+        jobs,
+        activeJobs: ref([]),
+        historyJobs: jobs,
+        legacyDownloads: ref([]),
+    }
+    const wrapper = mount(Downloads, { global: { directives: { tooltip: () => {} } } })
+    try {
+        expect(wrapper.get('h2').text()).toBe('安装内容：Sodium 等 3 项')
+        expect(wrapper.text()).not.toContain('正在完成安装')
+        const expand = wrapper.findAll('button').find((button) => button.text() === '详细信息')
+        expect(expand).toBeDefined()
+        await expand!.trigger('click')
+        expect(wrapper.text()).toContain('sodium-0.5.8.jar')
+        expect(wrapper.text()).toContain('iris-1.7.2.jar')
+        expect(wrapper.text()).toContain('appleskin-2.5.1.jar')
+        expect(wrapper.text()).not.toContain('暂无文件详情')
+        const search = wrapper.get('input')
+        await search.setValue('AppleSkin')
+        expect(wrapper.find('h2').exists()).toBe(true)
+        await search.setValue('iris-1.7.2.jar')
+        expect(wrapper.find('h2').exists()).toBe(true)
+        await search.setValue('not-installed.jar')
+        expect(wrapper.find('h2').exists()).toBe(false)
+        await search.setValue('')
+        for (const status of ['failed', 'canceled', 'interrupted'] as const) {
+            jobs.value = [{ ...job, status }]
+            await nextTick()
+            expect(wrapper.text()).not.toContain('正在完成安装')
+        }
+    } finally {
+        wrapper.unmount()
+        fixture.locale = 'en-US'
+        fixture.route = { query: {} }
+    }
+})
+
 it('keeps cancellation available for a canceling job and disables it while the request is pending', async () => {
     const jobs = ref<InstallJobSnapshot[]>([{ ...downloadingJob('modrinth'), status: 'canceling' }])
     let finishCancellation!: () => void

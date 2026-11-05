@@ -741,14 +741,6 @@ fn main() {
                         "instance_import_screenshot_groups",
                         "instance_delete_screenshots",
                         "instance_export_screenshots",
-                        "instance_list_worlds",
-                        "instance_world_advancements",
-                        "instance_advancement_catalog",
-                        "stats_overview",
-                        "instance_export_screenshots_bundle",
-                        "instance_import_screenshots_bundle",
-                        "instance_set_screenshot_note",
-                        "instance_list_screenshot_notes",
                         "instance_move_screenshots",
                         "instance_open_screenshot",
                         "instance_get_synced_options",
@@ -882,6 +874,34 @@ fn main() {
                         "mcp_configure",
                         "mcp_respond",
                         "mcp_disconnect",
+                        "mcp_ui_claim",
+                        "mcp_ui_respond",
+                    ])
+                    .default_permission(
+                        DefaultPermissionRule::AllowAllCommands,
+                    ),
+            )
+            .plugin(
+                "third-party-accounts",
+                InlinedPlugin::new()
+                    .commands(&[
+                        "get_account",
+                        "begin_authorization",
+                        "cancel_authorization",
+                        "disconnect",
+                        "check_connection",
+                    ])
+                    .default_permission(
+                        DefaultPermissionRule::AllowAllCommands,
+                    ),
+            )
+            .plugin(
+                "schematics",
+                InlinedPlugin::new()
+                    .commands(&[
+                        "schematics_list",
+                        "schematics_get",
+                        "schematics_install",
                     ])
                     .default_permission(
                         DefaultPermissionRule::AllowAllCommands,

@@ -604,7 +604,7 @@ function installationErrors(value: ResourceOperationPlan): string[] {
         ),
     ]
 }
-const applyTooltip = computed(() => {
+const applyIssueSummary = computed(() => {
     if (!forceInstall.value) return undefined
     if (errorSummary.value && error.value) return errorSummary.value
     if (!plan.value)
@@ -644,6 +644,29 @@ const applyTooltip = computed(() => {
         return resourcePlanIssueFeedback(issue, formatMessage, isSelectedIssue(issue, plan.value))
             .summary
     return formatMessage(summary ?? messages.empty)
+})
+const applyTooltip = computed(() => {
+    if (!forceInstall.value) return undefined
+    const acceptsCompatibility = plan.value?.nodes.some(
+        (node) =>
+            node.artifact &&
+            node.state !== 'optionalCandidate' &&
+            (['gameVersion', 'loader'] as const).some(
+                (dimension) =>
+                    node.compatibility[dimension] === 'incompatible' &&
+                    !plan.value?.exceptions.some(
+                        (exception) =>
+                            exception.selectionId === node.id &&
+                            exception.dimensions.includes(dimension),
+                    ),
+            ),
+    )
+    return formatMessage(
+        acceptsCompatibility
+            ? messages.forceInstallCompatibilityTooltip
+            : messages.forceInstallTooltip,
+        { reason: applyIssueSummary.value ?? '' },
+    )
 })
 const canSkipUnwritable = computed(
     () =>
@@ -869,7 +892,7 @@ function hide() {
     }
 }
 function show(value: OperationInput): Promise<InstallJobSnapshot | null> {
-    if (queueing.value) return Promise.resolve(null)
+    if (disposed || !modal.value || queueing.value) return Promise.resolve(null)
     release()
     input.value = value
     plan.value = null
@@ -1077,7 +1100,13 @@ async function submit(retryStale: boolean) {
         committing.value = true
         let job: InstallJobSnapshot
         try {
-            job = await resourceQueuePlan(reviewed.id, reviewed.revision)
+            const resourceNames = Object.fromEntries(
+                reviewed.nodes.flatMap((node) => {
+                    const title = names.value[node.id]?.title
+                    return title?.trim() ? [[node.id, title]] : []
+                }),
+            )
+            job = await resourceQueuePlan(reviewed.id, reviewed.revision, resourceNames)
         } finally {
             // Only the queue request itself is locked; the refresh after a stale
             // plan below is analysis again and must stay cancellable.

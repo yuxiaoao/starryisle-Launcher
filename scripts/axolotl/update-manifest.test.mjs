@@ -74,6 +74,14 @@ test('generate stable tagged URLs from draft assets and verify the repository an
                 assert.equal(update.signature, signature)
             for (const [platform, name] of Object.entries(platformNames))
                 assert.equal(manifest.platforms[platform].sha256, sha256(name))
+            assert.deepEqual(manifest.artifacts, {
+                portable: {
+                    platform: 'windows-x86_64',
+                    name: names[4],
+                    sha256: sha256(names[4]),
+                    url: `https://github.com/${repository}/releases/download/${tag}/${names[4]}`,
+                },
+            })
             const verified = verify(repository)
             assert.equal(verified.status, 0, verified.stderr)
         }
@@ -118,6 +126,28 @@ test('generate stable tagged URLs from draft assets and verify the repository an
         assert.notEqual(missingDigestResult.status, 0)
         assert.match(missingDigestResult.stderr, /is missing a SHA-256 digest/)
         assert(missingDigestResult.stderr.includes(names[1]))
+        fs.writeFileSync(releasePath, JSON.stringify(release))
+
+        // A stale zip from another version must not be described as this release's artifact.
+        const staleZip = structuredClone(release)
+        staleZip.assets = staleZip.assets.map((asset) =>
+            asset.name === names[4]
+                ? { ...asset, name: 'Axolotl_Launcher_1.10.0-beta.5_x64_portable.zip' }
+                : asset,
+        )
+        fs.writeFileSync(releasePath, JSON.stringify(staleZip))
+        const staleResult = generate()
+        assert.notEqual(staleResult.status, 0)
+        assert.match(staleResult.stderr, /x64_portable\.zip/)
+        fs.writeFileSync(releasePath, JSON.stringify(release))
+
+        // Above the threshold the portable artifact is required, not optional.
+        const noPortable = structuredClone(release)
+        noPortable.assets = noPortable.assets.filter((asset) => !asset.name.includes('portable'))
+        fs.writeFileSync(releasePath, JSON.stringify(noPortable))
+        const noPortableResult = generate()
+        assert.notEqual(noPortableResult.status, 0)
+        assert.match(noPortableResult.stderr, /Expected one release asset named/)
         fs.writeFileSync(releasePath, JSON.stringify(release))
 
         const cnbManifest = structuredClone(original)

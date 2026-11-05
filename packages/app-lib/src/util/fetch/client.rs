@@ -18,6 +18,35 @@ use std::sync::{Arc, LazyLock};
 #[cfg(test)]
 use std::time;
 
+/// Roots a test added to the clients it builds, so general clients trust the
+/// same loopback CA as the pinned ones.
+///
+/// This is a registry rather than a task-local scope: `DownloadClients::build`
+/// runs when a fixture constructs its clients, which happens before the test
+/// enters the future that issues requests. A scope bound around the requests
+/// would therefore arrive too late to affect the built clients.
+#[cfg(test)]
+static TEST_TRUST_ROOTS: LazyLock<
+    parking_lot::Mutex<Vec<reqwest::Certificate>>,
+> = LazyLock::new(Default::default);
+
+/// The test roots registered so far.
+#[cfg(test)]
+fn test_trust_roots() -> Vec<reqwest::Certificate> {
+    TEST_TRUST_ROOTS.lock().clone()
+}
+
+/// Registers `roots` for every client this test builds afterwards.
+///
+/// Roots are process-wide because the client that needs them is built by a
+/// fixture outside any scope. Each test gets its own process under nextest, and
+/// the loopback CAs are self-signed and unique per fixture, so one test's roots
+/// cannot make another test's traffic trusted.
+#[cfg(test)]
+pub(crate) fn register_test_trust_roots(roots: Vec<reqwest::Certificate>) {
+    TEST_TRUST_ROOTS.lock().extend(roots);
+}
+
 pub(crate) fn is_h2_protocol_failure(error: &reqwest::Error) -> bool {
     let mut chain = String::new();
     let mut source = error.source();
@@ -50,7 +79,7 @@ pub(crate) fn reqwest_client_builder() -> reqwest::ClientBuilder {
     };
     #[cfg(not(test))]
     let read_timeout = FILE_TRANSFER_READ_TIMEOUT;
-    reqwest::Client::builder()
+    crate::util::http::client_builder()
         .redirect(reqwest::redirect::Policy::custom(|attempt| {
             if retired_sources::is_retired(attempt.url()) {
                 attempt.error(NATIVE_DOWNLOAD_SOURCE_HAS_BEEN_RETIRED)
@@ -120,6 +149,7 @@ pub(crate) struct DownloadClients {
     pub(crate) http1_system: reqwest::Client,
     pub(crate) http1_direct: reqwest::Client,
     pub(crate) proxy: crate::util::proxy::ProxyConfig,
+    pub(crate) native_proxy: Arc<hyper_util::client::proxy::matcher::Matcher>,
     pub(crate) ignore_ssl_errors: bool,
     pub(crate) scope: String,
     pub(crate) system_dns: Arc<DownloadDnsResolver>,
@@ -161,6 +191,17 @@ impl DownloadClients {
             let builder = file_reqwest_client_builder()
                 .redirect(reqwest::redirect::Policy::none())
                 .danger_accept_invalid_certs(ignore_ssl_errors);
+            // Loopback fixtures sign their own certificates. Pinned clients get
+            // the root from `trust_test_root`, but a request that falls back to
+            // one of these general clients would fail with `UnknownIssuer`, so
+            // the test root has to reach them too.
+            #[cfg(test)]
+            let builder = match test_trust_roots() {
+                roots if roots.is_empty() => builder,
+                roots => roots.iter().fold(builder, |builder, root| {
+                    builder.add_root_certificate(root.clone())
+                }),
+            };
             // Reqwest does not expose a socket-lifetime admission hook. In
             // automatic mode its idle sockets would outlive request permits
             // and accumulate alongside probes and new endpoint generations.
@@ -177,14 +218,7 @@ impl DownloadClients {
             } else {
                 Arc::clone(&system_dns)
             });
-            let builder = if http1
-                || !direct
-                    && proxy.mode == crate::util::proxy::ProxyMode::Custom
-            {
-                builder.http1_only()
-            } else {
-                builder
-            };
+            let builder = if http1 { builder.http1_only() } else { builder };
             let builder = if direct {
                 builder.no_proxy()
             } else {
@@ -216,6 +250,7 @@ impl DownloadClients {
             http1_system: build(false, true)?,
             http1_direct: build(true, true)?,
             proxy: proxy.clone(),
+            native_proxy: proxy.native_matcher()?,
             ignore_ssl_errors,
             scope: crate::util::download::proxy_context::fingerprint_with_doh(
                 proxy,
@@ -255,6 +290,9 @@ impl DownloadClients {
             http1_system: HTTP1_NO_REDIRECT_REQWEST_CLIENT.clone(),
             http1_direct: HTTP1_DIRECT_REQWEST_CLIENT.clone(),
             proxy: Default::default(),
+            native_proxy: crate::util::proxy::ProxyConfig::default()
+                .native_matcher()
+                .expect("system proxy matcher should be valid"),
             ignore_ssl_errors: false,
             scope: FETCH_UNCONFIGURED.into(),
             system_dns: Arc::clone(&DOWNLOAD_DNS_RESOLVER),
