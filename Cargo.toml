@@ -8,6 +8,7 @@ members = [
   "packages/content-management",
   "packages/daedalus",
   "packages/launcher-mcp",
+  "packages/launcher-tools",
   "packages/path-util",
   "third-party/tauri-plugin-http",
 ]
@@ -79,12 +80,10 @@ image = { version = "0.25.5", default-features = false, features = [
 ] }
 indicatif = "0.18.0"
 itertools = "0.14.0"
-# jsonwebtoken 10 requires an explicit crypto backend; rust_crypto keeps the
-# build pure Rust (the aws_lc_rs backend would add a native C dependency).
-jsonwebtoken = { version = "10.3.0", features = ["rust_crypto"] }
 junction = "1"
 keyring = "4.1.5"
 launcher-mcp = { path = "packages/launcher-mcp" }
+launcher-tools = { path = "packages/launcher-tools" }
 libc = "0.2.189"
 libloading = "0.7.4"
 local-ip-address = "0.6.7"
@@ -107,6 +106,7 @@ rand = "0.8.8"
 regex = "1.12.2"
 reqwest = { version = "0.13.4", default-features = false }
 rgb = "0.8.52"
+ring = "0.17.14"
 rmcp = { version = "3.7.0", default-features = false, features = [
   "server",
   "transport-streamable-http-server"

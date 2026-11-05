@@ -3593,13 +3593,27 @@ version = "0.1.0"
 dependencies = [
  "axum",
  "futures",
- "reqwest 0.12.28",
+ "launcher-tools",
+ "reqwest",
  "rmcp",
+ "rustls",
  "serde",
  "serde_json",
  "tokio",
  "tokio-util",
  "tracing",
+ "uuid 1.24.0",
+]
+
+[[package]]
+name = "launcher-tools"
+version = "0.1.0"
+dependencies = [
+ "futures",
+ "serde",
+ "serde_json",
+ "tokio",
+ "tokio-util",
  "uuid 1.24.0",
 ]
 
@@ -3739,12 +3753,6 @@ name = "log"
 version = "0.4.33"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0ceec5bc11778974d1bcb055b18002eba7f4b3518b6a0081b3af5f21666da9ad"
-
-[[package]]
-name = "lru-slab"
-version = "0.1.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "112b39cec0b298b6c1999fee3e31427f74f676e4cb9879ed1a121b43661a4154"
 
 [[package]]
 name = "lzma-sys"
@@ -4655,7 +4663,7 @@ dependencies = [
  "derive_more",
  "itertools",
  "serde",
- "typed-path 0.12.3",
+ "typed-path",
 ]
 
 [[package]]
@@ -5086,24 +5094,6 @@ checksum = "e660451e55124f798a69a5af3f49ccfbefbd41910eefd25caf2393e1f3473ec1"
 dependencies = [
  "memchr",
  "serde",
- "tokio",
-]
-
-[[package]]
-name = "quinn"
-version = "0.11.11"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0c1a41e437b6bbd489372cd4971de128e85c855f56c57f283d20ff016cf7c0a8"
-dependencies = [
- "bytes",
- "cfg_aliases 0.2.2",
- "pin-project-lite",
- "quinn-proto",
- "quinn-udp",
- "rustc-hash",
- "rustls",
- "socket2",
- "thiserror 2.0.19",
  "tokio",
 ]
 
@@ -7172,7 +7162,7 @@ dependencies = [
 
 [[package]]
 name = "theseus"
-version = "1.0.3"
+version = "1.11.0-beta.2"
 dependencies = [
  "ariadne",
  "async-minecraft-ping",
@@ -7288,7 +7278,7 @@ dependencies = [
 
 [[package]]
 name = "theseus_gui"
-version = "1.0.3"
+version = "1.11.0-beta.2"
 dependencies = [
  "ashpd",
  "async_zip",
@@ -7311,6 +7301,7 @@ dependencies = [
  "image",
  "keyring",
  "launcher-mcp",
+ "launcher-tools",
  "libc",
  "libloading",
  "minisign-verify",
@@ -7857,12 +7848,6 @@ name = "twox-hash"
 version = "2.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8464ec13c3691491391d9fce00f6416c9a48e46972f72d7865688be2080192c9"
-
-[[package]]
-name = "typed-path"
-version = "0.13.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9ce898823d8cd0f028662d2f349694b1af0a5cc9be83f1d213a00d3147445e1e"
 
 [[package]]
 name = "typed-path"
@@ -9438,7 +9423,7 @@ dependencies = [
  "indexmap 2.14.0",
  "memchr",
  "nix 0.31.3",
- "typed-path 0.13.0",
+ "typed-path",
  "windows-sys 0.61.2",
  "zopfli",
  "zstd 0.14.3",
