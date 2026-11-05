@@ -241,6 +241,10 @@ const { width: windowWidth } = useWindowSize()
 const formatDateTime = useFormatDateTime({ dateStyle: 'long', timeStyle: 'short' })
 const formatMonth = useFormatDateTime({ month: 'long', year: 'numeric' })
 const messages = defineMessages({
+    editNote: {
+        id: 'app.screenshots.note.edit',
+        defaultMessage: 'Edit note',
+    },
     viewGrid: {
         id: 'app.screenshots.view.grid',
         defaultMessage: 'Grid',
@@ -1215,6 +1219,16 @@ function showScreenshotOptions(screenshot: InstanceScreenshot, event: MouseEvent
                       label: formatMessage(messages.copy),
                       icon: ClipboardCopyIcon,
                       action: () => void copyScreenshot(screenshot),
+                  },                  {
+                      id: 'edit-note',
+                      label: formatMessage(messages.editNote),
+                      icon: EditIcon,
+                      action: () => {
+                          editingNoteKey.value = screenshotNoteKey(
+                              screenshot.instance_id,
+                              screenshot.file_name,
+                          )
+                      },
                   },
               ]
             : []),
