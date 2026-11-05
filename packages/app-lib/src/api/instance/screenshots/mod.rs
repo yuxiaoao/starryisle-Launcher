@@ -4,7 +4,8 @@ mod operations;
 mod reconciliation;
 
 pub use self::bundle::{
-    export_instance_bundle, import_instance_bundle, BundleExportReport, BundleImportReport,
+    BundleExportReport, BundleImportReport, export_instance_bundle,
+    import_instance_bundle,
 };
 pub use self::notes::{
     ScreenshotNote, list_screenshot_notes, set_screenshot_note,
