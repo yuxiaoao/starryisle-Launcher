@@ -70,6 +70,11 @@ import {
 } from '@/helpers/instance'
 import { MAX_INSTANCE_GROUP_NAME_LENGTH } from '@/helpers/instance-groups'
 import {
+    getScreenshotNotes,
+    screenshotNoteKey,
+    setScreenshotNote,
+} from '@/helpers/screenshot-notes'
+import {
     instanceListQueryOptions,
     instanceScreenshotsQueryOptions,
     screenshotGroupsQueryOptions,
@@ -360,6 +365,37 @@ const screenshotsQuery = useQuery(
 )
 const instancesQuery = useQuery(instanceListQueryOptions())
 const screenshotGroupsQuery = useQuery(screenshotGroupsQueryOptions())
+
+const screenshotNotesQuery = useQuery({
+    queryKey: computed(() => ['screenshot-notes', props.instanceId ?? 'all']) as any,
+    queryFn: () => getScreenshotNotes(props.instanceId ?? undefined),
+})
+const screenshotNotes = computed(
+    () =>
+        new Map(
+            (screenshotNotesQuery.data.value ?? []).map((note) => [
+                screenshotNoteKey(note.instanceId, note.fileName),
+                note.note,
+            ]),
+        ) as Map<string, string>,
+)
+const editingNoteKey = ref<string | null>(null)
+function noteFor(screenshot: InstanceScreenshot): string | undefined {
+    return screenshotNotes.value.get(
+        screenshotNoteKey(screenshot.instance_id, screenshot.file_name),
+    )
+}
+function editingFor(screenshot: InstanceScreenshot): boolean {
+    return (
+        editingNoteKey.value ===
+        screenshotNoteKey(screenshot.instance_id, screenshot.file_name)
+    )
+}
+async function saveScreenshotNote(screenshot: InstanceScreenshot, note: string) {
+    await setScreenshotNote(screenshot.instance_id, screenshot.file_name, note)
+    editingNoteKey.value = null
+    await screenshotNotesQuery.refetch()
+}
 const screenshotsQueryPending = useReadyState(screenshotsQuery)
 const screenshotGroupsQueryPending = useReadyState(screenshotGroupsQuery)
 const screenshotsReadyPending = computed(
@@ -1697,6 +1733,8 @@ onBeforeUnmount(() => {
                     <ScreenshotTimeline
                         v-if="viewMode === 'timeline'"
                         :screenshots="filteredScreenshots"
+                        :note-for="noteFor"
+                        :editing-for="editingFor"
                         :show-instance="isGlobal"
                         :is-selected="
                             (screenshot: InstanceScreenshot) =>
@@ -1705,6 +1743,8 @@ onBeforeUnmount(() => {
                         @activate="activateScreenshot"
                         @contextmenu="showScreenshotOptions"
                         @toggle-select="toggleScreenshotSelection"
+                        @save-note="saveScreenshotNote"
+                        @cancel-note="editingNoteKey = null"
                     />
                     <div
                         v-if="viewMode === 'grid'"
