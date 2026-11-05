@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { CheckIcon } from '@modrinth/assets'
-import { defineMessages, useFormatDateTime, useVIntl } from '@modrinth/ui'
+import { defineMessages, useFormatDateTime } from '@modrinth/ui'
 import { nextTick, ref, watch } from 'vue'
 
 import { useImageThumbnail } from '@/composables/use-image-thumbnail'
@@ -22,9 +22,7 @@ const emit = defineEmits<{
     (e: 'toggle-select', screenshot: InstanceScreenshot): void
 }>()
 
-const { formatMessage: formatMessage } = useVIntl()
-
-const messages = defineMessages({
+const _messages = defineMessages({
     addNote: { id: 'app.screenshots.note.placeholder', defaultMessage: 'Add a note…' },
 })
 
