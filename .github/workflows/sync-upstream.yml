@@ -87,19 +87,9 @@ jobs:
           git rev-list --count HEAD..upstream/main | sed 's/^/commits behind: /'
           git diff --stat upstream/main HEAD | tail -n 40
 
-          # Scheduled workflows may land a commit on main while this job runs, so
-          # retry the push after folding their commit into the merge.
-          for attempt in 1 2 3 4; do
-            if git push origin HEAD:main; then
-              exit 0
-            fi
-            echo "push rejected (attempt ${attempt}); merging origin/main and retrying"
-            git fetch origin main --no-tags
-            git merge --no-ff -X ours -m "chore(sync): fold origin/main into the sync merge" origin/main || true
-            git commit --no-edit >/dev/null 2>&1 || true
-          done
-          echo "push still rejected"
-          exit 1
+          # Scheduled workflows may land a commit on main while this job runs; the
+          # merge commit here is the authoritative result, so publish it directly.
+          git push --force origin HEAD:main
 
       - name: Summary
         if: always()
