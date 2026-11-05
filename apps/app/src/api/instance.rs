@@ -111,6 +111,8 @@ pub fn init<R: tauri::Runtime>() -> tauri::plugin::TauriPlugin<R> {
             instance_cache_icon,
             instance_edit_icon,
             instance_list_screenshots,
+            instance_list_screenshot_notes,
+            instance_set_screenshot_note,
             instance_list_all_screenshots,
             instance_list_synced_screenshots,
             instance_save_edited_screenshot,
@@ -1489,6 +1491,19 @@ pub async fn instance_save_edited_screenshot<R: tauri::Runtime>(
     )
 }
 #[tauri::command]
+pub async fn instance_list_screenshot_notes(
+    instance_id: Option<String>,
+) -> Result<Vec<theseus::instance::ScreenshotNote>> {
+    Ok(theseus::instance::list_screenshot_notes(instance_id.as_deref()).await?)
+}
+#[tauri::command]
+pub async fn instance_set_screenshot_note(
+    instance_id: String,
+    file_name: String,
+    note: String,
+) -> Result<()> {
+    Ok(theseus::instance::set_screenshot_note(&instance_id, &file_name, &note).await?)
+}#[tauri::command]
 pub async fn instance_list_screenshot_groups()
 -> Result<Vec<theseus::instance::ScreenshotGroup>> {
     Ok(theseus::instance::list_screenshot_groups().await?)

@@ -730,6 +730,8 @@ fn main() {
                         "instance_cache_icon",
                         "instance_edit_icon",
                         "instance_list_screenshots",
+                        "instance_list_screenshot_notes",
+                        "instance_set_screenshot_note",
                         "instance_list_all_screenshots",
                         "instance_list_synced_screenshots",
                         "instance_save_edited_screenshot",

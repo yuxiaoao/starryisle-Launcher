@@ -1,6 +1,8 @@
+mod notes;
 mod operations;
 mod reconciliation;
 
+pub use self::notes::{list_screenshot_notes, set_screenshot_note, ScreenshotNote};
 pub use self::operations::{
     InstanceScreenshot, ScreenshotEditSaveMode, ScreenshotKey,
     delete_screenshots, export_screenshots, get_screenshot_path,
