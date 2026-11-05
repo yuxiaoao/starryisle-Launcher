@@ -58,6 +58,10 @@ const CHANNELS = ['release', 'beta']
 const REVERTIBLE_SCHEMA = {
     // Screenshots gain a notes table keyed by instance and file name.
     20261105130000: { tables: ["screenshot_notes"] },
+    // settings.oobe_completed_steps
+    20261104120000: {
+        columns: [{ table: 'settings', column: 'oobe_completed_steps' }],
+    },
     20261103130000: { columns: [{ table: 'install_jobs', column: 'level' }] },
     // settings.default_game_language
     20261103120000: {
