@@ -3,7 +3,7 @@ import { defineMessages, useFormatDateTime, useVIntl } from '@modrinth/ui'
 import dayjs from 'dayjs'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
-import type { InstanceScreenshot } from '@/helpers/screenshots'
+import type { InstanceScreenshot } from '@/helpers/instance'
 
 import TimelineRow from './timeline-row.vue'
 

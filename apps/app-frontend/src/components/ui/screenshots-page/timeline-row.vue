@@ -2,7 +2,7 @@
 import { CheckIcon } from '@modrinth/assets'
 import { MAX_SCREENSHOT_NOTE_LENGTH } from '@/helpers/screenshot-notes'
 import { useImageThumbnail } from '@/composables/use-image-thumbnail'
-import type { InstanceScreenshot } from '@/helpers/screenshots'
+import type { InstanceScreenshot } from '@/helpers/instance'
 import { defineMessages, useFormatDateTime, useVIntl } from '@modrinth/ui'
 import { nextTick, ref, watch } from 'vue'
 

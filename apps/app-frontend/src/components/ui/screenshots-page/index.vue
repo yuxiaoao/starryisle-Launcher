@@ -80,6 +80,7 @@ import {
 import ScreenshotDragGather from './drag-gather.vue'
 import ScreenshotDragPreview from './drag-preview.vue'
 import ScreenshotGroupSection from './group.vue'
+import ScreenshotTimeline from './timeline.vue'
 import { screenshotRenderWindows } from './screenshot-render-window'
 import {
     createScreenshotSelection,
@@ -155,6 +156,7 @@ const storageSuffix = props.instanceId ? 'instance' : 'global'
 const search = ref('')
 const sort = useStorage<ScreenshotSort>(`screenshots-sort-${storageSuffix}`, 'newest')
 const groupBy = useStorage<ScreenshotGroupBy>(`screenshots-group-v2-${storageSuffix}`, 'date')
+const viewMode = useStorage<'grid' | 'timeline'>(`screenshots-view-${storageSuffix}`, 'grid')
 const sortModel = computed<string>({
     get: () => sort.value,
     set: (value) => {
@@ -234,6 +236,14 @@ const { width: windowWidth } = useWindowSize()
 const formatDateTime = useFormatDateTime({ dateStyle: 'long', timeStyle: 'short' })
 const formatMonth = useFormatDateTime({ month: 'long', year: 'numeric' })
 const messages = defineMessages({
+    viewGrid: {
+        id: 'app.screenshots.view.grid',
+        defaultMessage: 'Grid',
+    },
+    viewTimeline: {
+        id: 'app.screenshots.view.timeline',
+        defaultMessage: 'Timeline',
+    },
     selectGroup: {
         id: 'app.screenshots.selection.select-group',
         defaultMessage: 'Select all screenshots in {group}',
@@ -1608,6 +1618,21 @@ onBeforeUnmount(() => {
                 :group-options="groupOptions"
                 @new-group="createCustomGroup"
             />
+
+            <div class="flex items-center gap-1">
+                <Button
+                    :type="viewMode === 'grid' ? 'colored' : 'quiet'"
+                    @click="viewMode = 'grid'"
+                >
+                    {{ formatMessage(messages.viewGrid) }}
+                </Button>
+                <Button
+                    :type="viewMode === 'timeline' ? 'colored' : 'quiet'"
+                    @click="viewMode = 'timeline'"
+                >
+                    {{ formatMessage(messages.viewTimeline) }}
+                </Button>
+            </div>
         </template>
 
         <Admonition
@@ -1669,7 +1694,20 @@ onBeforeUnmount(() => {
                     @pointerdown.capture="marquee.start"
                     @click.capture="onSelectionAreaClick"
                 >
+                    <ScreenshotTimeline
+                        v-if="viewMode === 'timeline'"
+                        :screenshots="filteredScreenshots"
+                        :show-instance="isGlobal"
+                        :is-selected="
+                            (screenshot: InstanceScreenshot) =>
+                                selectedKeys.has(getScreenshotKey(screenshot))
+                        "
+                        @activate="activateScreenshot"
+                        @contextmenu="showScreenshotOptions"
+                        @toggle-select="toggleScreenshotSelection"
+                    />
                     <div
+                        v-if="viewMode === 'grid'"
                         v-for="{
                             id,
                             group,
