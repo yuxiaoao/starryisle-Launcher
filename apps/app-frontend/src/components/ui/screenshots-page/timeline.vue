@@ -16,17 +16,16 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-    (e: 'activate', screenshot: InstanceScreenshot, event: MouseEvent): void
-    (e: 'contextmenu', screenshot: InstanceScreenshot, event: MouseEvent): void
+    (e: 'activate' | 'contextmenu', screenshot: InstanceScreenshot, event: MouseEvent): void
     (e: 'save-note', screenshot: InstanceScreenshot, note: string): void
     (e: 'cancel-note'): void
     (e: 'toggle-select', screenshot: InstanceScreenshot): void
     (e: 'clear-selection'): void
 }>()
 
-const { formatMessage } = useVIntl()
+const { formatMessage: _formatMessage } = useVIntl()
 
-const messages = defineMessages({
+const _messages = defineMessages({
     dayLabel: { id: 'app.screenshots.timeline.day', defaultMessage: '{date} · {count}' },
     empty: { id: 'app.screenshots.timeline.empty', defaultMessage: 'Nothing to show yet' },
 })

@@ -1761,14 +1761,15 @@ onBeforeUnmount(() => {
                         @cancel-note="editingNoteKey = null"
                     />
                     <div
-                        v-if="viewMode === 'grid'"
                         v-for="{
                             id,
                             group,
                             gridHeight,
                             renderedScreenshots,
                             virtualGridTop,
-                        } in virtualizedScreenshotGroups"
+                        } in viewMode === 'grid'
+                            ? virtualizedScreenshotGroups
+                            : []"
                         :key="id"
                     >
                         <ScreenshotGroupSection

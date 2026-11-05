@@ -15,8 +15,7 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-    (e: 'activate', screenshot: InstanceScreenshot, event: MouseEvent): void
-    (e: 'contextmenu', screenshot: InstanceScreenshot, event: MouseEvent): void
+    (e: 'activate' | 'contextmenu', screenshot: InstanceScreenshot, event: MouseEvent): void
     (e: 'save-note', screenshot: InstanceScreenshot, note: string): void
     (e: 'cancel-note'): void
     (e: 'toggle-select', screenshot: InstanceScreenshot): void
