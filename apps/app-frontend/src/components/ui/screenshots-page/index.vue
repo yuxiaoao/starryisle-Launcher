@@ -371,7 +371,7 @@ const instancesQuery = useQuery(instanceListQueryOptions())
 const screenshotGroupsQuery = useQuery(screenshotGroupsQueryOptions())
 
 const screenshotNotesQuery = useQuery({
-    queryKey: computed(() => ['screenshot-notes', props.instanceId ?? 'all']) as any,
+    queryKey: computed(() => ['screenshot-notes', props.instanceId ?? 'all']),
     queryFn: () => getScreenshotNotes(props.instanceId ?? undefined),
 })
 const screenshotNotes = computed(

@@ -101,7 +101,7 @@ function commit() {
             </span>
             <span
                 v-if="showInstance"
-                class="truncate text-base text-[var(--color-text-secondary)]"
+                class="truncate text-base text-[var(--color-text-tertiary)]"
             >
                 {{ screenshot.instance_name }}
             </span>
@@ -129,7 +129,7 @@ function commit() {
                 />
                 <p
                     v-else
-                    class="m-0 line-clamp-2 text-base text-[var(--color-text-secondary)]"
+                    class="m-0 line-clamp-2 text-base text-[var(--color-text-tertiary)]"
                     :title="note"
                 >
                     {{ note }}
