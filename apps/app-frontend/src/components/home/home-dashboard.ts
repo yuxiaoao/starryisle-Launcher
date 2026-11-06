@@ -190,11 +190,11 @@ export function createDefaultHomeDashboard(includeRecent = true): HomeDashboardC
         layout: 'grid',
         widgets: [
             createPlacement('greeting'),
-            ...(includeRecent ? [createPlacement('recent')] : []),
-            createPlacement('pinned-worlds'),
-            createPlacement('pinned-servers', '2x2'),
+            createPlacement('pinned-worlds', '1x2'),
+            createPlacement('pinned-servers', '2x1'),
+            ...(includeRecent ? [createPlacement('recent', '2x1')] : []),
+            createPlacement('weather', '1x2'),
             createPlacement('pinned-instances', '2x1'),
-            createPlacement('weather', '2x1'),
         ],
     }
 }
