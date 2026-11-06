@@ -30,6 +30,39 @@ export const ANNOUNCEMENT_CHANGE_TYPES: readonly AnnouncementChangeType[] = [
 
 export const launcherAnnouncements: readonly LauncherAnnouncement[] = [
     {
+        id: 'launcher-1.0.7',
+        version: '1.0.7',
+        publishedAt: '2026-11-07',
+        title: {
+            'en-US': 'StarryIsle Launcher 1.0.7',
+            'zh-CN': 'StarryIsle Launcher 1.0.7',
+        },
+        changes: {
+            added: [
+                {
+                    'en-US':
+                        'An interface hue section sits between the colour theme and the accent colour.',
+                    'zh-CN': '「色相」独立成区，位于色彩主题与强调色之间。',
+                },
+            ],
+            fixed: [
+                {
+                    'en-US': 'The calendar shows up in the sidebar again.',
+                    'zh-CN': '日历重新显示在右侧栏。',
+                },
+                {
+                    'en-US': 'The hue control only appears on the appearance page.',
+                    'zh-CN': '色相只在外观页面出现，不再出现在首页与导航、内容与下载页。',
+                },
+                {
+                    'en-US': 'The hue slider matches the accent colour slider.',
+                    'zh-CN': '色相滑块与强调色滑块样式一致。',
+                },
+            ],
+        },
+    },
+
+    {
         id: 'launcher-1.0.6',
         version: '1.0.6',
         publishedAt: '2026-11-06',
