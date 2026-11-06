@@ -302,7 +302,8 @@ async fn apply_wiki_icons(entries: &mut [AdvancementDef], cache_root: &Path) {
     tokio::spawn(async move {
         download_wiki_icons(&root, &ids).await;
     });
-}pub async fn advancement_catalog(
+}
+pub async fn advancement_catalog(
     instance_id: Option<String>,
 ) -> crate::Result<Vec<AdvancementDef>> {
     let state = State::get().await?;
