@@ -122,6 +122,7 @@ import McpConnectionOverlay from '@/features/mcp/McpConnectionOverlay.vue'
 import { startMcpStateSync } from '@/features/mcp/runtime'
 import { trackEvent } from '@/helpers/analytics'
 import { get_user, get_version } from '@/helpers/cache.js'
+import { applyBarTint, HUE_TINT_STORAGE_KEY } from '@/store/theme'
 import { configureCurseForgeManualDownloadWatcher } from '@/helpers/curseforge'
 import { applySettingChanges } from '@/helpers/deep-link-settings.ts'
 import { resolveOpenRoute, resolveSettingsRoute } from '@/helpers/deep-links.ts'
@@ -221,6 +222,19 @@ import { AppNotificationManager } from './providers/app-notifications'
 import { AppPopupNotificationManager } from './providers/app-popup-notifications'
 
 const themeStore = useTheming()
+
+// Restore the saved interface hue and keep the bars in sync with theme changes.
+try {
+    const storedHue = localStorage.getItem(HUE_TINT_STORAGE_KEY)
+    if (storedHue !== null) themeStore.setHueTint(Number(storedHue))
+} catch {
+    // storage may be unavailable; the in-memory default still applies
+}
+onMounted(() => applyBarTint(themeStore.hueTint))
+watch(
+    () => themeStore.selectedTheme,
+    () => applyBarTint(themeStore.hueTint),
+)
 /** While a dialog is open no shortcut fires, including the one being recorded. */
 const { hasModal } = useModalStack()
 const router = useRouter()
@@ -3531,6 +3545,9 @@ provideAppUpdateDownloadProgress(appUpdateDownload)
     />
 </template>
 
+/* 色相着色：导航栏与顶栏读取运行时变量，未设置时回落到主题色。 */ .app-grid-navbar {
+background-color: var(--app-nav-bg, var(--surface-bar)) !important; } .app-grid-statusbar {
+background-color: var(--app-top-bg, var(--surface-bar)) !important; }
 <style lang="scss" scoped>
 @property --right-bar-width {
     syntax: '<length>';
