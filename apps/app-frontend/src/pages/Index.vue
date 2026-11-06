@@ -34,6 +34,7 @@ import {
     type HomeGreetingEditorContext,
 } from '@/components/home/home-greeting-editor'
 import { getActivePlayerAccount } from '@/components/home/home-utils'
+import HomeCalendar from '@/components/home/HomeCalendar.vue'
 import HomeDailyChallenge from '@/components/home/HomeDailyChallenge.vue'
 import HomeDashboard from '@/components/home/HomeDashboard.vue'
 import HomeGreetingAccountModal from '@/components/home/HomeGreetingAccountModal.vue'
@@ -497,6 +498,7 @@ if (!instancesLoaded || instances.value.length > 0) void fetchPlayerName()
             :class="{ 'slide-enter-from': !animateSidebarShow }"
         >
             <HomePlayInsights />
+            <HomeCalendar :instances="instances" />
             <HomeDailyChallenge />
             <HomeMinecraftNews />
         </div>
