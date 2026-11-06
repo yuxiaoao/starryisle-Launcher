@@ -68,7 +68,7 @@
   "plugins": {
     "deep-link": {
       "desktop": {
-        "schemes": ["axolotl"]
+        "schemes": ["starryisle"]
       },
       "mobile": []
     }
