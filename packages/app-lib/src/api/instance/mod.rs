@@ -4,13 +4,13 @@ mod backup;
 mod content;
 mod core_components;
 
+mod advancement_catalog;
+mod advancements;
 mod get;
 mod groups;
 mod home;
 mod install;
 mod lifecycle;
-mod advancement_catalog;
-mod advancements;
 mod paths;
 pub(crate) mod projects;
 mod run;

@@ -43,19 +43,26 @@ pub struct WorldAdvancements {
 }
 
 /// Maps player uuids to names using the instance's `usercache.json`.
-fn player_names(instance_root: &Path) -> std::collections::HashMap<String, String> {
+fn player_names(
+    instance_root: &Path,
+) -> std::collections::HashMap<String, String> {
     let mut map = std::collections::HashMap::new();
-    let Ok(text) = std::fs::read_to_string(instance_root.join("usercache.json")) else {
+    let Ok(text) =
+        std::fs::read_to_string(instance_root.join("usercache.json"))
+    else {
         return map;
     };
-    let Ok(entries) = serde_json::from_str::<Vec<serde_json::Value>>(&text) else {
+    let Ok(entries) = serde_json::from_str::<Vec<serde_json::Value>>(&text)
+    else {
         return map;
     };
     for entry in entries {
-        let Some(uuid) = entry.get("uuid").and_then(|value| value.as_str()) else {
+        let Some(uuid) = entry.get("uuid").and_then(|value| value.as_str())
+        else {
             continue;
         };
-        let Some(name) = entry.get("name").and_then(|value| value.as_str()) else {
+        let Some(name) = entry.get("name").and_then(|value| value.as_str())
+        else {
             continue;
         };
         map.insert(uuid.to_string(), name.to_string());
@@ -63,7 +70,10 @@ fn player_names(instance_root: &Path) -> std::collections::HashMap<String, Strin
     map
 }
 
-fn to_player_refs(ids: Vec<String>, names: &std::collections::HashMap<String, String>) -> Vec<PlayerRef> {
+fn to_player_refs(
+    ids: Vec<String>,
+    names: &std::collections::HashMap<String, String>,
+) -> Vec<PlayerRef> {
     ids.into_iter()
         .map(|id| PlayerRef {
             name: names.get(&id).cloned(),
@@ -110,10 +120,13 @@ fn player_ids(world_dir: &Path) -> Vec<String> {
         };
         for entry in entries.flatten() {
             let path = entry.path();
-            if path.extension().and_then(|value| value.to_str()) != Some("json") {
+            if path.extension().and_then(|value| value.to_str()) != Some("json")
+            {
                 continue;
             }
-            if let Some(stem) = path.file_stem().and_then(|value| value.to_str()) {
+            if let Some(stem) =
+                path.file_stem().and_then(|value| value.to_str())
+            {
                 if !ids.iter().any(|existing| existing == stem) {
                     ids.push(stem.to_string());
                 }
@@ -141,7 +154,8 @@ fn timestamp_of(entry: &serde_json::Value) -> Option<i64> {
         let Some(text) = value.as_str() else {
             continue;
         };
-        let Ok(parsed) = DateTime::parse_from_str(text, "%Y-%m-%d %H:%M:%S %z") else {
+        let Ok(parsed) = DateTime::parse_from_str(text, "%Y-%m-%d %H:%M:%S %z")
+        else {
             continue;
         };
         let millis = parsed.with_timezone(&Utc).timestamp_millis();
@@ -153,7 +167,9 @@ fn timestamp_of(entry: &serde_json::Value) -> Option<i64> {
     earliest
 }
 
-pub async fn list_worlds(instance_id: &str) -> crate::Result<Vec<WorldSummary>> {
+pub async fn list_worlds(
+    instance_id: &str,
+) -> crate::Result<Vec<WorldSummary>> {
     let root = get_full_path(instance_id).await?;
     let names = player_names(&root);
     let dir = root.join("saves");
@@ -216,14 +232,18 @@ pub async fn world_advancements(
         if let Some(player) = &chosen {
             if let Some(file) = advancement_file(&dir, player) {
                 if let Ok(text) = std::fs::read_to_string(&file) {
-                    if let Ok(serde_json::Value::Object(map)) = serde_json::from_str(&text) {
+                    if let Ok(serde_json::Value::Object(map)) =
+                        serde_json::from_str(&text)
+                    {
                         for (id, entry) in map {
                             // Recipe unlocks share the file but are not advancements, and
                             // the file also carries bookkeeping keys such as DataVersion.
                             if !id.contains(':') {
                                 continue;
                             }
-                            if id.starts_with("minecraft:recipes/") || id.contains(":recipes/") {
+                            if id.starts_with("minecraft:recipes/")
+                                || id.contains(":recipes/")
+                            {
                                 continue;
                             }
                             let done = entry
@@ -261,57 +281,66 @@ pub async fn world_completed_all_players(
     world: &str,
 ) -> crate::Result<Vec<CompletedAdvancement>> {
     let dir = saves_dir(instance_id).await?.join(world);
-    tokio::task::spawn_blocking(move || -> crate::Result<Vec<CompletedAdvancement>> {
-        let mut earliest: std::collections::HashMap<String, Option<i64>> =
-            std::collections::HashMap::new();
+    tokio::task::spawn_blocking(
+        move || -> crate::Result<Vec<CompletedAdvancement>> {
+            let mut earliest: std::collections::HashMap<String, Option<i64>> =
+                std::collections::HashMap::new();
 
-        for player in player_ids(&dir) {
-            let Some(file) = advancement_file(&dir, &player) else {
-                continue;
-            };
-            let Ok(text) = std::fs::read_to_string(&file) else {
-                continue;
-            };
-            let Ok(serde_json::Value::Object(map)) = serde_json::from_str(&text) else {
-                continue;
-            };
-            for (id, entry) in map {
-                // Recipe unlocks share the file but are not advancements, and the file
-                // also carries bookkeeping keys such as DataVersion.
-                if !id.contains(':')
-                    || id.starts_with("minecraft:recipes/")
-                    || id.contains(":recipes/")
-                {
+            for player in player_ids(&dir) {
+                let Some(file) = advancement_file(&dir, &player) else {
                     continue;
-                }
-                let done = entry
-                    .get("done")
-                    .and_then(|value| value.as_bool())
-                    .unwrap_or(true);
-                if !done {
+                };
+                let Ok(text) = std::fs::read_to_string(&file) else {
                     continue;
+                };
+                let Ok(serde_json::Value::Object(map)) =
+                    serde_json::from_str(&text)
+                else {
+                    continue;
+                };
+                for (id, entry) in map {
+                    // Recipe unlocks share the file but are not advancements, and the file
+                    // also carries bookkeeping keys such as DataVersion.
+                    if !id.contains(':')
+                        || id.starts_with("minecraft:recipes/")
+                        || id.contains(":recipes/")
+                    {
+                        continue;
+                    }
+                    let done = entry
+                        .get("done")
+                        .and_then(|value| value.as_bool())
+                        .unwrap_or(true);
+                    if !done {
+                        continue;
+                    }
+                    let stamp = timestamp_of(&entry);
+                    earliest
+                        .entry(id)
+                        .and_modify(|current| {
+                            *current = match (*current, stamp) {
+                                (Some(existing), Some(candidate)) => {
+                                    Some(existing.min(candidate))
+                                }
+                                (None, Some(candidate)) => Some(candidate),
+                                (existing, None) => existing,
+                            };
+                        })
+                        .or_insert(stamp);
                 }
-                let stamp = timestamp_of(&entry);
-                earliest
-                    .entry(id)
-                    .and_modify(|current| {
-                        *current = match (*current, stamp) {
-                            (Some(existing), Some(candidate)) => Some(existing.min(candidate)),
-                            (None, Some(candidate)) => Some(candidate),
-                            (existing, None) => existing,
-                        };
-                    })
-                    .or_insert(stamp);
             }
-        }
 
-        let mut completed: Vec<CompletedAdvancement> = earliest
-            .into_iter()
-            .map(|(id, completed_at)| CompletedAdvancement { id, completed_at })
-            .collect();
-        completed.sort_by(|left, right| left.id.cmp(&right.id));
-        Ok(completed)
-    })
+            let mut completed: Vec<CompletedAdvancement> = earliest
+                .into_iter()
+                .map(|(id, completed_at)| CompletedAdvancement {
+                    id,
+                    completed_at,
+                })
+                .collect();
+            completed.sort_by(|left, right| left.id.cmp(&right.id));
+            Ok(completed)
+        },
+    )
     .await?
 }
 
@@ -321,15 +350,21 @@ pub async fn world_completed_all_players(
 /// Absolute path of the game jar that belongs to an instance. The instance's own
 /// configuration names the version directory, so two instances on different game
 /// versions do not share a catalogue.
-pub async fn version_jar(instance_id: Option<&str>) -> crate::Result<Option<PathBuf>> {
+pub async fn version_jar(
+    instance_id: Option<&str>,
+) -> crate::Result<Option<PathBuf>> {
     let state = State::get().await?;
     let versions = state.directories.versions_dir();
 
     let mut preferred: Option<String> = None;
     if let Some(id) = instance_id {
         if let Ok(root) = get_full_path(id).await {
-            if let Ok(text) = std::fs::read_to_string(root.join("axolotl_config.json")) {
-                if let Ok(value) = serde_json::from_str::<serde_json::Value>(&text) {
+            if let Ok(text) =
+                std::fs::read_to_string(root.join("axolotl_config.json"))
+            {
+                if let Ok(value) =
+                    serde_json::from_str::<serde_json::Value>(&text)
+                {
                     let content = value.get("content_set");
                     let game = content
                         .and_then(|set| set.get("game_version"))
@@ -338,7 +373,9 @@ pub async fn version_jar(instance_id: Option<&str>) -> crate::Result<Option<Path
                         .and_then(|set| set.get("loader_version"))
                         .and_then(|item| item.as_str());
                     preferred = match (game, loader) {
-                        (Some(game), Some(loader)) => Some(format!("{game}-{loader}")),
+                        (Some(game), Some(loader)) => {
+                            Some(format!("{game}-{loader}"))
+                        }
                         (Some(game), None) => Some(game.to_string()),
                         _ => None,
                     };
@@ -368,12 +405,16 @@ pub async fn version_jar(instance_id: Option<&str>) -> crate::Result<Option<Path
             };
             for file in files.flatten() {
                 let path = file.path();
-                if path.extension().and_then(|value| value.to_str()) != Some("jar") {
+                if path.extension().and_then(|value| value.to_str())
+                    != Some("jar")
+                {
                     continue;
                 }
                 let matches_instance = preferred
                     .as_deref()
-                    .map(|wanted| folder_name == wanted || folder_name.starts_with(wanted))
+                    .map(|wanted| {
+                        folder_name == wanted || folder_name.starts_with(wanted)
+                    })
                     .unwrap_or(false);
                 if matches_instance {
                     matched = Some(path.clone());
