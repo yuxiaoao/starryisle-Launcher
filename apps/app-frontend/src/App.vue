@@ -123,7 +123,6 @@ import { startMcpStateSync } from '@/features/mcp/runtime'
 import { trackEvent } from '@/helpers/analytics'
 import { get_user, get_version } from '@/helpers/cache.js'
 import { configureCurseForgeManualDownloadWatcher } from '@/helpers/curseforge'
-import { applyBarTint, HUE_TINT_STORAGE_KEY } from '@/store/theme'
 import { applySettingChanges } from '@/helpers/deep-link-settings.ts'
 import { resolveOpenRoute, resolveSettingsRoute } from '@/helpers/deep-links.ts'
 import {
@@ -217,6 +216,7 @@ import { setupContentInstallPreviews } from '@/providers/setup/content-install-p
 import { setupLoadingStateProvider } from '@/providers/setup/loading-state'
 import { useError } from '@/store/error.js'
 import { useTheming } from '@/store/state'
+import { applyBarTint, HUE_TINT_STORAGE_KEY } from '@/store/theme'
 
 import { AppNotificationManager } from './providers/app-notifications'
 import { AppPopupNotificationManager } from './providers/app-popup-notifications'
