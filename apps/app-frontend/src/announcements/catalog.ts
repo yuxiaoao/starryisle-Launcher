@@ -30,6 +30,60 @@ export const ANNOUNCEMENT_CHANGE_TYPES: readonly AnnouncementChangeType[] = [
 
 export const launcherAnnouncements: readonly LauncherAnnouncement[] = [
     {
+        id: 'launcher-1.0.5',
+        version: '1.0.5',
+        publishedAt: '2026-11-06',
+        title: {
+            'en-US': 'StarryIsle Launcher 1.0.5',
+            'zh-CN': 'StarryIsle Launcher 1.0.5',
+        },
+        changes: {
+            added: [
+                {
+                    'en-US': 'Advancement pages for every instance, read from your saved worlds.',
+                    'zh-CN': '每个实例的成就页面，直接读取存档里的进度。',
+                },
+                {
+                    'en-US':
+                        'Statistics page with total playtime, library size and achievement progress.',
+                    'zh-CN': '统计页面：总游玩时长、整合包规模和成就进度。',
+                },
+                {
+                    'en-US':
+                        'Screenshot bundles: export a selection with its notes and import it elsewhere.',
+                    'zh-CN': '截图包：连同备注一起导出选中截图，并能导入到别处。',
+                },
+                {
+                    'en-US':
+                        'Interface hue control that tints the navigation rail and the title bar.',
+                    'zh-CN': '界面色相控制，可给导航栏和顶栏着色。',
+                },
+            ],
+            changed: [
+                {
+                    'en-US': 'The home layout follows the original StarryIsle arrangement again.',
+                    'zh-CN': '首页恢复为 StarryIsle 原本的布局。',
+                },
+                {
+                    'en-US': 'The calendar sits between play insights and the daily challenge.',
+                    'zh-CN': '日历回到了游玩洞察与每日小挑战之间。',
+                },
+            ],
+            fixed: [
+                {
+                    'en-US':
+                        'Product name, icon, deep link and update feed carry the StarryIsle identity.',
+                    'zh-CN': '产品名称、图标、深链接和更新源均为 StarryIsle 身份。',
+                },
+                {
+                    'en-US': 'Play insights show the all-time total above the weekly figure.',
+                    'zh-CN': '游玩洞察在本周数据之上显示历史总时长。',
+                },
+            ],
+        },
+    },
+
+    {
         id: 'launcher-1.0.4',
         version: '1.0.4',
         publishedAt: '2026-11-06',
