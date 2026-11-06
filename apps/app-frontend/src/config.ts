@@ -11,7 +11,7 @@ export const AxolotlBrandConfig = Object.freeze({
     sponsorUrl: 'https://afdian.com/a/Mystic-Stars',
     bundleIdentifier: 'red.ghs.axolotl',
     deepLinkScheme: 'axolotl',
-    userAgent: (version: string, os: string) => `Axolotl-Launcher/${version} (${os})`,
+    userAgent: (version: string, os: string) => `StarryIsle-Launcher/${version} (${os})`,
     capabilities: Object.freeze({
         publicModrinthApi: true,
         privateModrinthServices: false,
