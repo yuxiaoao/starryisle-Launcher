@@ -970,52 +970,48 @@ watch(
                 <h2 class="m-0 text-lg font-semibold text-[var(--color-text-primary)]">
                     {{ formatMessage(messages.accentColorCustomHue) }}
                 </h2>
-                <p class="m-0 mt-1 text-sm leading-relaxed text-[var(--color-text-tertiary)]">
-                    调整顶栏与导航栏的颜色，不影响强调色。
-                </p>
             </template>
             <div class="flex flex-col gap-4 p-4 appearance-panel--divided">
+                <input
+                    type="range"
+                    min="0"
+                    max="359"
+                    step="1"
+                    :value="themeStore.hueTint ?? 180"
+                    class="hue-slider"
+                    :aria-label="formatMessage(messages.accentColorCustomHue)"
+                    @input="
+                        themeStore.setHueTint(Number(($event.target as HTMLInputElement).value))
+                    "
+                />
+
                 <div class="flex flex-wrap items-center gap-x-6 gap-y-3">
-                    <label class="flex min-w-0 flex-1 items-center gap-3">
-                        <input
-                            class="bar-hue-slider w-full"
-                            type="range"
-                            min="0"
-                            max="359"
-                            step="1"
-                            :value="themeStore.hueTint ?? 180"
-                            :aria-label="formatMessage(messages.accentColorCustomHue)"
-                            @input="
-                                themeStore.setHueTint(
-                                    Number(($event.target as HTMLInputElement).value),
-                                )
-                            "
-                        />
-                    </label>
-                    <div class="flex items-center gap-2">
+                    <label class="flex items-center gap-2">
                         <span class="text-sm font-semibold text-[var(--color-text-primary)]">
                             {{ formatMessage(messages.accentColorCustomHex) }}
                         </span>
                         <span class="font-mono text-sm text-[var(--color-text-tertiary)]">
                             {{ currentHueHex }}
                         </span>
+                    </label>
+                    <div class="flex items-center gap-2">
+                        <span
+                            class="size-6 shrink-0 rounded-full ring-2 ring-white/20"
+                            :style="{ backgroundColor: hueSwatches.lightHex }"
+                        />
+                        <span class="text-sm text-[var(--color-text-tertiary)]">
+                            {{ formatMessage(messages.accentColorCustomPreviewLight) }}
+                        </span>
                     </div>
-                </div>
-                <div class="flex items-center gap-2">
-                    <span
-                        class="size-6 shrink-0 rounded-full ring-2 ring-white/20"
-                        :style="{ backgroundColor: hueSwatches.lightHex }"
-                    />
-                    <span class="text-sm text-[var(--color-text-tertiary)]">
-                        {{ formatMessage(messages.accentColorCustomPreviewLight) }}
-                    </span>
-                    <span
-                        class="ml-4 size-6 shrink-0 rounded-full ring-2 ring-white/20"
-                        :style="{ backgroundColor: hueSwatches.darkHex }"
-                    />
-                    <span class="text-sm text-[var(--color-text-tertiary)]">
-                        {{ formatMessage(messages.accentColorCustomPreviewDark) }}
-                    </span>
+                    <div class="flex items-center gap-2">
+                        <span
+                            class="size-6 shrink-0 rounded-full ring-2 ring-white/20"
+                            :style="{ backgroundColor: hueSwatches.darkHex }"
+                        />
+                        <span class="text-sm text-[var(--color-text-tertiary)]">
+                            {{ formatMessage(messages.accentColorCustomPreviewDark) }}
+                        </span>
+                    </div>
                 </div>
             </div>
         </SettingsSection>
@@ -1988,41 +1984,6 @@ watch(
 </template>
 
 <style scoped lang="scss">
-.bar-hue-slider {
-    appearance: none;
-    height: 0.75rem;
-    border-radius: 9999px;
-    background: linear-gradient(
-        to right,
-        #ff0000,
-        #ffff00,
-        #00ff00,
-        #00ffff,
-        #0000ff,
-        #ff00ff,
-        #ff0000
-    );
-    cursor: pointer;
-}
-
-.bar-hue-slider::-webkit-slider-thumb {
-    appearance: none;
-    width: 1rem;
-    height: 1rem;
-    border: 2px solid #ffffff;
-    border-radius: 9999px;
-    background: #ffffff;
-    box-shadow: 0 0 0 2px rgb(0 0 0 / 35%);
-}
-
-.bar-hue-slider::-moz-range-thumb {
-    width: 1rem;
-    height: 1rem;
-    border: 2px solid #ffffff;
-    border-radius: 9999px;
-    background: #ffffff;
-}
-
 .appearance-panel--divided {
     border-bottom: 1px solid var(--settings-divider, var(--surface-4));
 }
