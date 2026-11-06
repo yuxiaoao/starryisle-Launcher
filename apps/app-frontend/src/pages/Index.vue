@@ -34,6 +34,7 @@ import {
     type HomeGreetingEditorContext,
 } from '@/components/home/home-greeting-editor'
 import { getActivePlayerAccount } from '@/components/home/home-utils'
+import HomeCalendar from '@/components/home/HomeCalendar.vue'
 import HomeDailyChallenge from '@/components/home/HomeDailyChallenge.vue'
 import HomeDashboard from '@/components/home/HomeDashboard.vue'
 import HomeGreetingAccountModal from '@/components/home/HomeGreetingAccountModal.vue'
@@ -425,7 +426,6 @@ if (!instancesLoaded || instances.value.length > 0) void fetchPlayerName()
                         dashboardEditing ? messages.doneEditing : messages.customizeWidgets,
                     )
                 "
-                data-onboarding-id="home-widget-customize"
                 type="button"
                 class="home-floating-action"
                 :class="{ 'is-active': dashboardEditing }"
@@ -471,7 +471,6 @@ if (!instancesLoaded || instances.value.length > 0) void fetchPlayerName()
             v-tooltip="
                 formatMessage(isMinimal ? messages.switchToInformation : messages.switchToMinimal)
             "
-            data-onboarding-id="home-layout-switch"
             type="button"
             role="switch"
             class="home-layout-switch"
@@ -499,6 +498,7 @@ if (!instancesLoaded || instances.value.length > 0) void fetchPlayerName()
             :class="{ 'slide-enter-from': !animateSidebarShow }"
         >
             <HomePlayInsights />
+            <HomeCalendar :instances="instances" />
             <HomeDailyChallenge />
             <HomeMinecraftNews />
         </div>

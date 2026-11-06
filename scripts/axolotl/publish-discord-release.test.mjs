@@ -296,7 +296,7 @@ test('loads exact TypeScript versions and rejects missing versions', async () =>
         new URL('../../apps/app-frontend/src/announcements/catalog.ts', import.meta.url),
         'utf8',
     )
-    assert.equal((await loadAnnouncement(real, 'v1.4.0')).version, '1.4.0')
+    assert.equal((await loadAnnouncement(real, 'v1.0.4')).version, '1.0.4')
 })
 
 test('rejects unpublished, mismatched, incomplete and foreign release metadata before sending', () => {

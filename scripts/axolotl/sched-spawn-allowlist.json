@@ -4,7 +4,7 @@
       "file": "apps/app/src/api/auth.rs",
       "form": "tokio::spawn",
       "count": 1,
-      "reason": "phase-0 baseline: existing task spawn; moves to scheduler dispatch with the governed items (spec §5.6) or stays operation-scoped",
+      "reason": "phase-0 baseline: existing task spawn; moves to scheduler dispatch with the governed items (spec 搂5.6) or stays operation-scoped",
       "sites": [
         "browser_login: let auth_code = tokio::spawn(oauth_utils::auth_code_reply::listen_fixed("
       ]
@@ -13,7 +13,7 @@
       "file": "apps/app/src/api/cache.rs",
       "form": "tauri::async_runtime::spawn",
       "count": 1,
-      "reason": "phase-0 baseline: existing Tauri runtime spawn; moves to scheduler dispatch with the governed items (spec §5.6) or stays operation-scoped",
+      "reason": "phase-0 baseline: existing Tauri runtime spawn; moves to scheduler dispatch with the governed items (spec 搂5.6) or stays operation-scoped",
       "sites": [
         "cancel_search_request: tauri::async_runtime::spawn(async move {"
       ]
@@ -115,7 +115,7 @@
       "file": "apps/app/src/api/mod_translation.rs",
       "form": "tauri::async_runtime::spawn",
       "count": 1,
-      "reason": "phase-0 baseline: existing Tauri runtime spawn; moves to scheduler dispatch with the governed items (spec §5.6) or stays operation-scoped",
+      "reason": "phase-0 baseline: existing Tauri runtime spawn; moves to scheduler dispatch with the governed items (spec 搂5.6) or stays operation-scoped",
       "sites": [
         "mod_translation_translate: tauri::async_runtime::spawn(async move {"
       ]
@@ -124,7 +124,7 @@
       "file": "apps/app/src/api/mr_auth.rs",
       "form": "tokio::spawn",
       "count": 1,
-      "reason": "phase-0 baseline: existing task spawn; moves to scheduler dispatch with the governed items (spec §5.6) or stays operation-scoped",
+      "reason": "phase-0 baseline: existing task spawn; moves to scheduler dispatch with the governed items (spec 搂5.6) or stays operation-scoped",
       "sites": [
         "modrinth_login: let auth_code = tokio::spawn(oauth_utils::auth_code_reply::listen("
       ]
@@ -133,7 +133,7 @@
       "file": "apps/app/src/api/resources.rs",
       "form": "tauri::async_runtime::spawn",
       "count": 1,
-      "reason": "phase-0 baseline: existing Tauri runtime spawn; moves to scheduler dispatch with the governed items (spec §5.6) or stays operation-scoped",
+      "reason": "phase-0 baseline: existing Tauri runtime spawn; moves to scheduler dispatch with the governed items (spec 搂5.6) or stays operation-scoped",
       "sites": [
         "initialize_content_refresh_events: tauri::async_runtime::spawn(async move {"
       ]
@@ -186,7 +186,7 @@
       "file": "apps/app/src/api/settings.rs",
       "form": "tauri::async_runtime::spawn",
       "count": 1,
-      "reason": "phase-0 baseline: existing Tauri runtime spawn; moves to scheduler dispatch with the governed items (spec §5.6) or stays operation-scoped",
+      "reason": "phase-0 baseline: existing Tauri runtime spawn; moves to scheduler dispatch with the governed items (spec 搂5.6) or stays operation-scoped",
       "sites": [
         "network_test_cancel: tauri::async_runtime::spawn(async move {"
       ]
@@ -222,7 +222,7 @@
       "file": "apps/app/src/api/system_accent.rs",
       "form": "tauri::async_runtime::spawn",
       "count": 1,
-      "reason": "phase-0 baseline: existing Tauri runtime spawn; moves to scheduler dispatch with the governed items (spec §5.6) or stays operation-scoped",
+      "reason": "phase-0 baseline: existing Tauri runtime spawn; moves to scheduler dispatch with the governed items (spec 搂5.6) or stays operation-scoped",
       "sites": [
         "start_accent_color_watcher: tauri::async_runtime::spawn(async move {"
       ]
@@ -397,7 +397,7 @@
       "file": "apps/app/src/lightweight_mode.rs",
       "form": "tauri::async_runtime::spawn",
       "count": 10,
-      "reason": "phase-0 baseline: existing Tauri runtime spawn; moves to scheduler dispatch with the governed items (spec §5.6) or stays operation-scoped",
+      "reason": "phase-0 baseline: existing Tauri runtime spawn; moves to scheduler dispatch with the governed items (spec 搂5.6) or stays operation-scoped",
       "sites": [
         "handle_menu_event: tauri::async_runtime::spawn(async move {",
         "handle_menu_event: tauri::async_runtime::spawn(async move {",
@@ -435,7 +435,7 @@
       "file": "apps/app/src/main.rs",
       "form": "tauri::async_runtime::spawn",
       "count": 8,
-      "reason": "phase-0 baseline: existing Tauri runtime spawn; moves to scheduler dispatch with the governed items (spec §5.6) or stays operation-scoped",
+      "reason": "phase-0 baseline: existing Tauri runtime spawn; moves to scheduler dispatch with the governed items (spec 搂5.6) or stays operation-scoped",
       "sites": [
         "initialize_state: tauri::async_runtime::spawn(async move {",
         "initialize_state: tauri::async_runtime::spawn(async {",
@@ -761,7 +761,7 @@
       "file": "packages/app-lib/src/api/curseforge/verify/worker.rs",
       "form": "tokio::spawn",
       "count": 2,
-      "reason": "phase-0 baseline: existing task spawn; moves to scheduler dispatch with the governed items (spec §5.6) or stays operation-scoped",
+      "reason": "phase-0 baseline: existing task spawn; moves to scheduler dispatch with the governed items (spec 搂5.6) or stays operation-scoped",
       "sites": [
         "spawn_curseforge_database_worker: tokio::spawn(async move {",
         "spawn_curseforge_verification_worker: tokio::spawn(async move {"
@@ -800,7 +800,7 @@
       "file": "packages/app-lib/src/api/google_ip.rs",
       "form": "tokio::spawn",
       "count": 1,
-      "reason": "phase-0 baseline: existing task spawn; moves to scheduler dispatch with the governed items (spec §5.6) or stays operation-scoped",
+      "reason": "phase-0 baseline: existing task spawn; moves to scheduler dispatch with the governed items (spec 搂5.6) or stays operation-scoped",
       "sites": [
         "start_refresh: let task = tokio::spawn(async move {"
       ]
@@ -819,12 +819,92 @@
       "file": "packages/app-lib/src/api/hongshi.rs",
       "form": "tokio::spawn",
       "count": 4,
-      "reason": "phase-0 baseline: existing task spawn; moves to scheduler dispatch with the governed items (spec §5.6) or stays operation-scoped",
+      "reason": "phase-0 baseline: existing task spawn; moves to scheduler dispatch with the governed items (spec 搂5.6) or stays operation-scoped",
       "sites": [
         "begin_start: tokio::spawn(async move {",
         "download: tokio::spawn(async move {",
         "spawn_kernel: tokio::spawn(read_output(stderr, false, log, sender)),",
         "spawn_kernel: tokio::spawn(read_output(stdout, true, log.clone(), sender.clone())),"
+      ]
+    },
+    {
+      "file": "packages/app-lib/src/api/instance/advancement_catalog.rs",
+      "form": "spawn_blocking",
+      "count": 1,
+      "reason": "ported achievement catalogue: reads the game jar off the blocking pool",
+      "sites": [
+        "advancement_catalog: let entries = tokio::task::spawn_blocking({"
+      ]
+    },
+    {
+      "file": "packages/app-lib/src/api/instance/advancement_catalog.rs",
+      "form": "std::fs",
+      "count": 24,
+      "reason": "ported achievement catalogue: reads the game jar and its cache directly",
+      "sites": [
+        "<module>: archive: &mut ZipArchive<std::fs::File>,",
+        "advancement_catalog: if let Ok(text) = std::fs::read_to_string(&catalog_file) {",
+        "advancement_catalog: let _ = std::fs::write(&catalog_file, text);",
+        "advancement_catalog: let _ = std::fs::write(&catalog_file, text);",
+        "advancement_catalog: let file = std::fs::File::open(&jar)?;",
+        "advancement_catalog: let meta = std::fs::metadata(&jar)?;",
+        "advancement_catalog: std::fs::create_dir_all(&icon_root)?;",
+        "advancement_catalog: std::fs::write(&target, bytes)?;",
+        "advancement_catalog: std::fs::write(&target, bytes)?;",
+        "advancement_catalog: std::fs::write(&target, bytes)?;",
+        "advancement_catalog: std::fs::write(&target, bytes)?;",
+        "advancement_catalog: std::fs::write(&target, bytes)?;",
+        "advancement_catalog: std::fs::write(&target, bytes)?;",
+        "advancement_catalog: std::fs::write(&target, bytes)?;",
+        "advancement_catalog: std::fs::write(&target, bytes)?;",
+        "asset_index: let Ok(entries) = std::fs::read_dir(assets.join(\"indexes\")) else {",
+        "asset_index: let Ok(text) = std::fs::read_to_string(&path) else {",
+        "download_wiki_icons: let Ok(_) = std::fs::create_dir_all(&dir) else {",
+        "download_wiki_icons: let _ = std::fs::write(&marker, b\"{}\");",
+        "download_wiki_icons: let fresh = std::fs::metadata(&marker)",
+        "download_wiki_icons: std::fs::write(&file, bytes).ok()?;",
+        "read_asset: std::fs::read(path).ok()",
+        "read_bytes: fn read_bytes(archive: &mut ZipArchive<std::fs::File>, name: &str) -> Option<Vec<u8>> {",
+        "read_entry: fn read_entry(archive: &mut ZipArchive<std::fs::File>, name: &str) -> Option<String> {"
+      ]
+    },
+    {
+      "file": "packages/app-lib/src/api/instance/advancement_catalog.rs",
+      "form": "tokio::spawn",
+      "count": 2,
+      "reason": "ported achievement catalogue: refreshes the icon cache in the background",
+      "sites": [
+        "apply_wiki_icons: tokio::spawn(async move {",
+        "download_wiki_icons: tasks.push(tokio::spawn(async move {"
+      ]
+    },
+    {
+      "file": "packages/app-lib/src/api/instance/advancements.rs",
+      "form": "spawn_blocking",
+      "count": 4,
+      "reason": "ported advancements reader: walks the saves directory off the blocking pool",
+      "sites": [
+        "list_worlds: tokio::task::spawn_blocking(move || -> crate::Result<Vec<WorldSummary>> {",
+        "version_jar: tokio::task::spawn_blocking(move || -> crate::Result<Option<PathBuf>> {",
+        "world_advancements: tokio::task::spawn_blocking(move || -> crate::Result<WorldAdvancements> {",
+        "world_completed_all_players: tokio::task::spawn_blocking(move || -> crate::Result<Vec<CompletedAdvancement>> {"
+      ]
+    },
+    {
+      "file": "packages/app-lib/src/api/instance/advancements.rs",
+      "form": "std::fs",
+      "count": 9,
+      "reason": "ported advancements reader: reads the advancement JSON files directly",
+      "sites": [
+        "last_played_from_level: let file = std::fs::File::open(world_dir.join(\"level.dat\")).ok()?;",
+        "list_worlds: let entries = match std::fs::read_dir(&dir) {",
+        "player_ids: let Ok(entries) = std::fs::read_dir(dir) else {",
+        "player_names: let Ok(text) = std::fs::read_to_string(instance_root.join(\"usercache.json\")) else {",
+        "version_jar: if let Ok(text) = std::fs::read_to_string(root.join(\"axolotl_config.json\")) {",
+        "version_jar: let Ok(entries) = std::fs::read_dir(&versions) else {",
+        "version_jar: let Ok(files) = std::fs::read_dir(&dir) else {",
+        "world_advancements: if let Ok(text) = std::fs::read_to_string(&file) {",
+        "world_completed_all_players: let Ok(text) = std::fs::read_to_string(&file) else {"
       ]
     },
     {
@@ -854,7 +934,7 @@
       "file": "packages/app-lib/src/api/instance/backup.rs",
       "form": "tokio::spawn",
       "count": 4,
-      "reason": "phase-0 baseline: existing task spawn; moves to scheduler dispatch with the governed items (spec §5.6) or stays operation-scoped",
+      "reason": "phase-0 baseline: existing task spawn; moves to scheduler dispatch with the governed items (spec 搂5.6) or stays operation-scoped",
       "sites": [
         "restore_snapshot: tokio::spawn(async move {",
         "start_repository_move: tokio::spawn(async move {",
@@ -888,6 +968,31 @@
         "inspect_assembled: let file = std::fs::File::open(&path)?;",
         "sha256_file: let mut file = std::fs::File::open(&path).map_err(|error| {",
         "validate_archive: let file = std::fs::File::open(&path).map_err(|error| {"
+      ]
+    },
+    {
+      "file": "packages/app-lib/src/api/instance/screenshots/bundle.rs",
+      "form": "spawn_blocking",
+      "count": 2,
+      "reason": "ported screenshot bundle export/import: zip work offloaded to the blocking pool; not yet routed through the governed scheduler",
+      "sites": [
+        "export_instance_bundle: tokio::task::spawn_blocking(move || -> crate::Result<()> {",
+        "import_instance_bundle: let (mut report, pending_notes) = tokio::task::spawn_blocking({"
+      ]
+    },
+    {
+      "file": "packages/app-lib/src/api/instance/screenshots/bundle.rs",
+      "form": "std::fs",
+      "count": 7,
+      "reason": "ported screenshot bundle export/import: reads and writes the instance screenshots directory directly",
+      "sites": [
+        "export_instance_bundle: for entry in std::fs::read_dir(&dir)? {",
+        "export_instance_bundle: let file = std::fs::File::create(&export_path)?;",
+        "export_instance_bundle: let mut source = std::fs::File::open(&path)?;",
+        "import_instance_bundle: let file = std::fs::File::open(&archive_path)?;",
+        "import_instance_bundle: let mut out = std::fs::File::create(&target)?;",
+        "import_instance_bundle: std::fs::create_dir_all(&dir)?;",
+        "import_instance_bundle: std::fs::create_dir_all(parent)?;"
       ]
     },
     {
@@ -941,7 +1046,7 @@
       "file": "packages/app-lib/src/api/instance/synced_options/game_options/locales/mod.rs",
       "form": "tokio::spawn",
       "count": 1,
-      "reason": "phase-0 baseline: existing task spawn; moves to scheduler dispatch with the governed items (spec §5.6) or stays operation-scoped",
+      "reason": "phase-0 baseline: existing task spawn; moves to scheduler dispatch with the governed items (spec 搂5.6) or stays operation-scoped",
       "sites": [
         "start_game_locale_indexer: tokio::spawn(async move {"
       ]
@@ -990,7 +1095,7 @@
       "file": "packages/app-lib/src/api/instance/upgrade.rs",
       "form": "tokio::spawn",
       "count": 1,
-      "reason": "phase-0 baseline: existing task spawn; moves to scheduler dispatch with the governed items (spec §5.6) or stays operation-scoped",
+      "reason": "phase-0 baseline: existing task spawn; moves to scheduler dispatch with the governed items (spec 搂5.6) or stays operation-scoped",
       "sites": [
         "start_plan_cleanup: tokio::spawn(async {"
       ]
@@ -1023,7 +1128,7 @@
       "file": "packages/app-lib/src/api/jre.rs",
       "form": "tokio::spawn",
       "count": 1,
-      "reason": "phase-0 baseline: existing task spawn; moves to scheduler dispatch with the governed items (spec §5.6) or stays operation-scoped",
+      "reason": "phase-0 baseline: existing task spawn; moves to scheduler dispatch with the governed items (spec 搂5.6) or stays operation-scoped",
       "sites": [
         "schedule_background_java_rescan: tokio::spawn(async {"
       ]
@@ -1103,7 +1208,7 @@
       "file": "packages/app-lib/src/api/minecraft_skins.rs",
       "form": "tokio::spawn",
       "count": 1,
-      "reason": "phase-0 baseline: existing task spawn; moves to scheduler dispatch with the governed items (spec §5.6) or stays operation-scoped",
+      "reason": "phase-0 baseline: existing task spawn; moves to scheduler dispatch with the governed items (spec 搂5.6) or stays operation-scoped",
       "sites": [
         "schedule_pending_skin_change_flush: tokio::spawn(async move {"
       ]
@@ -1248,7 +1353,7 @@
       "file": "packages/app-lib/src/api/pack/import/mod.rs",
       "form": "tokio::spawn",
       "count": 1,
-      "reason": "phase-0 baseline: existing task spawn; moves to scheduler dispatch with the governed items (spec §5.6) or stays operation-scoped",
+      "reason": "phase-0 baseline: existing task spawn; moves to scheduler dispatch with the governed items (spec 搂5.6) or stays operation-scoped",
       "sites": [
         "finish_import: tokio::spawn(async move {"
       ]
@@ -1259,7 +1364,7 @@
       "count": 1,
       "reason": "phase-0 baseline: synchronous file I/O; must not appear in L0 or inside a critical section (D17)",
       "sites": [
-        "read_pclce_config: let content = std::fs::read_to_string(&path).inspect_err(|e| {"
+        "read_pclce_config_at: let content = std::fs::read_to_string(path).inspect_err(|e| {"
       ]
     },
     {
@@ -1313,7 +1418,7 @@
       "file": "packages/app-lib/src/api/pack/install_mrpack.rs",
       "form": "tokio::spawn",
       "count": 2,
-      "reason": "phase-0 baseline: existing task spawn; moves to scheduler dispatch with the governed items (spec §5.6) or stays operation-scoped",
+      "reason": "phase-0 baseline: existing task spawn; moves to scheduler dispatch with the governed items (spec 搂5.6) or stays operation-scoped",
       "sites": [
         "install_zipped_mrpack_files_with_reporter: let completion_worker = tokio::spawn(async move {",
         "install_zipped_mrpack_files_with_reporter: let verification_worker = tokio::spawn(async move {"
@@ -1341,7 +1446,7 @@
       "file": "packages/app-lib/src/api/pack/parallel_minecraft_install.rs",
       "form": "tokio::spawn",
       "count": 1,
-      "reason": "phase-0 baseline: existing task spawn; moves to scheduler dispatch with the governed items (spec §5.6) or stays operation-scoped",
+      "reason": "phase-0 baseline: existing task spawn; moves to scheduler dispatch with the governed items (spec 搂5.6) or stays operation-scoped",
       "sites": [
         "start: let task = tokio::spawn(async move {"
       ]
@@ -1392,7 +1497,7 @@
       "file": "packages/app-lib/src/api/servers/lifecycle.rs",
       "form": "tokio::spawn",
       "count": 5,
-      "reason": "phase-0 baseline: existing task spawn; moves to scheduler dispatch with the governed items (spec §5.6) or stays operation-scoped",
+      "reason": "phase-0 baseline: existing task spawn; moves to scheduler dispatch with the governed items (spec 搂5.6) or stays operation-scoped",
       "sites": [
         "start_inner: tokio::spawn(monitor_server_process(",
         "start_inner: tokio::spawn(stream_server_pty_output(server_id.to_string(), reader));",
@@ -1474,7 +1579,7 @@
       "file": "packages/app-lib/src/api/terracotta.rs",
       "form": "tokio::spawn",
       "count": 2,
-      "reason": "phase-0 baseline: existing task spawn; moves to scheduler dispatch with the governed items (spec §5.6) or stays operation-scoped",
+      "reason": "phase-0 baseline: existing task spawn; moves to scheduler dispatch with the governed items (spec 搂5.6) or stays operation-scoped",
       "sites": [
         "capture_terracotta_output: tokio::spawn(async move {",
         "spawn_terracotta_state_poller: runtime.state_poller = Some(tokio::spawn(poll_terracotta_state(port)));"
@@ -1495,7 +1600,7 @@
       "file": "packages/app-lib/src/api/terracotta/lan.rs",
       "form": "tokio::spawn",
       "count": 1,
-      "reason": "phase-0 baseline: existing task spawn; moves to scheduler dispatch with the governed items (spec §5.6) or stays operation-scoped",
+      "reason": "phase-0 baseline: existing task spawn; moves to scheduler dispatch with the governed items (spec 搂5.6) or stays operation-scoped",
       "sites": [
         "sync: task: tokio::spawn(run(port)),"
       ]
@@ -1543,7 +1648,7 @@
       "file": "packages/app-lib/src/event/mod.rs",
       "form": "tokio::spawn",
       "count": 1,
-      "reason": "phase-0 baseline: existing task spawn; moves to scheduler dispatch with the governed items (spec §5.6) or stays operation-scoped",
+      "reason": "phase-0 baseline: existing task spawn; moves to scheduler dispatch with the governed items (spec 搂5.6) or stays operation-scoped",
       "sites": [
         "drop: tokio::spawn(async move {"
       ]
@@ -1562,7 +1667,7 @@
       "file": "packages/app-lib/src/install/events.rs",
       "form": "tokio::spawn",
       "count": 2,
-      "reason": "phase-0 baseline: existing task spawn; moves to scheduler dispatch with the governed items (spec §5.6) or stays operation-scoped",
+      "reason": "phase-0 baseline: existing task spawn; moves to scheduler dispatch with the governed items (spec 搂5.6) or stays operation-scoped",
       "sites": [
         "record_download_progress: tokio::spawn(async move {",
         "schedule_content_checkpoint: tokio::spawn(async move {"
@@ -1581,7 +1686,7 @@
       "file": "packages/app-lib/src/install/import_plan.rs",
       "form": "tokio::spawn",
       "count": 1,
-      "reason": "phase-0 baseline: existing task spawn; moves to scheduler dispatch with the governed items (spec §5.6) or stays operation-scoped",
+      "reason": "phase-0 baseline: existing task spawn; moves to scheduler dispatch with the governed items (spec 搂5.6) or stays operation-scoped",
       "sites": [
         "start_import_plan: tokio::spawn(async move {"
       ]
@@ -1618,7 +1723,7 @@
       "file": "packages/app-lib/src/install/runner.rs",
       "form": "tokio::spawn",
       "count": 1,
-      "reason": "phase-0 baseline: existing task spawn; moves to scheduler dispatch with the governed items (spec §5.6) or stays operation-scoped",
+      "reason": "phase-0 baseline: existing task spawn; moves to scheduler dispatch with the governed items (spec 搂5.6) or stays operation-scoped",
       "sites": [
         "schedule_cancel_cleanup: tokio::spawn(async move {"
       ]
@@ -1627,7 +1732,7 @@
       "file": "packages/app-lib/src/install/runner/lifecycle.rs",
       "form": "tokio::spawn",
       "count": 1,
-      "reason": "phase-0 baseline: existing task spawn; moves to scheduler dispatch with the governed items (spec §5.6) or stays operation-scoped",
+      "reason": "phase-0 baseline: existing task spawn; moves to scheduler dispatch with the governed items (spec 搂5.6) or stays operation-scoped",
       "sites": [
         "spawn_job: tokio::spawn(async move {"
       ]
@@ -1725,7 +1830,7 @@
       "file": "packages/app-lib/src/launcher/mod.rs",
       "form": "tokio::spawn",
       "count": 3,
-      "reason": "phase-0 baseline: existing task spawn; moves to scheduler dispatch with the governed items (spec §5.6) or stays operation-scoped",
+      "reason": "phase-0 baseline: existing task spawn; moves to scheduler dispatch with the governed items (spec 搂5.6) or stays operation-scoped",
       "sites": [
         "run_instance_install_command: let stderr_task = tokio::spawn(async move {",
         "run_instance_install_command: let stdout_task = tokio::spawn(async move {",
@@ -1990,7 +2095,7 @@
       "file": "packages/app-lib/src/resources/refresh.rs",
       "form": "tokio::spawn",
       "count": 5,
-      "reason": "phase-0 baseline: existing task spawn; moves to scheduler dispatch with the governed items (spec §5.6) or stays operation-scoped",
+      "reason": "phase-0 baseline: existing task spawn; moves to scheduler dispatch with the governed items (spec 搂5.6) or stays operation-scoped",
       "sites": [
         "run_round: tokio::spawn(async move {",
         "run_round: tokio_util::task::AbortOnDropHandle::new(tokio::spawn(async move {",
@@ -2003,7 +2108,7 @@
       "file": "packages/app-lib/src/resources/service.rs",
       "form": "tokio::spawn",
       "count": 3,
-      "reason": "phase-0 baseline: existing task spawn; moves to scheduler dispatch with the governed items (spec §5.6) or stays operation-scoped",
+      "reason": "phase-0 baseline: existing task spawn; moves to scheduler dispatch with the governed items (spec 搂5.6) or stays operation-scoped",
       "sites": [
         "dispatch: tokio::spawn(async move {",
         "dispatch: tokio::spawn(async move {",
@@ -2096,7 +2201,7 @@
       "file": "packages/app-lib/src/state/cache.rs",
       "form": "tokio::spawn",
       "count": 1,
-      "reason": "phase-0 baseline: existing task spawn; moves to scheduler dispatch with the governed items (spec §5.6) or stays operation-scoped",
+      "reason": "phase-0 baseline: existing task spawn; moves to scheduler dispatch with the governed items (spec 搂5.6) or stays operation-scoped",
       "sites": [
         "get_many: tokio::task::spawn(async move {"
       ]
@@ -2132,7 +2237,7 @@
       "file": "packages/app-lib/src/state/friends.rs",
       "form": "tokio::spawn",
       "count": 3,
-      "reason": "phase-0 baseline: existing task spawn; moves to scheduler dispatch with the governed items (spec §5.6) or stays operation-scoped",
+      "reason": "phase-0 baseline: existing task spawn; moves to scheduler dispatch with the governed items (spec 搂5.6) or stays operation-scoped",
       "sites": [
         "connect: tokio::spawn(async move {",
         "socket_loop: tokio::task::spawn(async move {",
@@ -2187,7 +2292,7 @@
       "file": "packages/app-lib/src/state/instances/commands/apply_content_install.rs",
       "form": "tokio::spawn",
       "count": 1,
-      "reason": "phase-0 baseline: existing task spawn; moves to scheduler dispatch with the governed items (spec §5.6) or stays operation-scoped",
+      "reason": "phase-0 baseline: existing task spawn; moves to scheduler dispatch with the governed items (spec 搂5.6) or stays operation-scoped",
       "sites": [
         "rollback_project: tokio::spawn(async move {"
       ]
@@ -2196,7 +2301,7 @@
       "file": "packages/app-lib/src/state/instances/commands/content_snapshot.rs",
       "form": "tokio::spawn",
       "count": 1,
-      "reason": "phase-0 baseline: existing task spawn; moves to scheduler dispatch with the governed items (spec §5.6) or stays operation-scoped",
+      "reason": "phase-0 baseline: existing task spawn; moves to scheduler dispatch with the governed items (spec 搂5.6) or stays operation-scoped",
       "sites": [
         "get_content_snapshot_inner: tokio::spawn(async move {"
       ]
@@ -2290,7 +2395,7 @@
       "file": "packages/app-lib/src/state/instances/watcher.rs",
       "form": "tokio::spawn",
       "count": 9,
-      "reason": "phase-0 baseline: existing task spawn; moves to scheduler dispatch with the governed items (spec §5.6) or stays operation-scoped",
+      "reason": "phase-0 baseline: existing task spawn; moves to scheduler dispatch with the governed items (spec 搂5.6) or stays operation-scoped",
       "sites": [
         "configure_manual_import_directory: tokio::spawn(async move {",
         "crash_task: tokio::task::spawn(async move {",
@@ -2316,7 +2421,7 @@
       "file": "packages/app-lib/src/state/mod.rs",
       "form": "tokio::spawn",
       "count": 3,
-      "reason": "phase-0 baseline: existing task spawn; moves to scheduler dispatch with the governed items (spec §5.6) or stays operation-scoped",
+      "reason": "phase-0 baseline: existing task spawn; moves to scheduler dispatch with the governed items (spec 搂5.6) or stays operation-scoped",
       "sites": [
         "resize_download_concurrency: tokio::spawn(async move {",
         "resize_download_concurrency: tokio::spawn(async move {",
@@ -2346,7 +2451,7 @@
       "file": "packages/app-lib/src/state/process.rs",
       "form": "tokio::spawn",
       "count": 6,
-      "reason": "phase-0 baseline: existing task spawn; moves to scheduler dispatch with the governed items (spec §5.6) or stays operation-scoped",
+      "reason": "phase-0 baseline: existing task spawn; moves to scheduler dispatch with the governed items (spec 搂5.6) or stays operation-scoped",
       "sites": [
         "insert_new_process: process.output_tasks.push(tokio::spawn(async move {",
         "insert_new_process: process.output_tasks.push(tokio::spawn(async move {",
@@ -2369,7 +2474,7 @@
       "file": "packages/app-lib/src/state/tunnel.rs",
       "form": "tokio::spawn",
       "count": 2,
-      "reason": "phase-0 baseline: existing task spawn; moves to scheduler dispatch with the governed items (spec §5.6) or stays operation-scoped",
+      "reason": "phase-0 baseline: existing task spawn; moves to scheduler dispatch with the governed items (spec 搂5.6) or stays operation-scoped",
       "sites": [
         "drop: tokio::spawn(close_sockets(self.write.clone(), sockets));",
         "shutdown: tokio::spawn(close_sockets(self.write.clone(), sockets)).await?"
@@ -2408,7 +2513,7 @@
       "file": "packages/app-lib/src/util/download/endpoint_selection/coordinator.rs",
       "form": "tokio::spawn",
       "count": 2,
-      "reason": "phase-0 baseline: existing task spawn; moves to scheduler dispatch with the governed items (spec §5.6) or stays operation-scoped",
+      "reason": "phase-0 baseline: existing task spawn; moves to scheduler dispatch with the governed items (spec 搂5.6) or stays operation-scoped",
       "sites": [
         "on_slow_region: tokio::spawn(async move {",
         "run_round: tokio::spawn(super::store::save(hints));"
@@ -2436,7 +2541,7 @@
       "file": "packages/app-lib/src/util/download/h2_pool.rs",
       "form": "tokio::spawn",
       "count": 2,
-      "reason": "phase-0 baseline: existing task spawn; moves to scheduler dispatch with the governed items (spec §5.6) or stays operation-scoped",
+      "reason": "phase-0 baseline: existing task spawn; moves to scheduler dispatch with the governed items (spec 搂5.6) or stays operation-scoped",
       "sites": [
         "select_parallel_connection: tokio::spawn(async move {",
         "spawn_connection_driver: tokio::spawn(async move {"
@@ -2528,7 +2633,7 @@
       "file": "packages/app-lib/src/util/fetch/probe.rs",
       "form": "tokio::spawn",
       "count": 1,
-      "reason": "phase-0 baseline: existing task spawn; moves to scheduler dispatch with the governed items (spec §5.6) or stays operation-scoped",
+      "reason": "phase-0 baseline: existing task spawn; moves to scheduler dispatch with the governed items (spec 搂5.6) or stays operation-scoped",
       "sites": [
         "ensure_task_routes_probed: tokio::spawn(async move {"
       ]
@@ -2537,7 +2642,7 @@
       "file": "packages/app-lib/src/util/fetch/progress.rs",
       "form": "tokio::spawn",
       "count": 1,
-      "reason": "phase-0 baseline: existing task spawn; moves to scheduler dispatch with the governed items (spec §5.6) or stays operation-scoped",
+      "reason": "phase-0 baseline: existing task spawn; moves to scheduler dispatch with the governed items (spec 搂5.6) or stays operation-scoped",
       "sites": [
         "prewarm_download_dns_for: tokio::spawn(async move {"
       ]
@@ -2651,7 +2756,7 @@
       "file": "packages/app-lib/src/util/jre.rs",
       "form": "tokio::spawn",
       "count": 1,
-      "reason": "phase-0 baseline: existing task spawn; moves to scheduler dispatch with the governed items (spec §5.6) or stays operation-scoped",
+      "reason": "phase-0 baseline: existing task spawn; moves to scheduler dispatch with the governed items (spec 搂5.6) or stays operation-scoped",
       "sites": [
         "check_java_at_filepaths: tokio::task::spawn(async move { check_java_at_filepath(&p).await })"
       ]
@@ -2671,7 +2776,7 @@
       "file": "packages/app-lib/src/util/rpc.rs",
       "form": "tokio::spawn",
       "count": 1,
-      "reason": "phase-0 baseline: existing task spawn; moves to scheduler dispatch with the governed items (spec §5.6) or stays operation-scoped",
+      "reason": "phase-0 baseline: existing task spawn; moves to scheduler dispatch with the governed items (spec 搂5.6) or stays operation-scoped",
       "sites": [
         "launch: tokio::spawn(async move {"
       ]
@@ -2704,7 +2809,7 @@
       "file": "packages/launcher-mcp/src/protocol.rs",
       "form": "tokio::spawn",
       "count": 2,
-      "reason": "phase-0 baseline: existing task spawn; moves to scheduler dispatch with the governed items (spec §5.6) or stays operation-scoped",
+      "reason": "phase-0 baseline: existing task spawn; moves to scheduler dispatch with the governed items (spec 搂5.6) or stays operation-scoped",
       "sites": [
         "initialize: tokio::spawn(async move {",
         "on_initialized: tokio::spawn(async move {"
@@ -2714,7 +2819,7 @@
       "file": "packages/launcher-mcp/src/server.rs",
       "form": "tokio::spawn",
       "count": 1,
-      "reason": "phase-0 baseline: existing task spawn; moves to scheduler dispatch with the governed items (spec §5.6) or stays operation-scoped",
+      "reason": "phase-0 baseline: existing task spawn; moves to scheduler dispatch with the governed items (spec 搂5.6) or stays operation-scoped",
       "sites": [
         "start_with_runtime: let task = tokio::spawn(async move {"
       ]

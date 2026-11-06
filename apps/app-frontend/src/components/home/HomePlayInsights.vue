@@ -13,6 +13,7 @@ const { formatMessage } = useVIntl()
 
 const messages = defineMessages({
     insights: { id: 'app.home.insights.title', defaultMessage: 'Play insights' },
+    total: { id: 'app.home.insights.total', defaultMessage: 'Total playtime: {duration}' },
     thisWeek: { id: 'app.home.insights.this-week', defaultMessage: 'This week: {duration}' },
     thisWeekMore: {
         id: 'app.home.insights.this-week-more',
@@ -75,6 +76,14 @@ function rangeSeconds(start: Date, days: number): number {
 
 const weekStart = computed(() => startOfWeek(new Date()))
 const thisWeekSeconds = computed(() => rangeSeconds(weekStart.value, 7))
+
+const totalSeconds = computed(() =>
+    dailyPlaytime.value.reduce((sum, entry) => sum + entry.played_seconds, 0),
+)
+
+const totalLine = computed(() =>
+    formatMessage(messages.total, { duration: formatDuration(totalSeconds.value) }),
+)
 const lastWeekSeconds = computed(() => rangeSeconds(shiftedDate(weekStart.value, -7), 7))
 
 const streakDays = computed(() => {
@@ -187,6 +196,13 @@ onUnmounted(() => {
             {{ formatMessage(messages.empty) }}
         </p>
         <ul v-else class="m-0 flex list-none flex-col gap-2 p-0">
+            <li class="flex min-w-0 items-center gap-2 text-sm text-[var(--color-text-default)]">
+                <ClockIcon
+                    class="size-4 shrink-0 text-[var(--color-text-tertiary)]"
+                    aria-hidden="true"
+                />
+                <span class="min-w-0">{{ totalLine }}</span>
+            </li>
             <li class="flex min-w-0 items-center gap-2 text-sm text-[var(--color-text-default)]">
                 <ClockIcon
                     class="size-4 shrink-0 text-[var(--color-text-tertiary)]"

@@ -51,7 +51,7 @@ const messages = defineMessages({
     disclaimerBody: {
         id: 'app.lab.seed-map.copyright.disclaimer-body',
         defaultMessage:
-            'Minecraft is a trademark of Mojang Synergies AB. Axolotl Launcher is not affiliated with or endorsed by Mojang or MinecraftSearch.',
+            'Minecraft is a trademark of Mojang Synergies AB. StarryIsle Launcher is not affiliated with or endorsed by Mojang or MinecraftSearch.',
     },
 })
 

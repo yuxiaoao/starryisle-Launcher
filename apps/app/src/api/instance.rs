@@ -111,6 +111,10 @@ pub fn init<R: tauri::Runtime>() -> tauri::plugin::TauriPlugin<R> {
             instance_cache_icon,
             instance_edit_icon,
             instance_list_screenshots,
+            instance_export_screenshot_bundle,
+            instance_import_screenshot_bundle,
+            instance_list_screenshot_notes,
+            instance_set_screenshot_note,
             instance_list_all_screenshots,
             instance_list_synced_screenshots,
             instance_save_edited_screenshot,
@@ -1486,6 +1490,52 @@ pub async fn instance_save_edited_screenshot<R: tauri::Runtime>(
     serialize_screenshot(
         &app,
         theseus::instance::save_edited_screenshot(key, bytes, mode).await?,
+    )
+}
+#[tauri::command]
+pub async fn instance_export_screenshot_bundle(
+    instance_id: String,
+    file_names: Option<Vec<String>>,
+    export_path: String,
+) -> Result<theseus::instance::BundleExportReport> {
+    Ok(theseus::instance::export_instance_bundle(
+        &instance_id,
+        file_names,
+        std::path::PathBuf::from(export_path),
+    )
+    .await?)
+}
+#[tauri::command]
+pub async fn instance_import_screenshot_bundle(
+    instance_id: String,
+    archive_path: String,
+    conflict: String,
+) -> Result<theseus::instance::BundleImportReport> {
+    Ok(theseus::instance::import_instance_bundle(
+        &instance_id,
+        std::path::PathBuf::from(archive_path),
+        &conflict,
+    )
+    .await?)
+}
+#[tauri::command]
+pub async fn instance_list_screenshot_notes(
+    instance_id: Option<String>,
+) -> Result<Vec<theseus::instance::ScreenshotNote>> {
+    Ok(
+        theseus::instance::list_screenshot_notes(instance_id.as_deref())
+            .await?,
+    )
+}
+#[tauri::command]
+pub async fn instance_set_screenshot_note(
+    instance_id: String,
+    file_name: String,
+    note: String,
+) -> Result<()> {
+    Ok(
+        theseus::instance::set_screenshot_note(&instance_id, &file_name, &note)
+            .await?,
     )
 }
 #[tauri::command]

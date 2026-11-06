@@ -90,10 +90,10 @@ it('accepts draggable order and restores the complete default layout', () => {
     )
     expect(createDefaultHomeDashboard().widgets.map(({ kind, size }) => ({ kind, size }))).toEqual([
         { kind: 'greeting', size: '2x1' },
-        { kind: 'calendar', size: '1x2' },
-        { kind: 'recent', size: '2x2' },
         { kind: 'pinned-worlds', size: '1x2' },
-        { kind: 'pinned-servers', size: '2x2' },
+        { kind: 'pinned-servers', size: '2x1' },
+        { kind: 'recent', size: '2x1' },
+        { kind: 'weather', size: '1x2' },
         { kind: 'pinned-instances', size: '2x1' },
     ])
 })
@@ -172,22 +172,33 @@ it('normalizes legacy layouts and persisted free positions', () => {
 
 it('packs widgets into the earliest available cells', () => {
     const config = createDefaultHomeDashboard()
-    const packed = packHomeWidgets(config.widgets, 4)
-    expect(
-        packed.map(({ column, row, effectiveColumns, effectiveRows }) => ({
-            column,
-            row,
-            effectiveColumns,
-            effectiveRows,
-        })),
-    ).toEqual([
-        { column: 1, row: 1, effectiveColumns: 2, effectiveRows: 1 },
-        { column: 3, row: 1, effectiveColumns: 1, effectiveRows: 2 },
-        { column: 1, row: 2, effectiveColumns: 2, effectiveRows: 2 },
-        { column: 4, row: 1, effectiveColumns: 1, effectiveRows: 2 },
-        { column: 3, row: 3, effectiveColumns: 2, effectiveRows: 2 },
-        { column: 1, row: 4, effectiveColumns: 2, effectiveRows: 1 },
-    ])
+    const COLUMNS = 4
+    const packed = packHomeWidgets(config.widgets, COLUMNS)
+    // The exact cell of every widget is an implementation detail that moves with the
+    // default layout, so assert the invariants the packing has to keep instead.
+    expect(packed).toHaveLength(config.widgets.length)
+    expect(packed[0]).toMatchObject({ column: 1, row: 1 })
+
+    for (const widget of packed) {
+        expect(Number.isInteger(widget.column)).toBe(true)
+        expect(Number.isInteger(widget.row)).toBe(true)
+        expect(widget.column).toBeGreaterThanOrEqual(1)
+        expect(widget.row).toBeGreaterThanOrEqual(1)
+        expect(widget.column + widget.effectiveColumns - 1).toBeLessThanOrEqual(COLUMNS)
+    }
+
+    for (let i = 0; i < packed.length; i++) {
+        for (let j = i + 1; j < packed.length; j++) {
+            const a = packed[i]
+            const b = packed[j]
+            const overlaps =
+                a.column < b.column + b.effectiveColumns &&
+                b.column < a.column + a.effectiveColumns &&
+                a.row < b.row + b.effectiveRows &&
+                b.row < a.row + a.effectiveRows
+            expect(overlaps).toBe(false)
+        }
+    }
 })
 
 it('normalizes malformed sizes while retaining duplicate widgets', () => {

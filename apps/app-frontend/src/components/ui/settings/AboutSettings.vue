@@ -63,7 +63,7 @@ const pressingMemberName = ref<string>()
 let longPressTimer: ReturnType<typeof window.setTimeout> | undefined
 let pressStart = { x: 0, y: 0 }
 let suppressNextMemberClick = false
-const replayOnboarding = inject<(mode: 'main' | 'instance') => Promise<void>>('replayOnboarding')
+const replayOobe = inject<() => void>('replayOobe')
 
 const licenseUrl = `${AxolotlBrandConfig.repositoryUrl}/blob/main/LICENSE`
 const copyingUrl = `${AxolotlBrandConfig.repositoryUrl}/blob/main/COPYING.md`
@@ -214,9 +214,9 @@ const messages = defineMessages({
         id: 'app.settings.about.version',
         defaultMessage: 'Version {version}',
     },
-    replayOnboarding: {
-        id: 'app.settings.about.replay-onboarding',
-        defaultMessage: 'Replay tour',
+    replayOobe: {
+        id: 'app.settings.about.replay-oobe',
+        defaultMessage: 'Run first-time setup again',
     },
     developmentTeam: {
         id: 'app.settings.about.development-team',
@@ -269,12 +269,12 @@ const messages = defineMessages({
     attribution: {
         id: 'app.settings.about.attribution',
         defaultMessage:
-            'Axolotl Launcher is a modified version of the open-source Modrinth codebase.',
+            'StarryIsle Launcher is a modified version of the open-source Modrinth codebase.',
     },
     notAffiliated: {
         id: 'app.settings.about.not-affiliated',
         defaultMessage:
-            'Modrinth is a trademark of Rinth, Inc. Axolotl Launcher is not affiliated with or endorsed by Rinth, Inc.',
+            'Modrinth is a trademark of Rinth, Inc. StarryIsle Launcher is not affiliated with or endorsed by Rinth, Inc.',
     },
     originalSource: {
         id: 'app.settings.about.original-source',
@@ -602,9 +602,9 @@ const projectLinks = [
             </div>
         </details>
 
-        <div id="settings-target-about-replay-tour" tabindex="-1" class="flex flex-wrap gap-2">
-            <Button type="base" @click="replayOnboarding?.('main')">
-                {{ formatMessage(messages.replayOnboarding) }}
+        <div id="settings-target-about-replay-oobe" tabindex="-1" class="flex flex-wrap gap-2">
+            <Button type="base" @click="replayOobe?.()">
+                {{ formatMessage(messages.replayOobe) }}
             </Button>
         </div>
     </div>

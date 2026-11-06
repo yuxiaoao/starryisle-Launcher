@@ -41,7 +41,7 @@ import {
     useVIntl,
 } from '@modrinth/ui'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
-import { save } from '@tauri-apps/plugin-dialog'
+import { open, save } from '@tauri-apps/plugin-dialog'
 import { readFile } from '@tauri-apps/plugin-fs'
 import { useElementSize, useStorage, useWindowSize } from '@vueuse/core'
 import dayjs from 'dayjs'
@@ -69,6 +69,12 @@ import {
     set_screenshot_group_memberships,
 } from '@/helpers/instance'
 import { MAX_INSTANCE_GROUP_NAME_LENGTH } from '@/helpers/instance-groups'
+import { exportScreenshotBundle, importScreenshotBundle } from '@/helpers/screenshot-bundles'
+import {
+    getScreenshotNotes,
+    screenshotNoteKey,
+    setScreenshotNote,
+} from '@/helpers/screenshot-notes'
 import {
     instanceListQueryOptions,
     instanceScreenshotsQueryOptions,
@@ -86,6 +92,7 @@ import {
     isSelectionModifier,
     screenshotGridTargets,
 } from './screenshot-selection'
+import ScreenshotTimeline from './timeline.vue'
 import ScreenshotToolbar from './toolbar.vue'
 import { type ActiveScreenshotDrag, useScreenshotDragGather } from './use-screenshot-drag-gather'
 import { useScreenshotMarquee } from './use-screenshot-marquee'
@@ -155,6 +162,7 @@ const storageSuffix = props.instanceId ? 'instance' : 'global'
 const search = ref('')
 const sort = useStorage<ScreenshotSort>(`screenshots-sort-${storageSuffix}`, 'newest')
 const groupBy = useStorage<ScreenshotGroupBy>(`screenshots-group-v2-${storageSuffix}`, 'date')
+const viewMode = useStorage<'grid' | 'timeline'>(`screenshots-view-${storageSuffix}`, 'grid')
 const sortModel = computed<string>({
     get: () => sort.value,
     set: (value) => {
@@ -234,6 +242,18 @@ const { width: windowWidth } = useWindowSize()
 const formatDateTime = useFormatDateTime({ dateStyle: 'long', timeStyle: 'short' })
 const formatMonth = useFormatDateTime({ month: 'long', year: 'numeric' })
 const messages = defineMessages({
+    editNote: {
+        id: 'app.screenshots.note.edit',
+        defaultMessage: 'Edit note',
+    },
+    viewGrid: {
+        id: 'app.screenshots.view.grid',
+        defaultMessage: 'Grid',
+    },
+    viewTimeline: {
+        id: 'app.screenshots.view.timeline',
+        defaultMessage: 'Timeline',
+    },
     selectGroup: {
         id: 'app.screenshots.selection.select-group',
         defaultMessage: 'Select all screenshots in {group}',
@@ -350,6 +370,34 @@ const screenshotsQuery = useQuery(
 )
 const instancesQuery = useQuery(instanceListQueryOptions())
 const screenshotGroupsQuery = useQuery(screenshotGroupsQueryOptions())
+
+const screenshotNotesQuery = useQuery({
+    queryKey: computed(() => ['screenshot-notes', props.instanceId ?? 'all']),
+    queryFn: () => getScreenshotNotes(props.instanceId ?? undefined),
+})
+const screenshotNotes = computed(
+    () =>
+        new Map(
+            (screenshotNotesQuery.data.value ?? []).map((note) => [
+                screenshotNoteKey(note.instanceId, note.fileName),
+                note.note,
+            ]),
+        ) as Map<string, string>,
+)
+const editingNoteKey = ref<string | null>(null)
+function noteFor(screenshot: InstanceScreenshot): string | undefined {
+    return screenshotNotes.value.get(
+        screenshotNoteKey(screenshot.instance_id, screenshot.file_name),
+    )
+}
+function editingFor(screenshot: InstanceScreenshot): boolean {
+    return editingNoteKey.value === screenshotNoteKey(screenshot.instance_id, screenshot.file_name)
+}
+async function saveScreenshotNote(screenshot: InstanceScreenshot, note: string) {
+    await setScreenshotNote(screenshot.instance_id, screenshot.file_name, note)
+    editingNoteKey.value = null
+    await screenshotNotesQuery.refetch()
+}
 const screenshotsQueryPending = useReadyState(screenshotsQuery)
 const screenshotGroupsQueryPending = useReadyState(screenshotGroupsQuery)
 const screenshotsReadyPending = computed(
@@ -1170,6 +1218,17 @@ function showScreenshotOptions(screenshot: InstanceScreenshot, event: MouseEvent
                       icon: ClipboardCopyIcon,
                       action: () => void copyScreenshot(screenshot),
                   },
+                  {
+                      id: 'edit-note',
+                      label: formatMessage(messages.editNote),
+                      icon: EditIcon,
+                      action: () => {
+                          editingNoteKey.value = screenshotNoteKey(
+                              screenshot.instance_id,
+                              screenshot.file_name,
+                          )
+                      },
+                  },
               ]
             : []),
         {
@@ -1342,6 +1401,47 @@ async function exportSelected() {
             keys: selected.map(getScreenshotKey),
             path: outputPath,
         })
+    } catch (error) {
+        handleError(error)
+    }
+}
+
+async function exportBundle() {
+    const instanceId = props.instanceId
+    if (!instanceId || bulkBusy.value) return
+    const selected = selectedScreenshots.value.filter((entry) => entry.instance_id === instanceId)
+    const outputPath = await save({
+        defaultPath: 'StarryIsle screenshots.zip',
+        filters: [{ name: 'ZIP', extensions: ['zip'] }],
+    })
+    if (!outputPath) return
+    try {
+        await exportScreenshotBundle(
+            instanceId,
+            outputPath,
+            selected.map((entry) => entry.file_name),
+        )
+        addNotification({ type: 'success', title: 'Bundle exported' })
+    } catch (error) {
+        handleError(error)
+    }
+}
+
+async function importBundle() {
+    const instanceId = props.instanceId
+    if (!instanceId || bulkBusy.value) return
+    const picked = await open({
+        multiple: false,
+        filters: [{ name: 'ZIP', extensions: ['zip'] }],
+    })
+    if (!picked || Array.isArray(picked)) return
+    try {
+        const report = await importScreenshotBundle(instanceId, picked, 'skip')
+        addNotification({
+            type: 'success',
+            title: `Imported ${report.imported} screenshot(s), skipped ${report.skipped}`,
+        })
+        await queryClient.invalidateQueries({ queryKey: screenshotKeys.global() })
     } catch (error) {
         handleError(error)
     }
@@ -1608,6 +1708,21 @@ onBeforeUnmount(() => {
                 :group-options="groupOptions"
                 @new-group="createCustomGroup"
             />
+
+            <div class="flex items-center gap-1">
+                <Button
+                    :type="viewMode === 'grid' ? 'colored' : 'quiet'"
+                    @click="viewMode = 'grid'"
+                >
+                    {{ formatMessage(messages.viewGrid) }}
+                </Button>
+                <Button
+                    :type="viewMode === 'timeline' ? 'colored' : 'quiet'"
+                    @click="viewMode = 'timeline'"
+                >
+                    {{ formatMessage(messages.viewTimeline) }}
+                </Button>
+            </div>
         </template>
 
         <Admonition
@@ -1669,6 +1784,22 @@ onBeforeUnmount(() => {
                     @pointerdown.capture="marquee.start"
                     @click.capture="onSelectionAreaClick"
                 >
+                    <ScreenshotTimeline
+                        v-if="viewMode === 'timeline'"
+                        :screenshots="filteredScreenshots"
+                        :note-for="noteFor"
+                        :editing-for="editingFor"
+                        :show-instance="isGlobal"
+                        :is-selected="
+                            (screenshot: InstanceScreenshot) =>
+                                selectedKeys.has(getScreenshotKey(screenshot))
+                        "
+                        @activate="activateScreenshot"
+                        @contextmenu="showScreenshotOptions"
+                        @toggle-select="toggleScreenshotSelection"
+                        @save-note="saveScreenshotNote"
+                        @cancel-note="editingNoteKey = null"
+                    />
                     <div
                         v-for="{
                             id,
@@ -1676,7 +1807,7 @@ onBeforeUnmount(() => {
                             gridHeight,
                             renderedScreenshots,
                             virtualGridTop,
-                        } in virtualizedScreenshotGroups"
+                        } in viewMode === 'grid' ? virtualizedScreenshotGroups : []"
                         :key="id"
                     >
                         <ScreenshotGroupSection
@@ -1863,6 +1994,26 @@ onBeforeUnmount(() => {
             >
                 <FileArchiveIcon />
                 <span class="bar-label">{{ formatMessage(messages.exportZip) }}</span>
+            </Button>
+            <Button
+                v-if="props.instanceId"
+                v-tooltip="'Export bundle'"
+                type="quiet"
+                :disabled="bulkBusy"
+                @click="exportBundle"
+            >
+                <FileArchiveIcon />
+                <span class="bar-label">Export bundle</span>
+            </Button>
+            <Button
+                v-if="props.instanceId"
+                v-tooltip="'Import bundle'"
+                type="quiet"
+                :disabled="bulkBusy"
+                @click="importBundle"
+            >
+                <FileArchiveIcon />
+                <span class="bar-label">Import bundle</span>
             </Button>
             <div class="mx-1 h-6 w-px bg-surface-5" />
             <Button

@@ -9,6 +9,8 @@ mod groups;
 mod home;
 mod install;
 mod lifecycle;
+mod advancement_catalog;
+mod advancements;
 mod paths;
 pub(crate) mod projects;
 mod run;
@@ -115,6 +117,12 @@ pub use self::screenshot_groups::{
     list_screenshot_groups, rename_screenshot_group,
     set_screenshot_group_memberships,
 };
+pub use self::screenshots::{
+    BundleExportReport, BundleImportReport, ScreenshotNote,
+    export_instance_bundle, import_instance_bundle, list_screenshot_notes,
+    set_screenshot_note,
+};
+#[allow(unused_imports)]
 pub use self::screenshots::{
     InstanceScreenshot, ScreenshotEditSaveMode, ScreenshotKey,
     delete_screenshots, export_screenshots, get_screenshot_path,
