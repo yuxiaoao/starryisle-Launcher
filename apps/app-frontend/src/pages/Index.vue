@@ -35,6 +35,7 @@ import {
 } from '@/components/home/home-greeting-editor'
 import { getActivePlayerAccount } from '@/components/home/home-utils'
 import HomeCalendar from '@/components/home/HomeCalendar.vue'
+import { provideHomeDashboardRuntime } from '@/components/home/home-dashboard-runtime'
 import HomeDailyChallenge from '@/components/home/HomeDailyChallenge.vue'
 import HomeDashboard from '@/components/home/HomeDashboard.vue'
 import HomeGreetingAccountModal from '@/components/home/HomeGreetingAccountModal.vue'
@@ -58,6 +59,10 @@ import { useTheming } from '@/store/state'
 import type { FeatureFlag, HomeLayout } from '@/store/theme'
 
 const { handleError } = injectNotificationManager()
+
+// The rail renders the calendar outside the dashboard grid, so it needs the
+// same runtime the dashboard widgets receive.
+provideHomeDashboardRuntime(handleError)
 const route = useRoute()
 const router = useRouter()
 const breadcrumbs = useBreadcrumbs()
