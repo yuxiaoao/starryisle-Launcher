@@ -41,7 +41,7 @@ import {
     useVIntl,
 } from '@modrinth/ui'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
-import { save } from '@tauri-apps/plugin-dialog'
+import { open, save } from '@tauri-apps/plugin-dialog'
 import { readFile } from '@tauri-apps/plugin-fs'
 import { useElementSize, useStorage, useWindowSize } from '@vueuse/core'
 import dayjs from 'dayjs'
@@ -69,6 +69,7 @@ import {
     set_screenshot_group_memberships,
 } from '@/helpers/instance'
 import { MAX_INSTANCE_GROUP_NAME_LENGTH } from '@/helpers/instance-groups'
+import { exportScreenshotBundle, importScreenshotBundle } from '@/helpers/screenshot-bundles'
 import {
     getScreenshotNotes,
     screenshotNoteKey,
@@ -1405,6 +1406,44 @@ async function exportSelected() {
     }
 }
 
+async function exportBundle() {
+    const instanceId = props.instanceId
+    if (!instanceId || bulkBusy.value) return
+    const selected = selectedScreenshots.value.filter((entry) => entry.instance_id === instanceId)
+    const outputPath = await save({
+        defaultPath: 'StarryIsle screenshots.zip',
+        filters: [{ name: 'ZIP', extensions: ['zip'] }],
+    })
+    if (!outputPath) return
+    try {
+        await exportScreenshotBundle(
+            instanceId,
+            outputPath,
+            selected.map((entry) => entry.file_name),
+        )
+        addNotification({ type: 'success', title: 'Bundle exported' })
+    } catch (error) {
+        handleError(error)
+    }
+}
+
+async function importBundle() {
+    const instanceId = props.instanceId
+    if (!instanceId || bulkBusy.value) return
+    const picked = await open({
+        multiple: false,
+        filters: [{ name: 'ZIP', extensions: ['zip'] }],
+    })
+    if (!picked || Array.isArray(picked)) return
+    try {
+        const report = await importScreenshotBundle(instanceId, picked, 'skip')
+        addNotification({ type: 'success', title: 'Bundle imported' })
+        await queryClient.invalidateQueries({ queryKey: screenshotKeys.global() })
+    } catch (error) {
+        handleError(error)
+    }
+}
+
 async function copyScreenshot(screenshot: InstanceScreenshot) {
     try {
         const png = readFile(screenshot.path).then(
@@ -1952,6 +1991,26 @@ onBeforeUnmount(() => {
             >
                 <FileArchiveIcon />
                 <span class="bar-label">{{ formatMessage(messages.exportZip) }}</span>
+            </Button>
+            <Button
+                v-if="props.instanceId"
+                v-tooltip="'Export bundle'"
+                type="quiet"
+                :disabled="bulkBusy"
+                @click="exportBundle"
+            >
+                <FileArchiveIcon />
+                <span class="bar-label">Export bundle</span>
+            </Button>
+            <Button
+                v-if="props.instanceId"
+                v-tooltip="'Import bundle'"
+                type="quiet"
+                :disabled="bulkBusy"
+                @click="importBundle"
+            >
+                <UploadIcon />
+                <span class="bar-label">Import bundle</span>
             </Button>
             <div class="mx-1 h-6 w-px bg-surface-5" />
             <Button

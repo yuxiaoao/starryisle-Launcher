@@ -21,10 +21,10 @@ export async function exportScreenshotBundle(
     path: string,
     fileNames?: string[],
 ): Promise<BundleExportReport> {
-    return await invoke('plugin:instance|instance_export_screenshots_bundle', {
+    return await invoke('plugin:instance|instance_export_screenshot_bundle', {
         instanceId,
         fileNames: fileNames && fileNames.length > 0 ? fileNames : null,
-        path,
+        exportPath: path,
     })
 }
 
@@ -33,9 +33,9 @@ export async function importScreenshotBundle(
     path: string,
     conflict: BundleConflictPolicy,
 ): Promise<BundleImportReport> {
-    return await invoke('plugin:instance|instance_import_screenshots_bundle', {
+    return await invoke('plugin:instance|instance_import_screenshot_bundle', {
         instanceId,
-        path,
+        archivePath: path,
         conflict,
     })
 }
