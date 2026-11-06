@@ -62,6 +62,12 @@
           "url": "https://update.axlmc.org/*"
         },
         {
+          "url": "https://github.com/*"
+        },
+        {
+          "url": "https://objects.githubusercontent.com/*"
+        },
+        {
           "url": "http://localhost:8000/*"
         },
         {

@@ -30,6 +30,31 @@ export const ANNOUNCEMENT_CHANGE_TYPES: readonly AnnouncementChangeType[] = [
 
 export const launcherAnnouncements: readonly LauncherAnnouncement[] = [
     {
+        id: 'launcher-1.0.6',
+        version: '1.0.6',
+        publishedAt: '2026-11-06',
+        title: {
+            'en-US': 'StarryIsle Launcher 1.0.6',
+            'zh-CN': 'StarryIsle Launcher 1.0.6',
+        },
+        changes: {
+            changed: [
+                {
+                    'en-US':
+                        'The launcher now checks this repository for updates instead of the upstream update server.',
+                    'zh-CN': '启动器改为在本仓库检查更新，不再访问上游的更新服务器。',
+                },
+            ],
+            fixed: [
+                {
+                    'en-US': 'Update checks no longer offer upstream builds.',
+                    'zh-CN': '检查更新时不再提供上游版本的安装包。',
+                },
+            ],
+        },
+    },
+
+    {
         id: 'launcher-1.0.5',
         version: '1.0.5',
         publishedAt: '2026-11-06',

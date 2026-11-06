@@ -286,7 +286,7 @@ async function loadLatestChannelVersions() {
         (['release', 'beta'] as const).map(async (channel) => {
             try {
                 const response = await tauriFetch(
-                    `https://update.axlmc.org/latest?channel=${channel}`,
+                    `https://github.com/yuxiaoao/starryisle-Launcher/releases/latest/download/latest.json`,
                 )
                 if (!response.ok) return [channel, undefined] as const
                 const payload = (await response.json()) as { version?: string }

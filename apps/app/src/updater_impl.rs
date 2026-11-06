@@ -18,7 +18,8 @@ use theseus::{
 use tokio::time::Instant;
 use url::Url;
 
-const UPDATE_SERVER_LATEST_URL: &str = "https://update.axlmc.org/latest";
+const UPDATE_SERVER_LATEST_URL: &str = "https://github.com/yuxiaoao/starryisle-Launcher/releases/latest/download/latest.json";
+// Only used for Debian packages, which this fork does not publish yet.
 const UPDATE_SERVER_API: &str = "https://update.axlmc.org/api/versions";
 const UPDATE_ARTIFACT_BASE: &str = "https://dist.axlmc.org/";
 
@@ -223,6 +224,15 @@ fn update_artifact_url(relative_path: &str) -> Result<Url> {
     Ok(url)
 }
 
+/// GitHub manifests carry absolute artifact URLs, while the legacy Update
+/// Server manifest carries paths relative to the distribution origin.
+fn resolve_update_download_url(url: &Url) -> Result<Url> {
+    if matches!(url.scheme(), "http" | "https") && url.host_str().is_some() {
+        return Ok(url.clone());
+    }
+    update_artifact_url(url.path())
+}
+
 /// Build the platform-updater with the given endpoints and run a check.
 async fn check_with_endpoints<R: Runtime>(
     webview: &Webview<R>,
@@ -288,7 +298,8 @@ async fn check_with_updater<R: Runtime>(
         update.download_url =
             fetch_update_artifact(&update.version, None).await?.url;
     } else {
-        update.download_url = update_artifact_url(update.download_url.path())?;
+        update.download_url =
+            resolve_update_download_url(&update.download_url)?;
     }
 
     let published_at = update
@@ -663,12 +674,20 @@ mod tests {
     }
 
     #[test]
-    fn metadata_endpoints_stay_on_update_server() {
+    fn the_update_manifest_comes_from_this_fork() {
         assert_eq!(
             update_endpoint().unwrap().as_str(),
-            "https://update.axlmc.org/latest"
+            "https://github.com/yuxiaoao/starryisle-Launcher/releases/latest/download/latest.json"
         );
-        assert_eq!(UPDATE_SERVER_API, "https://update.axlmc.org/api/versions");
+    }
+
+    #[test]
+    fn absolute_artifact_urls_are_used_verbatim() {
+        let url = url::Url::parse(
+            "https://github.com/yuxiaoao/starryisle-Launcher/releases/download/v1.0.5/StarryIsle.Launcher_1.0.5_x64-setup.exe",
+        )
+        .unwrap();
+        assert_eq!(resolve_update_download_url(&url).unwrap(), url);
     }
 
     #[test]

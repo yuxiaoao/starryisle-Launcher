@@ -45,14 +45,20 @@ fn entity_icon(item: &str) -> Option<&'static str> {
     }
 }
 
-fn read_entry(archive: &mut ZipArchive<std::fs::File>, name: &str) -> Option<String> {
+fn read_entry(
+    archive: &mut ZipArchive<std::fs::File>,
+    name: &str,
+) -> Option<String> {
     let mut file = archive.by_name(name).ok()?;
     let mut buffer = String::new();
     file.read_to_string(&mut buffer).ok()?;
     Some(buffer)
 }
 
-fn read_bytes(archive: &mut ZipArchive<std::fs::File>, name: &str) -> Option<Vec<u8>> {
+fn read_bytes(
+    archive: &mut ZipArchive<std::fs::File>,
+    name: &str,
+) -> Option<Vec<u8>> {
     let mut file = archive.by_name(name).ok()?;
     let mut buffer = Vec::new();
     file.read_to_end(&mut buffer).ok()?;
@@ -61,7 +67,11 @@ fn read_bytes(archive: &mut ZipArchive<std::fs::File>, name: &str) -> Option<Vec
 
 /// Reads a file out of the launcher's asset store, which keeps the game assets
 /// that are not packed inside the version jar.
-fn read_asset(assets: &Path, objects: &HashMap<String, String>, key: &str) -> Option<Vec<u8>> {
+fn read_asset(
+    assets: &Path,
+    objects: &HashMap<String, String>,
+    key: &str,
+) -> Option<Vec<u8>> {
     let hash = objects.get(key)?;
     if hash.len() < 2 {
         return None;
@@ -86,9 +96,13 @@ fn asset_index(assets: &Path) -> HashMap<String, String> {
         let Ok(value) = serde_json::from_str::<serde_json::Value>(&text) else {
             continue;
         };
-        if let Some(objects) = value.get("objects").and_then(|inner| inner.as_object()) {
+        if let Some(objects) =
+            value.get("objects").and_then(|inner| inner.as_object())
+        {
             for (key, meta) in objects {
-                if let Some(hash) = meta.get("hash").and_then(|inner| inner.as_str()) {
+                if let Some(hash) =
+                    meta.get("hash").and_then(|inner| inner.as_str())
+                {
                     merged.insert(key.clone(), hash.to_string());
                 }
             }
@@ -108,28 +122,41 @@ fn load_lang(
         "assets/minecraft/lang/zh_cn.json",
     ] {
         if let Some(text) = read_entry(archive, name) {
-            if let Ok(map) = serde_json::from_str::<HashMap<String, String>>(&text) {
+            if let Ok(map) =
+                serde_json::from_str::<HashMap<String, String>>(&text)
+            {
                 merged.extend(map);
             }
         }
     }
     // Newer installs keep the language files in the asset store instead of the jar.
     if !merged.contains_key("advancements.story.root.title") {
-        if let Some(bytes) = read_asset(assets, objects, "minecraft/lang/en_us.json") {
-            if let Ok(map) = serde_json::from_slice::<HashMap<String, String>>(&bytes) {
+        if let Some(bytes) =
+            read_asset(assets, objects, "minecraft/lang/en_us.json")
+        {
+            if let Ok(map) =
+                serde_json::from_slice::<HashMap<String, String>>(&bytes)
+            {
                 merged.extend(map);
             }
         }
     }
-    if let Some(bytes) = read_asset(assets, objects, "minecraft/lang/zh_cn.json") {
-        if let Ok(map) = serde_json::from_slice::<HashMap<String, String>>(&bytes) {
+    if let Some(bytes) =
+        read_asset(assets, objects, "minecraft/lang/zh_cn.json")
+    {
+        if let Ok(map) =
+            serde_json::from_slice::<HashMap<String, String>>(&bytes)
+        {
             merged.extend(map);
         }
     }
     merged
 }
 
-fn resolve_text(value: &serde_json::Value, lang: &HashMap<String, String>) -> String {
+fn resolve_text(
+    value: &serde_json::Value,
+    lang: &HashMap<String, String>,
+) -> String {
     if let Some(text) = value.get("text").and_then(|inner| inner.as_str()) {
         return text.to_string();
     }
@@ -169,7 +196,6 @@ async fn download_wiki_icons(cache_root: &Path, ids: &[String]) {
     let dir = cache_root.join("wiki-icons");
     let marker = dir.join("fetched.json");
 
-
     // Reuse the previous download while it is still fresh.
     let fresh = std::fs::metadata(&marker)
         .ok()
@@ -181,18 +207,24 @@ async fn download_wiki_icons(cache_root: &Path, ids: &[String]) {
         return;
     }
 
-    let Some(page) =
-        fetch_text("https://zh.minecraft.wiki/w/%E8%BF%9B%E5%BA%A6?variant=zh-cn").await
+    let Some(page) = fetch_text(
+        "https://zh.minecraft.wiki/w/%E8%BF%9B%E5%BA%A6?variant=zh-cn",
+    )
+    .await
     else {
         return;
     };
     let Ok(row_re) = regex::Regex::new(r"(?s)<tr[^>]*>(.*?)</tr>") else {
         return;
     };
-    let Ok(icon_re) = regex::Regex::new(r"Invicon_([A-Za-z0-9_-]+)\.(?:png|gif)") else {
+    let Ok(icon_re) =
+        regex::Regex::new(r"Invicon_([A-Za-z0-9_-]+)\.(?:png|gif)")
+    else {
         return;
     };
-    let Ok(id_re) = regex::Regex::new(r"<code>([a-z0-9_]+)<wbr[^>]*>/?([a-z0-9_/]*)</code>") else {
+    let Ok(id_re) = regex::Regex::new(
+        r"<code>([a-z0-9_]+)<wbr[^>]*>/?([a-z0-9_/]*)</code>",
+    ) else {
         return;
     };
 
@@ -200,15 +232,20 @@ async fn download_wiki_icons(cache_root: &Path, ids: &[String]) {
     // picture, and the code cell carries its namespace id.
     let mut rows: Vec<(String, String)> = Vec::new();
     for row in row_re.captures_iter(&page) {
-        let Some(body) = row.get(1) else { continue; };
+        let Some(body) = row.get(1) else {
+            continue;
+        };
         let body = body.as_str();
-        let Some(icon_name) = icon_re.captures(body).and_then(|capture| capture.get(1)) else {
+        let Some(icon_name) =
+            icon_re.captures(body).and_then(|capture| capture.get(1))
+        else {
             continue;
         };
         let Some(id_match) = id_re.captures(body) else {
             continue;
         };
-        let (Some(namespace), Some(path)) = (id_match.get(1), id_match.get(2)) else {
+        let (Some(namespace), Some(path)) = (id_match.get(1), id_match.get(2))
+        else {
             continue;
         };
         let path = path.as_str().trim_start_matches('/');
@@ -230,7 +267,8 @@ async fn download_wiki_icons(cache_root: &Path, ids: &[String]) {
         }
         let dir = dir.clone();
         tasks.push(tokio::spawn(async move {
-            let url = format!("https://zh.minecraft.wiki/images/Invicon_{name}.png");
+            let url =
+                format!("https://zh.minecraft.wiki/images/Invicon_{name}.png");
             let bytes = fetch_bytes(&url).await?;
             let file = dir.join(format!("{}.png", slug_id(&id)));
             std::fs::write(&file, bytes).ok()?;
@@ -297,7 +335,8 @@ async fn apply_wiki_icons(entries: &mut [AdvancementDef], cache_root: &Path) {
         return;
     }
 
-    let ids: Vec<String> = entries.iter().map(|entry| entry.id.clone()).collect();
+    let ids: Vec<String> =
+        entries.iter().map(|entry| entry.id.clone()).collect();
     let root = cache_root.to_path_buf();
     tokio::spawn(async move {
         download_wiki_icons(&root, &ids).await;

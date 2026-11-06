@@ -726,7 +726,9 @@ fn main() {
         &tauri_context.config().identifier,
     );
 
-    tracing::info!("Initialized tracing subscriber. Loading StarryIsle Launcher!");
+    tracing::info!(
+        "Initialized tracing subscriber. Loading StarryIsle Launcher!"
+    );
 
     let mut builder = tauri::Builder::default().register_uri_scheme_protocol(
         "axolotl-skin",
