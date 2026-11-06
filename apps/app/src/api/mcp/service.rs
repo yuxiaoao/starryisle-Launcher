@@ -54,7 +54,7 @@ impl Controller {
         let revision_base = self.revision_base;
         let token = if self.preferences.require_auth {
             let credential = keyring::Entry::new(
-                "Axolotl Launcher MCP",
+                "StarryIsle Launcher MCP",
                 &app.config().identifier,
             )
             .map_err(|error| error.to_string())?;

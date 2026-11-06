@@ -39,7 +39,7 @@ const messages = defineMessages({
     skip: { id: 'app.oobe.action.skip', defaultMessage: 'Skip' },
     finish: { id: 'app.oobe.action.finish', defaultMessage: 'Finish' },
     progress: { id: 'app.oobe.progress', defaultMessage: 'Setup progress' },
-    dialogLabel: { id: 'app.oobe.dialog-label', defaultMessage: 'Set up Axolotl Launcher' },
+    dialogLabel: { id: 'app.oobe.dialog-label', defaultMessage: 'Set up StarryIsle Launcher' },
 })
 
 const index = ref(0)
@@ -139,7 +139,7 @@ onMounted(focusHeading)
                 <span
                     data-tauri-drag-region
                     class="text-sm font-semibold text-[var(--color-text-tertiary)]"
-                    >Axolotl Launcher</span
+                    >StarryIsle Launcher</span
                 >
             </div>
             <ol

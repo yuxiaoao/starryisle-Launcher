@@ -1975,10 +1975,10 @@
     "message": "隐藏至托盘"
   },
   "app.appearance-settings.close-behavior.title": {
-    "message": "关闭 Axolotl Launcher 的方式"
+    "message": "关闭 StarryIsle Launcher 的方式"
   },
   "app.appearance-settings.color-theme.description": {
-    "message": "为 Axolotl Launcher 选择偏好的色彩主题。"
+    "message": "为 StarryIsle Launcher 选择偏好的色彩主题。"
   },
   "app.appearance-settings.color-theme.title": {
     "message": "色彩主题"
@@ -2419,7 +2419,7 @@
     "message": "记住我的选择"
   },
   "app.close-launcher.title": {
-    "message": "选择关闭 Axolotl Launcher 的方式"
+    "message": "选择关闭 StarryIsle Launcher 的方式"
   },
   "app.close-launcher.tray": {
     "message": "隐藏至托盘"
@@ -3379,7 +3379,7 @@
     "message": "调试信息"
   },
   "app.error.directory-description": {
-    "message": "Axolotl Launcher 无法迁移到所选目录。请联系支持获取帮助，或取消目录更改。"
+    "message": "StarryIsle Launcher 无法迁移到所选目录。请联系支持获取帮助，或取消目录更改。"
   },
   "app.error.directory-title": {
     "message": "无法更改应用目录"
@@ -3397,7 +3397,7 @@
     "message": "与 Microsoft、Xbox 或 Minecraft 服务的连接被拒绝。这些服务可能被 hosts 文件阻止，请参考支持文章进行修复。"
   },
   "app.error.loader-description": {
-    "message": "Axolotl Launcher 无法找到此实例所需的加载器版本。"
+    "message": "StarryIsle Launcher 无法找到此实例所需的加载器版本。"
   },
   "app.error.loader-fix": {
     "message": "请使用下方按钮修复此实例。"
@@ -3415,7 +3415,7 @@
     "message": "登录 Minecraft"
   },
   "app.error.network-description": {
-    "message": "Axolotl Launcher 连接 Microsoft 服务时遇到问题，这通常是网络连接不佳造成的。请重试；如果问题持续存在，请参考支持文章。"
+    "message": "StarryIsle Launcher 连接 Microsoft 服务时遇到问题，这通常是网络连接不佳造成的。请重试；如果问题持续存在，请参考支持文章。"
   },
   "app.error.network-issues": {
     "message": "网络问题"
@@ -3436,7 +3436,7 @@
     "message": "正在使用 PC Game Pass、从基岩版转来，或刚刚购买游戏？"
   },
   "app.error.permissions-description": {
-    "message": "Axolotl Launcher 无法写入所选目录。请调整目录权限后重试，或取消目录更改。"
+    "message": "StarryIsle Launcher 无法写入所选目录。请调整目录权限后重试，或取消目录更改。"
   },
   "app.error.permissions-title": {
     "message": "更改目录权限"
@@ -3466,7 +3466,7 @@
     "message": "重新安装较新版本的 Axolotl——它可以直接打开这个数据库。"
   },
   "app.error.state-description": {
-    "message": "Axolotl Launcher 未能正确加载，可能有文件损坏或缺少必要文件。"
+    "message": "StarryIsle Launcher 未能正确加载，可能有文件损坏或缺少必要文件。"
   },
   "app.error.state-fix-internet": {
     "message": "检查网络连接，然后重启应用。"
@@ -3478,7 +3478,7 @@
     "message": "重新下载并安装应用。"
   },
   "app.error.state-title": {
-    "message": "Axolotl Launcher 初始化失败"
+    "message": "StarryIsle Launcher 初始化失败"
   },
   "app.error.support-article": {
     "message": "支持文章"
@@ -5641,7 +5641,7 @@
     "message": "红石"
   },
   "app.lab.recipe-generator.copyright.disclaimer-body": {
-    "message": "Minecraft 素材版权归 Mojang Studios / Microsoft 所有，仅用于识别兼容的游戏内容。Axolotl Launcher 与 Mojang Studios 或 Microsoft 无关联，也未获得其认可。"
+    "message": "Minecraft 素材版权归 Mojang Studios / Microsoft 所有，仅用于识别兼容的游戏内容。StarryIsle Launcher 与 Mojang Studios 或 Microsoft 无关联，也未获得其认可。"
   },
   "app.lab.recipe-generator.copyright.disclaimer-heading": {
     "message": "非官方工具"
@@ -6619,7 +6619,7 @@
     "message": "复制 /tp"
   },
   "app.lab.seed-map.copyright.disclaimer-body": {
-    "message": "Minecraft 是 Mojang Synergies AB 的商标。Axolotl Launcher 与 Mojang 或 MinecraftSearch 均无隶属关系，也未获得其认可。"
+    "message": "Minecraft 是 Mojang Synergies AB 的商标。StarryIsle Launcher 与 Mojang 或 MinecraftSearch 均无隶属关系，也未获得其认可。"
   },
   "app.lab.seed-map.copyright.disclaimer-heading": {
     "message": "非官方工具"
@@ -8761,7 +8761,7 @@
     "message": "选择你喜欢的样式。"
   },
   "app.oobe.dialog-label": {
-    "message": "设置 Axolotl Launcher"
+    "message": "设置 StarryIsle Launcher"
   },
   "app.oobe.language.description": {
     "message": "选择后启动器会立即切换。"
@@ -9901,7 +9901,7 @@
     "message": "支持项目持续开发"
   },
   "app.settings.about.attribution": {
-    "message": "Axolotl Launcher 是开源项目 Modrinth 代码库的修改版本。"
+    "message": "StarryIsle Launcher 是开源项目 Modrinth 代码库的修改版本。"
   },
   "app.settings.about.community-support": {
     "message": "项目与社区"
@@ -10000,7 +10000,7 @@
     "message": "许可证与来源声明"
   },
   "app.settings.about.not-affiliated": {
-    "message": "Modrinth 是 Rinth, Inc. 的商标。Axolotl Launcher 与 Rinth, Inc. 无关联，亦未获得其认可。"
+    "message": "Modrinth 是 Rinth, Inc. 的商标。StarryIsle Launcher 与 Rinth, Inc. 无关联，亦未获得其认可。"
   },
   "app.settings.about.original-source": {
     "message": "Modrinth 原始源代码"
@@ -12682,13 +12682,13 @@
     "message": "小鬼当家"
   },
   "app.skins.sign-in.axolotl-alt": {
-    "message": "Axolotl Launcher"
+    "message": "StarryIsle Launcher"
   },
   "app.skins.sign-in.button": {
     "message": "登录"
   },
   "app.skins.sign-in.description": {
-    "message": "请登录您的 Minecraft 账号，以便使用 Axolotl Launcher 的皮肤管理功能。"
+    "message": "请登录您的 Minecraft 账号，以便使用 StarryIsle Launcher 的皮肤管理功能。"
   },
   "app.skins.sign-in.title": {
     "message": "请登录"
@@ -12916,16 +12916,16 @@
     "message": "此版本暂未内置更新公告，请前往官网查看完整更新日志。"
   },
   "app.update-announcement.unknown-title": {
-    "message": "Axolotl Launcher 已更新"
+    "message": "StarryIsle Launcher 已更新"
   },
   "app.update-announcement.version": {
     "message": "版本 {version}"
   },
   "app.update-popup.body.download-complete": {
-    "message": "Axolotl Launcher v{version} 更新已下载完成！立即重启更新，或退出时自动安装。"
+    "message": "StarryIsle Launcher v{version} 更新已下载完成！立即重启更新，或退出时自动安装。"
   },
   "app.update-popup.body.metered": {
-    "message": "Axolotl Launcher v{version} 现已发布！由于你正在使用按流量计费的网络，该更新未自动下载。"
+    "message": "StarryIsle Launcher v{version} 现已发布！由于你正在使用按流量计费的网络，该更新未自动下载。"
   },
   "app.update-popup.changelog": {
     "message": "更新日志"

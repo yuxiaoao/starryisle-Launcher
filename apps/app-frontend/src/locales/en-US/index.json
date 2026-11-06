@@ -751,10 +751,10 @@
     "message": "Hide to tray"
   },
   "app.appearance-settings.close-behavior.title": {
-    "message": "Choose how to close Axolotl Launcher"
+    "message": "Choose how to close StarryIsle Launcher"
   },
   "app.appearance-settings.color-theme.description": {
-    "message": "Select your preferred color theme for Axolotl Launcher."
+    "message": "Select your preferred color theme for StarryIsle Launcher."
   },
   "app.appearance-settings.color-theme.title": {
     "message": "Color theme"
@@ -1234,7 +1234,7 @@
     "message": "Remember my choice"
   },
   "app.close-launcher.title": {
-    "message": "Choose how to close Axolotl Launcher"
+    "message": "Choose how to close StarryIsle Launcher"
   },
   "app.close-launcher.tray": {
     "message": "Hide to tray"
@@ -2251,7 +2251,7 @@
     "message": "Debug information"
   },
   "app.error.directory-description": {
-    "message": "Axolotl Launcher cannot migrate to the selected directory. Contact support for help or cancel the directory change."
+    "message": "StarryIsle Launcher cannot migrate to the selected directory. Contact support for help or cancel the directory change."
   },
   "app.error.directory-title": {
     "message": "Could not change app directory"
@@ -2269,7 +2269,7 @@
     "message": "The connection to Microsoft, Xbox, or Minecraft services was rejected. These services may be blocked by your hosts file. See our support article for steps to fix the issue."
   },
   "app.error.loader-description": {
-    "message": "Axolotl Launcher could not find a loader version for this instance."
+    "message": "StarryIsle Launcher could not find a loader version for this instance."
   },
   "app.error.loader-fix": {
     "message": "Repair the instance using the button below."
@@ -2287,7 +2287,7 @@
     "message": "Sign in to Minecraft"
   },
   "app.error.network-description": {
-    "message": "Axolotl Launcher had trouble connecting to Microsoft services. This is often caused by a poor connection. Try again, and use our support article if the issue persists."
+    "message": "StarryIsle Launcher had trouble connecting to Microsoft services. This is often caused by a poor connection. Try again, and use our support article if the issue persists."
   },
   "app.error.network-issues": {
     "message": "Network issues"
@@ -2308,7 +2308,7 @@
     "message": "Using PC Game Pass, coming from Bedrock, or just bought the game?"
   },
   "app.error.permissions-description": {
-    "message": "Axolotl Launcher cannot write to the selected directory. Adjust its permissions and try again, or cancel the directory change."
+    "message": "StarryIsle Launcher cannot write to the selected directory. Adjust its permissions and try again, or cancel the directory change."
   },
   "app.error.permissions-title": {
     "message": "Change directory permissions"
@@ -2338,7 +2338,7 @@
     "message": "Reinstall the newer version of Axolotl - it opens this database as it is."
   },
   "app.error.state-description": {
-    "message": "Axolotl Launcher failed to load correctly. A file may be corrupted or an essential file may be missing."
+    "message": "StarryIsle Launcher failed to load correctly. A file may be corrupted or an essential file may be missing."
   },
   "app.error.state-fix-internet": {
     "message": "Check your internet connection, then restart the app."
@@ -2350,7 +2350,7 @@
     "message": "Download and install the app again."
   },
   "app.error.state-title": {
-    "message": "Error initializing Axolotl Launcher"
+    "message": "Error initializing StarryIsle Launcher"
   },
   "app.error.support-article": {
     "message": "Support article"
@@ -5752,7 +5752,7 @@
     "message": "Redstone"
   },
   "app.lab.recipe-generator.copyright.disclaimer-body": {
-    "message": "Minecraft assets are Copyright Mojang Studios / Microsoft and are used only to identify compatible content. Axolotl Launcher is not affiliated with or endorsed by Mojang Studios or Microsoft."
+    "message": "Minecraft assets are Copyright Mojang Studios / Microsoft and are used only to identify compatible content. StarryIsle Launcher is not affiliated with or endorsed by Mojang Studios or Microsoft."
   },
   "app.lab.recipe-generator.copyright.disclaimer-heading": {
     "message": "Unofficial tool"
@@ -6847,7 +6847,7 @@
     "message": "Copy /tp"
   },
   "app.lab.seed-map.copyright.disclaimer-body": {
-    "message": "Minecraft is a trademark of Mojang Synergies AB. Axolotl Launcher is not affiliated with or endorsed by Mojang or MinecraftSearch."
+    "message": "Minecraft is a trademark of Mojang Synergies AB. StarryIsle Launcher is not affiliated with or endorsed by Mojang or MinecraftSearch."
   },
   "app.lab.seed-map.copyright.disclaimer-heading": {
     "message": "Unofficial tool"
@@ -9340,7 +9340,7 @@
     "message": "Choose the style you like."
   },
   "app.oobe.dialog-label": {
-    "message": "Set up Axolotl Launcher"
+    "message": "Set up StarryIsle Launcher"
   },
   "app.oobe.language.description": {
     "message": "The launcher switches as soon as you pick one."
@@ -11173,7 +11173,7 @@
     "message": "Help support continued development"
   },
   "app.settings.about.attribution": {
-    "message": "Axolotl Launcher is a modified version of the open-source Modrinth codebase."
+    "message": "StarryIsle Launcher is a modified version of the open-source Modrinth codebase."
   },
   "app.settings.about.community-support": {
     "message": "Project & community"
@@ -11272,7 +11272,7 @@
     "message": "License & attribution"
   },
   "app.settings.about.not-affiliated": {
-    "message": "Modrinth is a trademark of Rinth, Inc. Axolotl Launcher is not affiliated with or endorsed by Rinth, Inc."
+    "message": "Modrinth is a trademark of Rinth, Inc. StarryIsle Launcher is not affiliated with or endorsed by Rinth, Inc."
   },
   "app.settings.about.original-source": {
     "message": "Original Modrinth source"
@@ -14503,13 +14503,13 @@
     "message": "Tiny Takeover"
   },
   "app.skins.sign-in.axolotl-alt": {
-    "message": "Axolotl Launcher"
+    "message": "StarryIsle Launcher"
   },
   "app.skins.sign-in.button": {
     "message": "Sign In"
   },
   "app.skins.sign-in.description": {
-    "message": "Please sign into your Minecraft account to use the skin management features of Axolotl Launcher."
+    "message": "Please sign into your Minecraft account to use the skin management features of StarryIsle Launcher."
   },
   "app.skins.sign-in.title": {
     "message": "Please sign in"
@@ -14740,16 +14740,16 @@
     "message": "This version does not have a bundled announcement yet. Visit the website for the full changelog."
   },
   "app.update-announcement.unknown-title": {
-    "message": "Axolotl Launcher was updated"
+    "message": "StarryIsle Launcher was updated"
   },
   "app.update-announcement.version": {
     "message": "Version {version}"
   },
   "app.update-popup.body.download-complete": {
-    "message": "Axolotl Launcher v{version} has finished downloading. Reload to update now, or automatically when you close Axolotl Launcher."
+    "message": "StarryIsle Launcher v{version} has finished downloading. Reload to update now, or automatically when you close StarryIsle Launcher."
   },
   "app.update-popup.body.metered": {
-    "message": "Axolotl Launcher v{version} is available now! Since you're on a metered network, we didn't automatically download it."
+    "message": "StarryIsle Launcher v{version} is available now! Since you're on a metered network, we didn't automatically download it."
   },
   "app.update-popup.changelog": {
     "message": "Changelog"

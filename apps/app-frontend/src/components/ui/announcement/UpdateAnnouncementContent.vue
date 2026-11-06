@@ -32,7 +32,7 @@ const { formatMessage } = useVIntl()
 const messages = defineMessages({
     unknownTitle: {
         id: 'app.update-announcement.unknown-title',
-        defaultMessage: 'Axolotl Launcher was updated',
+        defaultMessage: 'StarryIsle Launcher was updated',
     },
     unknownBody: {
         id: 'app.update-announcement.unknown-body',

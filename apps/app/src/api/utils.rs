@@ -135,7 +135,7 @@ pub async fn export_error_logs(
     let archive = tokio::fs::File::create(&output_path).await?;
     let mut writer = ZipFileWriter::with_tokio(archive);
     let report = format!(
-        "Axolotl Launcher error report\nExported at: {}\n\nError:\n{}\n",
+        "StarryIsle Launcher error report\nExported at: {}\n\nError:\n{}\n",
         chrono::Local::now().to_rfc3339(),
         error_message
     );
@@ -294,7 +294,7 @@ pub async fn export_launcher_logs(
         write_exported_logs(writer, range, level, &state).await?;
 
     let mut manifest = format!(
-        "Axolotl Launcher log export\n\
+        "StarryIsle Launcher log export\n\
          Exported at: {}\n\
          App version: {}\n\
          Time range: {}\n\
@@ -746,7 +746,7 @@ async fn censor_export_text(
 
 fn build_environment_report() -> String {
     format!(
-        "Axolotl Launcher environment\n\
+        "StarryIsle Launcher environment\n\
          App version: {}\n\
          Operating system: {}\n\
          Architecture: {}\n",

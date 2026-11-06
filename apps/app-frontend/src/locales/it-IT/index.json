@@ -66,7 +66,7 @@
     "message": "Rendering avanzato"
   },
   "app.appearance-settings.color-theme.description": {
-    "message": "Scegli il tema che Axolotl Launcher userà su questo dispositivo."
+    "message": "Scegli il tema che StarryIsle Launcher userà su questo dispositivo."
   },
   "app.appearance-settings.color-theme.title": {
     "message": "Tema"
@@ -486,7 +486,7 @@
     "message": "Accedi col tuo account Minecraft per poter gestire le skin qui."
   },
   "app.skins.sign-in.axolotl-alt": {
-    "message": "Axolotl Launcher"
+    "message": "StarryIsle Launcher"
   },
   "app.skins.sign-in.title": {
     "message": "Effettua l'accesso"
@@ -495,10 +495,10 @@
     "message": "Seleziona una skin"
   },
   "app.update-popup.body.download-complete": {
-    "message": "Axolotl Launcher v{version} è stata scaricata. Ricarica per aggiornare ora, o avverrà in automatico alla chiusura dell'app."
+    "message": "StarryIsle Launcher v{version} è stata scaricata. Ricarica per aggiornare ora, o avverrà in automatico alla chiusura dell'app."
   },
   "app.update-popup.body.metered": {
-    "message": "Axolotl Launcher v{version} è ora disponibile! Poiché sei su una rete a consumo, non l'abbiamo scaricata automaticamente."
+    "message": "StarryIsle Launcher v{version} è ora disponibile! Poiché sei su una rete a consumo, non l'abbiamo scaricata automaticamente."
   },
   "app.update-popup.changelog": {
     "message": "Novità"

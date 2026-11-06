@@ -61,10 +61,10 @@
       }
     ]
   },
-  "productName": "Axolotl Launcher",
+  "productName": "StarryIsle Launcher",
   "version": "../app-frontend/package.json",
-  "mainBinaryName": "Axolotl Launcher",
-  "identifier": "red.ghs.axolotl",
+  "mainBinaryName": "StarryIsle Launcher",
+  "identifier": "com.starryisle.launcher",
   "plugins": {
     "deep-link": {
       "desktop": {
@@ -83,7 +83,7 @@
         "fullscreen": false,
         "height": 800,
         "resizable": true,
-        "title": "Axolotl Launcher",
+        "title": "StarryIsle Launcher",
         "label": "main",
         "width": 1280,
         "minHeight": 700,

@@ -195,6 +195,7 @@ export function createDefaultHomeDashboard(includeRecent = true): HomeDashboardC
             createPlacement('pinned-worlds'),
             createPlacement('pinned-servers', '2x2'),
             createPlacement('pinned-instances', '2x1'),
+            createPlacement('weather', '2x1'),
         ],
     }
 }
