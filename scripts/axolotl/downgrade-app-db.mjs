@@ -580,7 +580,7 @@ function objectsPresent(db, objects) {
 // Names a running launcher can appear under. Installed builds use the configured
 // main binary name and a `tauri dev` binary keeps the crate name; a fork may
 // rename it again, so AXOLOTL_LAUNCHER_IMAGES replaces the list.
-const LAUNCHER_IMAGES = ['Axolotl Launcher.exe', 'theseus_gui.exe']
+const LAUNCHER_IMAGES = ['StarryIsle Launcher.exe', 'Axolotl Launcher.exe', 'theseus_gui.exe']
 
 function launcherImages() {
     const configured = process.env.AXOLOTL_LAUNCHER_IMAGES
