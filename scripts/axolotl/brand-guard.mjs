@@ -47,15 +47,15 @@ for (const root of roots) {
 const tauriConfig = JSON.parse(await readFile('apps/app/tauri.conf.json', 'utf8'))
 const frontendConfig = await readFile('apps/app-frontend/src/config.ts', 'utf8')
 const requiredInvariants = [
-    ['product name', tauriConfig.productName === 'Axolotl Launcher'],
-    ['bundle identifier', tauriConfig.identifier === 'red.ghs.axolotl'],
+    ['product name', tauriConfig.productName === 'StarryIsle Launcher'],
+    ['bundle identifier', tauriConfig.identifier === 'com.starryisle.launcher'],
     [
         'deep-link scheme',
-        tauriConfig.plugins?.['deep-link']?.desktop?.schemes?.includes('axolotl') === true,
+        tauriConfig.plugins?.['deep-link']?.desktop?.schemes?.includes('starryisle') === true,
     ],
     [
         'User-Agent format',
-        frontendConfig.includes('Axolotl-Launcher/${version} (${os})'),
+        frontendConfig.includes('StarryIsle-Launcher/${version} (${os})'),
     ],
     [
         'private Modrinth services disabled',
@@ -68,8 +68,8 @@ for (const [label, valid] of requiredInvariants) {
 }
 
 if (failures.length > 0) {
-    console.error(`Axolotl brand guard failed:\n${failures.join('\n')}`)
+    console.error(`StarryIsle brand guard failed:\n${failures.join('\n')}`)
     process.exit(1)
 }
 
-console.log('Axolotl brand guard passed.')
+console.log('StarryIsle brand guard passed.')

@@ -1437,7 +1437,10 @@ async function importBundle() {
     if (!picked || Array.isArray(picked)) return
     try {
         const report = await importScreenshotBundle(instanceId, picked, 'skip')
-        addNotification({ type: 'success', title: 'Bundle imported' })
+        addNotification({
+            type: 'success',
+            title: `Imported ${report.imported} screenshot(s), skipped ${report.skipped}`,
+        })
         await queryClient.invalidateQueries({ queryKey: screenshotKeys.global() })
     } catch (error) {
         handleError(error)
@@ -2009,7 +2012,7 @@ onBeforeUnmount(() => {
                 :disabled="bulkBusy"
                 @click="importBundle"
             >
-                <UploadIcon />
+                <FileArchiveIcon />
                 <span class="bar-label">Import bundle</span>
             </Button>
             <div class="mx-1 h-6 w-px bg-surface-5" />
