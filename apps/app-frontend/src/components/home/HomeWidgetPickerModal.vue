@@ -140,12 +140,6 @@ const catalogSections = computed(() => [
                 description: formatMessage(messages.recentDescription),
                 icon: HistoryIcon,
             },
-            {
-                kind: 'calendar' as const,
-                label: formatMessage(messages.calendar),
-                description: formatMessage(messages.calendarDescription),
-                icon: CalendarIcon,
-            },
         ],
     },
     {

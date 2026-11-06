@@ -498,7 +498,13 @@ if (!instancesLoaded || instances.value.length > 0) void fetchPlayerName()
             :class="{ 'slide-enter-from': !animateSidebarShow }"
         >
             <HomePlayInsights />
-            <HomeCalendar :instances="instances" />
+            <div
+                class="flex-none border-0 border-b-[1px] border-solid border-[--brand-gradient-border]"
+            >
+                <div class="h-[21rem] min-h-0">
+                    <HomeCalendar :instances="instances" />
+                </div>
+            </div>
             <HomeDailyChallenge />
             <HomeMinecraftNews />
         </div>
