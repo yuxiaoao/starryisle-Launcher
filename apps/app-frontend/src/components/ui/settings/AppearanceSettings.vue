@@ -45,7 +45,6 @@ import { createSettingsPatchSaver } from '@/helpers/settings-patch'
 import { getSystemFontFamilies } from '@/helpers/system-fonts.ts'
 import { getOS } from '@/helpers/utils'
 import { useTheming } from '@/store/state'
-import { hueTintSwatches } from '@/store/theme'
 import {
     type AccentColor,
     type CloseBehavior,
@@ -73,11 +72,6 @@ const props = withDefaults(
 
 const themeStore = useTheming()
 
-// 色相：整个界面的导航栏 / 顶栏着色
-const hueSwatches = computed(() => hueTintSwatches(themeStore.hueTint ?? 180))
-const currentHueHex = computed(() =>
-    themeStore.selectedTheme === 'light' ? hueSwatches.value.lightHex : hueSwatches.value.darkHex,
-)
 const { formatMessage } = useVIntl()
 const { handleError } = injectNotificationManager()
 
@@ -1929,81 +1923,11 @@ watch(
             </SettingsRow>
         </SettingsSection>
     </div>
-    <section class="mt-6 flex flex-col gap-3">
-        <h3 class="m-0 text-lg font-semibold text-[var(--color-text-primary)]">色相</h3>
-        <input
-            class="bar-hue-slider w-full"
-            type="range"
-            min="0"
-            max="359"
-            step="1"
-            :value="themeStore.hueTint ?? 180"
-            @input="themeStore.setHueTint(Number(($event.target as HTMLInputElement).value))"
-        />
-        <div class="flex flex-wrap items-center gap-4 text-sm">
-            <span class="font-medium">十六进制色号</span>
-            <span class="font-mono text-[var(--color-text-tertiary)]">{{ currentHueHex }}</span>
-            <span class="flex items-center gap-2">
-                <span class="size-6 rounded-full" :style="{ background: hueSwatches.lightHex }" />
-                浅色主题
-            </span>
-            <span class="flex items-center gap-2">
-                <span class="size-6 rounded-full" :style="{ background: hueSwatches.darkHex }" />
-                深色主题
-            </span>
-        </div>
-    </section>
 </template>
 
 <style scoped lang="scss">
 .appearance-panel--divided {
     border-bottom: 1px solid var(--settings-divider, var(--surface-4));
-}
-
-.bar-hue-slider {
-    appearance: none;
-    display: block;
-    width: 100%;
-    height: 0.75rem;
-    min-height: 0;
-    padding: 0;
-    border: none;
-    border-radius: var(--radius-max);
-    background: linear-gradient(
-        to right,
-        hsl(0, 80%, 55%),
-        hsl(60, 80%, 55%),
-        hsl(120, 80%, 55%),
-        hsl(180, 80%, 55%),
-        hsl(240, 80%, 55%),
-        hsl(300, 80%, 55%),
-        hsl(360, 80%, 55%)
-    );
-    cursor: pointer;
-
-    &:focus-visible {
-        outline: 2px solid var(--color-focus-ring);
-        outline-offset: 2px;
-    }
-
-    &::-webkit-slider-thumb {
-        appearance: none;
-        width: 1.25rem;
-        height: 1.25rem;
-        border-radius: 50%;
-        background: var(--color-brand);
-        border: 0.1875rem solid var(--surface-4);
-        box-shadow: var(--shadow-button);
-    }
-
-    &::-moz-range-thumb {
-        width: 1.25rem;
-        height: 1.25rem;
-        border-radius: 50%;
-        background: var(--color-brand);
-        border: 0.1875rem solid var(--surface-4);
-        box-shadow: var(--shadow-button);
-    }
 }
 
 .custom-bg-preview-dim {
