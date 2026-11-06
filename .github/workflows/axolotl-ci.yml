@@ -189,7 +189,7 @@ jobs:
 
   resources:
     name: Prepare build resources
-    needs: [changes, guardrails]
+    needs: [changes]
     if: needs.changes.outputs.desktop == 'true'
     runs-on: ubuntu-24.04
     steps:
@@ -221,7 +221,7 @@ jobs:
 
   desktop:
     name: Build and test desktop application
-    needs: [changes, guardrails, resources]
+    needs: [changes, resources]
     if: needs.changes.outputs.desktop == 'true'
     strategy:
       fail-fast: false
@@ -369,7 +369,7 @@ jobs:
           & apps/installer-ui/tests/uninstall-smoke.ps1
   website:
     name: Build website (${{ matrix.nitro-preset }})
-    needs: [changes, guardrails]
+    needs: [changes]
     if: needs.changes.outputs.website == 'true'
     runs-on: ubuntu-latest
     strategy:
@@ -404,7 +404,7 @@ jobs:
   # it; never lower it to make a change pass.
   coverage:
     name: Measure Rust coverage
-    needs: [changes, guardrails, resources]
+    needs: [changes, resources]
     if: needs.changes.outputs.desktop == 'true'
     runs-on: ubuntu-24.04
     env:
