@@ -2,6 +2,7 @@
     /* 导航栏与顶栏的运行时着色，未设置色相时回落到主题颜色。 */
     --app-nav-bg: var(--surface-bar, var(--surface-3));
     --app-top-bg: var(--surface-bar, var(--surface-3));
+    --app-shell-bg: var(--surface-bar, var(--surface-3));
 }
 
 .light-properties {

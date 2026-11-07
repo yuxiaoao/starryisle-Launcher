@@ -496,7 +496,7 @@ onBeforeUnmount(() => {
                     </div>
                 </div>
                 <span
-                    class="w-24 shrink-0 text-right text-sm tabular-nums text-[var(--color-text-secondary)]"
+                    class="w-24 shrink-0 text-right text-sm tabular-nums text-[var(--color-text-tertiary)]"
                 >
                     {{ progressLabelFor(row.done) }}
                 </span>
@@ -521,12 +521,12 @@ onBeforeUnmount(() => {
                             >
                                 {{ openWorld }}
                             </p>
-                            <p class="m-0 mt-1 text-sm text-[var(--color-text-secondary)]">
+                            <p class="m-0 mt-1 text-sm text-[var(--color-text-tertiary)]">
                                 {{ progressLabel }}
                             </p>
                         </div>
                         <button
-                            class="cursor-pointer rounded-lg border-0 bg-transparent px-2 py-1 text-xl leading-none text-[var(--color-text-secondary)] hover:bg-surface-3"
+                            class="cursor-pointer rounded-lg border-0 bg-transparent px-2 py-1 text-xl leading-none text-[var(--color-text-tertiary)] hover:bg-surface-3"
                             @click="closeDetail"
                         >
                             ×
@@ -537,7 +537,7 @@ onBeforeUnmount(() => {
 
                     <template v-else-if="detail">
                         <div class="flex items-center gap-2 px-5 py-3">
-                            <span class="text-sm text-[var(--color-text-secondary)]">
+                            <span class="text-sm text-[var(--color-text-tertiary)]">
                                 {{ formatMessage(messages.player) }}
                             </span>
                             <span
@@ -577,7 +577,7 @@ onBeforeUnmount(() => {
                                 :class="
                                     activeCategory === category
                                         ? 'bg-brand text-[var(--color-accent-contrast)]'
-                                        : 'bg-surface-3 text-[var(--color-text-secondary)] hover:bg-surface-4'
+                                        : 'bg-surface-3 text-[var(--color-text-tertiary)] hover:bg-surface-4'
                                 "
                                 @click="activeCategory = category"
                             >
@@ -619,7 +619,7 @@ onBeforeUnmount(() => {
                                         }}
                                     </p>
                                     <p
-                                        class="m-0 mt-0.5 text-xs text-[var(--color-text-secondary)]"
+                                        class="m-0 mt-0.5 text-xs text-[var(--color-text-tertiary)]"
                                     >
                                         {{
                                             item.masked
