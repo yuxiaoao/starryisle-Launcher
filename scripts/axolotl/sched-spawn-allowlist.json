@@ -653,7 +653,7 @@
         "start_uninstall: let _ = fs::remove_file(&status_path);",
         "start_uninstall: let _ = fs::remove_file(status_path);",
         "validate_request: if fs::create_dir_all(&resource_dir).is_err() {",
-        "validate_request: if fs::write(&write_test, b\"Axolotl Launcher\").is_err() {",
+        "validate_request: if fs::write(&write_test, b\"StarryIsle Launcher\").is_err() {",
         "validate_request: let _ = fs::remove_file(write_test);",
         "webview_data_directory: fs::create_dir_all(&directory).map_err(|error| {"
       ]
@@ -869,6 +869,8 @@
       "reason": "ported achievement catalogue: reads the game jar and its cache directly",
       "sites": [
         "<module>: archive: &mut ZipArchive<std::fs::File>,",
+        "<module>: archive: &mut ZipArchive<std::fs::File>,",
+        "<module>: archive: &mut ZipArchive<std::fs::File>,",
         "advancement_catalog: if let Ok(text) = std::fs::read_to_string(&catalog_file) {",
         "advancement_catalog: let _ = std::fs::write(&catalog_file, text);",
         "advancement_catalog: let _ = std::fs::write(&catalog_file, text);",
@@ -889,9 +891,7 @@
         "download_wiki_icons: let _ = std::fs::write(&marker, b\"{}\");",
         "download_wiki_icons: let fresh = std::fs::metadata(&marker)",
         "download_wiki_icons: std::fs::write(&file, bytes).ok()?;",
-        "read_asset: std::fs::read(path).ok()",
-        "read_bytes: fn read_bytes(archive: &mut ZipArchive<std::fs::File>, name: &str) -> Option<Vec<u8>> {",
-        "read_entry: fn read_entry(archive: &mut ZipArchive<std::fs::File>, name: &str) -> Option<String> {"
+        "read_asset: std::fs::read(path).ok()"
       ]
     },
     {
@@ -913,7 +913,7 @@
         "list_worlds: tokio::task::spawn_blocking(move || -> crate::Result<Vec<WorldSummary>> {",
         "version_jar: tokio::task::spawn_blocking(move || -> crate::Result<Option<PathBuf>> {",
         "world_advancements: tokio::task::spawn_blocking(move || -> crate::Result<WorldAdvancements> {",
-        "world_completed_all_players: tokio::task::spawn_blocking(move || -> crate::Result<Vec<CompletedAdvancement>> {"
+        "world_completed_all_players: tokio::task::spawn_blocking("
       ]
     },
     {
@@ -925,10 +925,10 @@
         "last_played_from_level: let file = std::fs::File::open(world_dir.join(\"level.dat\")).ok()?;",
         "list_worlds: let entries = match std::fs::read_dir(&dir) {",
         "player_ids: let Ok(entries) = std::fs::read_dir(dir) else {",
-        "player_names: let Ok(text) = std::fs::read_to_string(instance_root.join(\"usercache.json\")) else {",
-        "version_jar: if let Ok(text) = std::fs::read_to_string(root.join(\"axolotl_config.json\")) {",
+        "player_names: std::fs::read_to_string(instance_root.join(\"usercache.json\"))",
         "version_jar: let Ok(entries) = std::fs::read_dir(&versions) else {",
         "version_jar: let Ok(files) = std::fs::read_dir(&dir) else {",
+        "version_jar: std::fs::read_to_string(root.join(\"axolotl_config.json\"))",
         "world_advancements: if let Ok(text) = std::fs::read_to_string(&file) {",
         "world_completed_all_players: let Ok(text) = std::fs::read_to_string(&file) else {"
       ]
@@ -1563,6 +1563,18 @@
         "collect_mod_metadata: let Ok(entries) = std::fs::read_dir(&current) else {",
         "find_manifest_entry: let file = std::fs::File::open(&archive_path)",
         "read_mod_metadata: let file = std::fs::File::open(path).ok()?;"
+      ]
+    },
+    {
+      "file": "packages/app-lib/src/api/stats.rs",
+      "form": "std::fs",
+      "count": 4,
+      "reason": "ported statistics page: reads the instance list and advancement files to aggregate playtime",
+      "sites": [
+        "modified_stamp: std::fs::metadata(path)",
+        "saves_stamp: let Ok(entries) = std::fs::read_dir(&saves) else {",
+        "screenshots_stamp: let Ok(entries) = std::fs::read_dir(&shots) else {",
+        "walk: let Ok(entries) = std::fs::read_dir(dir) else {"
       ]
     },
     {
