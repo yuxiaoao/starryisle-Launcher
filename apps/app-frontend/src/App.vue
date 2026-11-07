@@ -1056,7 +1056,7 @@ const messages = defineMessages({
     runningAsAdmin: {
         id: 'app.warning.running-as-admin',
         defaultMessage:
-            'Axolotl is running as administrator. Drag-and-drop file import is disabled in this mode; please restart the launcher without administrator privileges.',
+            'StarryIsle is running as administrator. Drag-and-drop file import is disabled in this mode; please restart the launcher without administrator privileges.',
     },
     restarting: {
         id: 'app.restarting',

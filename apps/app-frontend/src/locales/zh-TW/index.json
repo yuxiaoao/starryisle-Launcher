@@ -4461,7 +4461,7 @@
     "message": "非官方工具"
   },
   "app.lab.seed-map.copyright.engine-body": {
-    "message": "群系、地形、出生點與結構數據由 xpple/cubiomes 和 Axolotl 原生集成在本地生成。該引擎基於 Cubitect/cubiomes，版權所有 (c) 2020 Cubitect，並依據 MIT 許可證提供。"
+    "message": "群系、地形、出生點與結構數據由 xpple/cubiomes 和 StarryIsle 原生集成在本地生成。該引擎基於 Cubitect/cubiomes，版權所有 (c) 2020 Cubitect，並依據 MIT 許可證提供。"
   },
   "app.lab.seed-map.copyright.engine-heading": {
     "message": "本地地圖引擎"
@@ -5685,7 +5685,7 @@
     "message": "Discord 執行時顯示你當前使用啟動器或遊玩的狀態。"
   },
   "app.privacy-consent.intro": {
-    "message": "選擇 Axolotl 可以傳送或展示的內容。確認前不會傳送任何遙測。"
+    "message": "選擇 StarryIsle 可以傳送或展示的內容。確認前不會傳送任何遙測。"
   },
   "app.privacy-consent.privacy-policy": {
     "message": "閱讀隱私政策"
@@ -6402,7 +6402,7 @@
     "message": "{loader} 伺服器端暫不支援"
   },
   "app.servers.modpack.unsupported-loader-description": {
-    "message": "此整合包使用 {loader}，但 Axolotl 目前僅支援原版、Fabric 與 Quilt 整合包伺服器端。{loader} 支援即將推出。"
+    "message": "此整合包使用 {loader}，但 StarryIsle 目前僅支援原版、Fabric 與 Quilt 整合包伺服器端。{loader} 支援即將推出。"
   },
   "app.settings.about.afdian": {
     "message": "在愛發電贊助"
@@ -6726,7 +6726,7 @@
     "message": "應用程式目錄"
   },
   "app.settings.resources.axolotl-data-directory": {
-    "message": "Axolotl 資料目錄"
+    "message": "StarryIsle 資料目錄"
   },
   "app.settings.resources.app-directory-description": {
     "message": "啟動器用於儲存全部遊戲檔案的目錄。變更後將在重新啟動啟動器後生效。"
@@ -6738,7 +6738,7 @@
     "message": "Minecraft 目錄"
   },
   "app.settings.resources.minecraft-directories-description": {
-    "message": "新增一或多個供實例使用的外部 .minecraft 資料夾。這些資料夾會與 Axolotl 資料分開保存。"
+    "message": "新增一或多個供實例使用的外部 .minecraft 資料夾。這些資料夾會與 StarryIsle 資料分開保存。"
   },
   "app.settings.resources.minecraft-directory-mode": {
     "message": "遊戲目錄模式"
@@ -7137,7 +7137,7 @@
     "message": "將 Release 資料複製到 Beta？"
   },
   "app.settings.updates.channel.description": {
-    "message": "選擇 Axolotl 接收的啟動器版本。"
+    "message": "選擇 StarryIsle 接收的啟動器版本。"
   },
   "app.settings.updates.channel.label": {
     "message": "管道"
@@ -7149,7 +7149,7 @@
     "message": "穩定且經過測試的新功能與修正，更新頻率較慢。"
   },
   "app.settings.updates.channel.restart-description": {
-    "message": "立即重新啟動 Axolotl 以開始使用新的更新管道，或稍後手動重新啟動。"
+    "message": "立即重新啟動 StarryIsle 以開始使用新的更新管道，或稍後手動重新啟動。"
   },
   "app.settings.updates.channel.restart-development-description": {
     "message": "手動重新啟動開發工作階段後，新的更新管道才會生效。"
@@ -7188,7 +7188,7 @@
     "message": "資料庫隔離"
   },
   "app.settings.updates.database-operation.active-target": {
-    "message": "無法覆寫目前正在使用的資料庫。請先重新啟動 Axolotl 並切換更新管道。"
+    "message": "無法覆寫目前正在使用的資料庫。請先重新啟動 StarryIsle 並切換更新管道。"
   },
   "app.settings.updates.database-operation.beta-to-release": {
     "message": "從 Beta 複製到 Release"
@@ -7206,7 +7206,7 @@
     "message": "覆寫資料庫？"
   },
   "app.settings.updates.database-operation.failed": {
-    "message": "無法複製資料庫。請確認 Axolotl 未在使用目標資料庫。"
+    "message": "無法複製資料庫。請確認 StarryIsle 未在使用目標資料庫。"
   },
   "app.settings.updates.database-operation.label": {
     "message": "資料庫操作"
@@ -7275,7 +7275,7 @@
     "message": "只有透過加密簽章驗證的更新才會被安裝。"
   },
   "app.settings.updates.up-to-date": {
-    "message": "Axolotl 已是最新版本。"
+    "message": "StarryIsle 已是最新版本。"
   },
   "app.sidebar.collapse": {
     "message": "收起邊欄"
@@ -7680,7 +7680,7 @@
     "message": "正在安裝版本 {version}"
   },
   "app.warning.running-as-admin": {
-    "message": "Axolotl 正在以系統管理員身分執行。此模式無法拖曳匯入檔案，請以一般權限重新啟動啟動器。"
+    "message": "StarryIsle 正在以系統管理員身分執行。此模式無法拖曳匯入檔案，請以一般權限重新啟動啟動器。"
   },
   "app.world-editor.allow-commands.label": {
     "message": "允許作弊"
@@ -8127,7 +8127,7 @@
     "message": "光影包"
   },
   "drop.help.title": {
-    "message": "我可以拖入什麼到 Axolotl？"
+    "message": "我可以拖入什麼到 StarryIsle？"
   },
   "drop.help.worlds-desc": {
     "message": "拖放存檔文件夾來導入到實例。"
@@ -9099,7 +9099,7 @@
     "message": "{count} 個精確選擇"
   },
   "instance.upgrade.customize.custom.description": {
-    "message": "為所選內容固定精確版本，其餘相依關係由 Axolotl 求解。"
+    "message": "為所選內容固定精確版本，其餘相依關係由 StarryIsle 求解。"
   },
   "instance.upgrade.customize.custom.discard-switch": {
     "message": "捨棄並切換"
@@ -9204,7 +9204,7 @@
     "message": "繼續前請處理自訂衝突。"
   },
   "instance.upgrade.customize.search-limit.body": {
-    "message": "Axolotl 無法在搜尋上限內找到方案。請放寬一項自訂選擇。"
+    "message": "StarryIsle 無法在搜尋上限內找到方案。請放寬一項自訂選擇。"
   },
   "instance.upgrade.customize.search-limit.title": {
     "message": "已達搜尋上限"

@@ -29,7 +29,7 @@ pub(super) async fn create_shortcut(
             escape_desktop_entry_value(
                 &icon_path
                     .map(|path| path.to_string_lossy())
-                    .unwrap_or_else(|| "AxolotlLauncher".into()),
+                    .unwrap_or_else(|| "StarryIsleLauncher".into()),
             ),
         ),
     )

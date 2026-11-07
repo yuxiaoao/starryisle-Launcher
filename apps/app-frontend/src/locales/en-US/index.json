@@ -1,13 +1,25 @@
 {
-  "app.schematics.source.reden": { "message": "Reden" },
-  "app.schematics.source.buildschematics": { "message": "BuildSchematics" },
-  "app.schematics.failed-sources": { "message": "{sources} could not be loaded." },
-  "app.schematics.sort.default": { "message": "Source order" },
-  "app.schematics.sort.name": { "message": "Name" },
+  "app.schematics.source.reden": {
+    "message": "Reden"
+  },
+  "app.schematics.source.buildschematics": {
+    "message": "BuildSchematics"
+  },
+  "app.schematics.failed-sources": {
+    "message": "{sources} could not be loaded."
+  },
+  "app.schematics.sort.default": {
+    "message": "Source order"
+  },
+  "app.schematics.sort.name": {
+    "message": "Name"
+  },
   "app.schematics.login-required-sources": {
     "message": "{count, plural, one {# source requires <login-link>sign-in</login-link>} other {# sources require <login-link>sign-in</login-link>}}"
   },
-  "app.schematics.open-source": { "message": "View on source website" },
+  "app.schematics.open-source": {
+    "message": "View on source website"
+  },
   "app.schematics.instances-error": {
     "message": "Could not load your instances."
   },
@@ -53,8 +65,12 @@
   "app.schematics.search": {
     "message": "Search schematics"
   },
-  "app.schematics.sort.hot": { "message": "Popular" },
-  "app.schematics.sort.featured": { "message": "Featured" },
+  "app.schematics.sort.hot": {
+    "message": "Popular"
+  },
+  "app.schematics.sort.featured": {
+    "message": "Featured"
+  },
   "app.schematics.author-summary": {
     "message": "{author} · {summary}"
   },
@@ -67,11 +83,21 @@
   "app.schematics.installing": {
     "message": "Installing…"
   },
-  "app.schematics.preview": { "message": "Preview" },
-  "app.schematics.files": { "message": "Files" },
-  "app.schematics.creator": { "message": "Creator" },
-  "app.schematics.source-heading": { "message": "Source" },
-  "app.schematics.preview-source": { "message": "Shimu Space · {fileName}" },
+  "app.schematics.preview": {
+    "message": "Preview"
+  },
+  "app.schematics.files": {
+    "message": "Files"
+  },
+  "app.schematics.creator": {
+    "message": "Creator"
+  },
+  "app.schematics.source-heading": {
+    "message": "Source"
+  },
+  "app.schematics.preview-source": {
+    "message": "Shimu Space · {fileName}"
+  },
   "app.schematics.installed": {
     "message": "Installed"
   },
@@ -2326,7 +2352,7 @@
     "message": "Not enough space"
   },
   "app.error.state-database-newer-description": {
-    "message": "The database was last opened by a newer version of Axolotl, which upgraded it to a format this version cannot read. Your instances and settings are still there."
+    "message": "The database was last opened by a newer version of StarryIsle, which upgraded it to a format this version cannot read. Your instances and settings are still there."
   },
   "app.error.state-database-newer-fix-downgrade": {
     "message": "If you are trying out a build rather than using the launcher normally, revert the database with scripts/axolotl/downgrade-app-db.mjs instead."
@@ -2335,7 +2361,7 @@
     "message": "To start the launcher again, either:"
   },
   "app.error.state-database-newer-fix-update": {
-    "message": "Reinstall the newer version of Axolotl - it opens this database as it is."
+    "message": "Reinstall the newer version of StarryIsle - it opens this database as it is."
   },
   "app.error.state-description": {
     "message": "StarryIsle Launcher failed to load correctly. A file may be corrupted or an essential file may be missing."
@@ -4042,10 +4068,10 @@
     "message": "Edit groups"
   },
   "app.instances.game-directory.managed": {
-    "message": "Axolotl data directory"
+    "message": "StarryIsle data directory"
   },
   "app.instances.game-directory.managed-short": {
-    "message": "Axolotl"
+    "message": "StarryIsle"
   },
   "app.instances.group-by": {
     "message": "Group by"
@@ -6853,7 +6879,7 @@
     "message": "Unofficial tool"
   },
   "app.lab.seed-map.copyright.engine-body": {
-    "message": "Map predictions are computed locally with xpple/cubiomes, based on cubiomes by Cubitect (MIT License), together with the Axolotl native integration."
+    "message": "Map predictions are computed locally with xpple/cubiomes, based on cubiomes by Cubitect (MIT License), together with the StarryIsle native integration."
   },
   "app.lab.seed-map.copyright.engine-heading": {
     "message": "Local map engine"
@@ -9010,7 +9036,7 @@
     "message": "Minecraft opened a different LAN port. Restart the tunnel before sharing it."
   },
   "app.multiplayer.hongshi.port-hint": {
-    "message": "Open a world to LAN. Axolotl will detect the port automatically; external games can use a manual port."
+    "message": "Open a world to LAN. StarryIsle will detect the port automatically; external games can use a manual port."
   },
   "app.multiplayer.hongshi.public-address": {
     "message": "Public address"
@@ -9460,7 +9486,7 @@
     "message": "Shows your current launcher or game activity in Discord when Discord is running."
   },
   "app.privacy-consent.intro": {
-    "message": "Choose what Axolotl may send or display. Nothing is sent until you confirm these choices."
+    "message": "Choose what StarryIsle may send or display. Nothing is sent until you confirm these choices."
   },
   "app.privacy-consent.privacy-policy": {
     "message": "Read the privacy policy"
@@ -10675,7 +10701,7 @@
     "message": "Preparing server..."
   },
   "app.servers.modpack.unsupported-loader-description": {
-    "message": "This modpack uses {loader}, but Axolotl can only start modpack servers with vanilla, Fabric, or Quilt. Support for {loader} is coming soon."
+    "message": "This modpack uses {loader}, but StarryIsle can only start modpack servers with vanilla, Fabric, or Quilt. Support for {loader} is coming soon."
   },
   "app.servers.modpack.unsupported-loader-title": {
     "message": "{loader} servers are not supported yet"
@@ -11266,7 +11292,7 @@
     "message": "The tide is falling — keep your axolotls underwater!"
   },
   "app.settings.about.game.title": {
-    "message": "Axolotl merge"
+    "message": "StarryIsle merge"
   },
   "app.settings.about.license-attribution": {
     "message": "License & attribution"
@@ -11386,7 +11412,7 @@
     "message": "Press Space or click to start"
   },
   "app.settings.about.run.title": {
-    "message": "Axolotl run"
+    "message": "StarryIsle run"
   },
   "app.settings.about.run.tnt": {
     "message": "TNT"
@@ -13084,7 +13110,7 @@
     "message": "You are currently running in portable mode. The app directory is fixed and cannot be changed."
   },
   "app.settings.resources.axolotl-data-directory": {
-    "message": "Axolotl data directory"
+    "message": "StarryIsle data directory"
   },
   "app.settings.resources.chinese-names": {
     "message": "Add known Chinese names to downloads"
@@ -13198,7 +13224,7 @@
     "message": "Minecraft directories"
   },
   "app.settings.resources.minecraft-directories-description": {
-    "message": "Add one or more .minecraft folders for instances that use an external game directory. These folders are kept separate from Axolotl data."
+    "message": "Add one or more .minecraft folders for instances that use an external game directory. These folders are kept separate from StarryIsle data."
   },
   "app.settings.resources.minecraft-directory-mode": {
     "message": "Game directory mode"
@@ -13516,7 +13542,7 @@
     "message": "External game directories"
   },
   "app.settings.storage.externalHelp": {
-    "message": "These directories are managed outside Axolotl and are excluded from the launcher total. Overlapping directories are listed once."
+    "message": "These directories are managed outside StarryIsle and are excluded from the launcher total. Overlapping directories are listed once."
   },
   "app.settings.storage.externalMetadata": {
     "message": "Linked instances also use this folder. Files with uncertain usage are kept."
@@ -14095,7 +14121,7 @@
     "message": "Copy Release data to Beta?"
   },
   "app.settings.updates.channel.description": {
-    "message": "Choose which launcher versions Axolotl receives."
+    "message": "Choose which launcher versions StarryIsle receives."
   },
   "app.settings.updates.channel.label": {
     "message": "Channel"
@@ -14107,7 +14133,7 @@
     "message": "Stable, tested features and fixes. Updates arrive less often."
   },
   "app.settings.updates.channel.restart-description": {
-    "message": "Restart Axolotl now to start using the new update channel, or restart manually later."
+    "message": "Restart StarryIsle now to start using the new update channel, or restart manually later."
   },
   "app.settings.updates.channel.restart-development-description": {
     "message": "The new update channel will be used after you manually restart the development session."
@@ -14158,7 +14184,7 @@
     "message": "Database isolation"
   },
   "app.settings.updates.database-operation.active-target": {
-    "message": "Cannot overwrite the database currently in use. Restart Axolotl and switch channels first."
+    "message": "Cannot overwrite the database currently in use. Restart StarryIsle and switch channels first."
   },
   "app.settings.updates.database-operation.beta-to-release": {
     "message": "Copy Beta to Release"
@@ -14176,7 +14202,7 @@
     "message": "Overwrite database?"
   },
   "app.settings.updates.database-operation.failed": {
-    "message": "The database could not be copied. Please make sure Axolotl is not using the target database."
+    "message": "The database could not be copied. Please make sure StarryIsle is not using the target database."
   },
   "app.settings.updates.database-operation.label": {
     "message": "Database operation"
@@ -14233,7 +14259,7 @@
     "message": "Updates are installed only when their cryptographic signature is valid."
   },
   "app.settings.updates.up-to-date": {
-    "message": "Axolotl is up to date."
+    "message": "StarryIsle is up to date."
   },
   "app.shortcut-settings.change-shortcut": {
     "message": "Change the shortcut for {action}"
@@ -14779,7 +14805,7 @@
     "message": "Installing version {version}"
   },
   "app.warning.running-as-admin": {
-    "message": "Axolotl is running as administrator. Drag-and-drop file import is disabled in this mode; please restart the launcher without administrator privileges."
+    "message": "StarryIsle is running as administrator. Drag-and-drop file import is disabled in this mode; please restart the launcher without administrator privileges."
   },
   "app.window-controls.close": {
     "message": "Close"
@@ -15250,7 +15276,7 @@
     "message": "Shader Packs"
   },
   "drop.help.title": {
-    "message": "What can I drop into Axolotl?"
+    "message": "What can I drop into StarryIsle?"
   },
   "drop.help.worlds-desc": {
     "message": "Drag world save folders to import them into an instance."
@@ -15865,7 +15891,7 @@
     "message": "Version isolated (stored in versions/)"
   },
   "instance.settings.tabs.general.game-dir.managed-note": {
-    "message": "This instance uses the Axolotl-managed folder."
+    "message": "This instance uses the StarryIsle-managed folder."
   },
   "instance.settings.tabs.general.game-dir.move-note": {
     "message": "Switching isolation only updates the launcher path. Move the mods, saves, and config folders yourself to match."
@@ -16438,7 +16464,7 @@
     "message": "{count, plural, one {# exact choice} other {# exact choices}}"
   },
   "instance.upgrade.customize.custom.description": {
-    "message": "Fix exact versions for selected content and let Axolotl solve the remaining dependency graph."
+    "message": "Fix exact versions for selected content and let StarryIsle solve the remaining dependency graph."
   },
   "instance.upgrade.customize.custom.discard-switch": {
     "message": "Discard and switch"
@@ -16492,7 +16518,7 @@
     "message": "Update dependency"
   },
   "instance.upgrade.customize.description": {
-    "message": "Choose how aggressively Axolotl should update content in this instance."
+    "message": "Choose how aggressively StarryIsle should update content in this instance."
   },
   "instance.upgrade.customize.effective-changes": {
     "message": "Effective changes"
@@ -16543,7 +16569,7 @@
     "message": "Resolve custom conflicts before continuing."
   },
   "instance.upgrade.customize.search-limit.body": {
-    "message": "Axolotl couldn't find a solution within the search limit. Try relaxing one of your custom choices."
+    "message": "StarryIsle couldn't find a solution within the search limit. Try relaxing one of your custom choices."
   },
   "instance.upgrade.customize.search-limit.title": {
     "message": "Search limit reached"
@@ -18394,7 +18420,7 @@
     "message": "Horse"
   },
   "app.lab.command-generator.preset.entity-type.axolotl": {
-    "message": "Axolotl"
+    "message": "StarryIsle"
   },
   "app.lab.command-generator.preset.entity-type.zombie": {
     "message": "Zombie"

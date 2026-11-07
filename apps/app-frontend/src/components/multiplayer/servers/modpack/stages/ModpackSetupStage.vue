@@ -31,7 +31,7 @@ const messages = defineMessages({
     unsupportedLoaderDescription: {
         id: 'app.servers.modpack.unsupported-loader-description',
         defaultMessage:
-            'This modpack uses {loader}, but Axolotl can only start modpack servers with vanilla, Fabric, or Quilt. Support for {loader} is coming soon.',
+            'This modpack uses {loader}, but StarryIsle can only start modpack servers with vanilla, Fabric, or Quilt. Support for {loader} is coming soon.',
     },
 })
 

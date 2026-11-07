@@ -269,7 +269,7 @@ const overtimeCount = ref(0)
 // Reports when the run is finished so the host may replace it with another game.
 watch(gameOver, (value) => emit('settled', value), { immediate: true })
 const messages = defineMessages({
-    title: { id: 'app.settings.about.game.title', defaultMessage: 'Axolotl merge' },
+    title: { id: 'app.settings.about.game.title', defaultMessage: 'StarryIsle merge' },
     score: { id: 'app.settings.about.game.score', defaultMessage: 'Score: {score}' },
     highestLevel: {
         id: 'app.settings.about.game.highest-level',

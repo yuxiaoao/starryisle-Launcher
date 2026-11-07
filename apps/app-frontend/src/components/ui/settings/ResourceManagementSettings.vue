@@ -301,7 +301,7 @@ const messages = defineMessages({
     appDirectory: { id: 'app.settings.resources.app-directory', defaultMessage: 'App directory' },
     axolotlDataDirectory: {
         id: 'app.settings.resources.axolotl-data-directory',
-        defaultMessage: 'Axolotl data directory',
+        defaultMessage: 'StarryIsle data directory',
     },
     appDirectoryDescription: {
         id: 'app.settings.resources.app-directory-description',
@@ -320,7 +320,7 @@ const messages = defineMessages({
     minecraftDirectoriesDescription: {
         id: 'app.settings.resources.minecraft-directories-description',
         defaultMessage:
-            'Add one or more .minecraft folders for instances that use an external game directory. These folders are kept separate from Axolotl data.',
+            'Add one or more .minecraft folders for instances that use an external game directory. These folders are kept separate from StarryIsle data.',
     },
     addMinecraftDirectory: {
         id: 'app.settings.resources.add-minecraft-directory',

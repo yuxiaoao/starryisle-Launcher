@@ -80,7 +80,7 @@ pub enum ImportLauncherType {
 impl fmt::Display for ImportLauncherType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            ImportLauncherType::Axolotl => write!(f, "Axolotl"),
+            ImportLauncherType::Axolotl => write!(f, "StarryIsle"),
             ImportLauncherType::MultiMC => write!(f, "MultiMC"),
             ImportLauncherType::PrismLauncher => write!(f, "PrismLauncher"),
             ImportLauncherType::ATLauncher => write!(f, "ATLauncher"),

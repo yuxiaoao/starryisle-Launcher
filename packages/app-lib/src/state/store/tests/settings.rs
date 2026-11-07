@@ -89,7 +89,7 @@ fn record() -> SettingsRecord {
         home_widget_background_opacity: 20,
         hidden_nav_items: "[\"screenshots\"]".to_string(),
         custom_window_title_enabled: true,
-        default_window_title: "Axolotl".to_string(),
+        default_window_title: "StarryIsle".to_string(),
         custom_background_component_opacity: 40,
         ui_font: Some("Inter".to_string()),
         mono_font: Some("JetBrains Mono".to_string()),

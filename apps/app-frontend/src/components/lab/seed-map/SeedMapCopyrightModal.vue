@@ -34,7 +34,7 @@ const messages = defineMessages({
     engineBody: {
         id: 'app.lab.seed-map.copyright.engine-body',
         defaultMessage:
-            'Map predictions are computed locally with xpple/cubiomes, based on cubiomes by Cubitect (MIT License), together with the Axolotl native integration.',
+            'Map predictions are computed locally with xpple/cubiomes, based on cubiomes by Cubitect (MIT License), together with the StarryIsle native integration.',
     },
     viewLicense: {
         id: 'app.lab.seed-map.copyright.view-license',

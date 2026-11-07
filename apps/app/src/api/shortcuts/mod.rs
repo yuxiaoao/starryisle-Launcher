@@ -322,9 +322,9 @@ mod tests {
     fn desktop_shortcut_name_is_safe_on_all_supported_platforms() {
         assert_eq!(
             desktop_shortcut_name("My: Instance?/ "),
-            "Axolotl - My_ Instance__"
+            "StarryIsle - My_ Instance__"
         );
-        assert_eq!(desktop_shortcut_name(" ... "), "Axolotl - Instance");
+        assert_eq!(desktop_shortcut_name(" ... "), "StarryIsle - Instance");
     }
 
     #[cfg(target_os = "windows")]
