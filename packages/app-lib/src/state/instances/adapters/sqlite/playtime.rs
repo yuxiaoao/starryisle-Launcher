@@ -258,8 +258,7 @@ pub(crate) async fn get_instance_totals(
     pool: &SqlitePool,
 ) -> crate::Result<Vec<(String, i64)>> {
     let rows = sqlx::query_as::<_, (String, i64)>(
-        "SELECT instance_name, COALESCE(SUM(played_seconds), 0) AS total \\
-         FROM instance_daily_playtime GROUP BY instance_name ORDER BY total DESC",
+        "SELECT instance_name, COALESCE(SUM(played_seconds), 0) AS total FROM instance_daily_playtime GROUP BY instance_name ORDER BY total DESC",
     )
     .fetch_all(pool)
     .await?;
