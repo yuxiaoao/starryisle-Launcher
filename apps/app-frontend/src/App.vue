@@ -3599,7 +3599,7 @@ provideAppUpdateDownloadProgress(appUpdateDownload)
     grid-template-rows: auto 1fr;
     position: relative;
     //z-index: 0;
-    background-color: var(--surface-3);
+    background-color: var(--app-shell-bg, var(--surface-3));
     height: 100vh;
 }
 
