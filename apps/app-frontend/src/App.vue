@@ -3544,10 +3544,6 @@ provideAppUpdateDownloadProgress(appUpdateDownload)
         @finish="finishOobe"
     />
 </template>
-
-/* 色相着色：导航栏与顶栏读取运行时变量，未设置时回落到主题色。 */ .app-grid-navbar {
-background-color: var(--app-nav-bg, var(--surface-bar)) !important; } .app-grid-statusbar {
-background-color: var(--app-top-bg, var(--surface-bar)) !important; }
 <style lang="scss" scoped>
 @property --right-bar-width {
     syntax: '<length>';
@@ -3643,15 +3639,28 @@ background-color: var(--app-top-bg, var(--surface-bar)) !important; }
 }
 
 .app-grid-layout.has-custom-background {
-    .app-grid-navbar,
-    .app-grid-statusbar {
-        // `--surface-3` carries the body-overridden "Component opacity" alpha in
-        // this mode (see `global.scss`), so this only paints the chrome.
-        background-color: var(--surface-3) !important;
+    .app-grid-navbar {
+        background-color: var(--app-nav-bg, var(--surface-3)) !important;
 
         backdrop-filter: none;
         -webkit-backdrop-filter: none;
     }
+
+    .app-grid-statusbar {
+        background-color: var(--app-top-bg, var(--surface-3)) !important;
+
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
+    }
+}
+
+// 色相着色：导航栏与顶栏读取运行时变量，未设置时回落到主题色。
+.app-grid-navbar {
+    background-color: var(--app-nav-bg, var(--surface-bar)) !important;
+}
+
+.app-grid-statusbar {
+    background-color: var(--app-top-bg, var(--surface-bar)) !important;
 }
 
 .app-grid-navbar {
