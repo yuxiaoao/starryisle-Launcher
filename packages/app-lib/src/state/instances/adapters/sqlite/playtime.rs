@@ -242,3 +242,48 @@ pub(crate) async fn mark_playtime_submitted(
 
     Ok(())
 }
+
+/// Total seconds played across every instance.
+pub(crate) async fn get_total_seconds(pool: &SqlitePool) -> crate::Result<i64> {
+    let total = sqlx::query_scalar::<_, Option<i64>>(
+        "SELECT COALESCE(SUM(played_seconds), 0) FROM instance_daily_playtime",
+    )
+    .fetch_one(pool)
+    .await?;
+    Ok(total.unwrap_or(0))
+}
+
+/// Total seconds per instance, largest first.
+pub(crate) async fn get_instance_totals(
+    pool: &SqlitePool,
+) -> crate::Result<Vec<(String, i64)>> {
+    let rows = sqlx::query_as::<_, (String, i64)>(
+        "SELECT instance_name, COALESCE(SUM(played_seconds), 0) AS total \\
+         FROM instance_daily_playtime GROUP BY instance_name ORDER BY total DESC",
+    )
+    .fetch_all(pool)
+    .await?;
+    Ok(rows)
+}
+
+/// Earliest day with recorded playtime, as YYYY-MM-DD.
+pub(crate) async fn get_first_play_date(
+    pool: &SqlitePool,
+) -> crate::Result<Option<String>> {
+    Ok(sqlx::query_scalar::<_, Option<String>>(
+        "SELECT MIN(played_on) FROM instance_daily_playtime WHERE played_seconds > 0",
+    )
+    .fetch_one(pool)
+    .await?)
+}
+
+/// Cheap change stamp for the stats cache.
+pub(crate) async fn get_last_modified(
+    pool: &SqlitePool,
+) -> crate::Result<Option<i64>> {
+    Ok(sqlx::query_scalar::<_, Option<i64>>(
+        "SELECT MAX(rowid) FROM instance_daily_playtime",
+    )
+    .fetch_one(pool)
+    .await?)
+}
