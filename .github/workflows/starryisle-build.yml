@@ -66,8 +66,9 @@ jobs:
 
       - name: Bundle NSIS installer
         working-directory: apps/app
-        run: pnpm tauri bundle --bundles nsis --ci --config tauri-release.conf.json
+        run: pnpm tauri bundle --bundles nsis --ci --config tauri-release.conf.json --config tauri-modern.conf.json --config tauri-updater.conf.json
         env:
+          AXOLOTL_INSTALLER_UI_PATH: ${{ github.workspace }}/target/release/axolotl-installer-ui.exe
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
 
