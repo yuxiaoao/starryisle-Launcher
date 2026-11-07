@@ -1,13 +1,25 @@
 {
-  "app.schematics.source.reden": { "message": "Reden" },
-  "app.schematics.source.buildschematics": { "message": "BuildSchematics" },
-  "app.schematics.failed-sources": { "message": "暂时无法加载：{sources}" },
-  "app.schematics.sort.default": { "message": "来源默认顺序" },
-  "app.schematics.sort.name": { "message": "名称" },
+  "app.schematics.source.reden": {
+    "message": "Reden"
+  },
+  "app.schematics.source.buildschematics": {
+    "message": "BuildSchematics"
+  },
+  "app.schematics.failed-sources": {
+    "message": "暂时无法加载：{sources}"
+  },
+  "app.schematics.sort.default": {
+    "message": "来源默认顺序"
+  },
+  "app.schematics.sort.name": {
+    "message": "名称"
+  },
   "app.schematics.login-required-sources": {
     "message": "{count} 个来源需要<login-link>登录</login-link>"
   },
-  "app.schematics.open-source": { "message": "在来源网站查看" },
+  "app.schematics.open-source": {
+    "message": "在来源网站查看"
+  },
   "app.schematics.instances-error": {
     "message": "无法读取实例列表。"
   },
@@ -53,8 +65,12 @@
   "app.schematics.search": {
     "message": "搜索投影"
   },
-  "app.schematics.sort.hot": { "message": "热门" },
-  "app.schematics.sort.featured": { "message": "精选" },
+  "app.schematics.sort.hot": {
+    "message": "热门"
+  },
+  "app.schematics.sort.featured": {
+    "message": "精选"
+  },
   "app.schematics.author-summary": {
     "message": "{author} · {summary}"
   },
@@ -67,11 +83,21 @@
   "app.schematics.installing": {
     "message": "正在安装…"
   },
-  "app.schematics.preview": { "message": "预览" },
-  "app.schematics.files": { "message": "文件" },
-  "app.schematics.creator": { "message": "创作者" },
-  "app.schematics.source-heading": { "message": "来源" },
-  "app.schematics.preview-source": { "message": "拾木空间 · {fileName}" },
+  "app.schematics.preview": {
+    "message": "预览"
+  },
+  "app.schematics.files": {
+    "message": "文件"
+  },
+  "app.schematics.creator": {
+    "message": "创作者"
+  },
+  "app.schematics.source-heading": {
+    "message": "来源"
+  },
+  "app.schematics.preview-source": {
+    "message": "拾木空间 · {fileName}"
+  },
   "app.schematics.installed": {
     "message": "已安装"
   },
@@ -1905,18 +1931,19 @@
   "app.ai-settings.visit-website": {
     "message": "访问官网"
   },
-"app.appearance-settings.interface-tint.title": {
-  "message": "界面色调"
-},
-"app.appearance-settings.interface-tint.description": {
-  "message": "用选定的色相给左侧导航栏与顶栏着色，不影响图标与强调色。"
-},
-"app.appearance-settings.interface-tint.enable": {
-  "message": "启用界面色调"
-},
-"app.appearance-settings.interface-tint.enable-description": {
-  "message": "用选定的色相给左侧导航栏与顶栏换个底色。"
-},  "app.appearance-settings.accent-color.blue": {
+  "app.appearance-settings.interface-tint.title": {
+    "message": "界面色调"
+  },
+  "app.appearance-settings.interface-tint.description": {
+    "message": "用选定的色相给左侧导航栏与顶栏着色，不影响图标与强调色。"
+  },
+  "app.appearance-settings.interface-tint.enable": {
+    "message": "启用界面色调"
+  },
+  "app.appearance-settings.interface-tint.enable-description": {
+    "message": "用选定的色相给左侧导航栏与顶栏换个底色。"
+  },
+  "app.appearance-settings.accent-color.blue": {
     "message": "蓝色"
   },
   "app.appearance-settings.accent-color.custom": {
@@ -8664,8 +8691,8 @@
     "message": "皮肤选择器"
   },
   "app.navigation.stats": {
-  "message": "统计"
-},
+    "message": "统计"
+  },
   "app.navigation.worlds": {
     "message": "世界"
   },
@@ -20872,5 +20899,143 @@
   },
   "app.settings.export.imported-dropped-text": {
     "message": "{count, plural, =0 {没有文档发生变化。} other {已更新 # 个本地设置文档。}} {dropped, plural, other {另有 # 个值因类型不合法被忽略。}}"
+  },
+  "app.stats.title": {
+    "message": "统计"
+  },
+  "app.stats.instances": {
+    "message": "实例"
+  },
+  "app.stats.screenshots": {
+    "message": "截图"
+  },
+  "app.stats.heatmap": {
+    "message": "游玩时长"
+  },
+  "app.stats.less": {
+    "message": "较少"
+  },
+  "app.stats.more": {
+    "message": "较多"
+  },
+  "app.stats.legend1": {
+    "message": "30 分钟以内"
+  },
+  "app.stats.legend2": {
+    "message": "30 分钟 – 2 小时"
+  },
+  "app.stats.legend3": {
+    "message": "2 – 5 小时"
+  },
+  "app.stats.legend4": {
+    "message": "5 小时以上"
+  },
+  "app.stats.ranking": {
+    "message": "各实例游玩时长"
+  },
+  "app.stats.timeline": {
+    "message": "成就时间线"
+  },
+  "app.stats.time-unknown": {
+    "message": "时间未知"
+  },
+  "app.stats.time-unknown-hint": {
+    "message": "不计入年度总计"
+  },
+  "app.stats.empty": {
+    "message": "还没有统计数据。开始游戏后记录会显示在这里。"
+  },
+  "app.stats.loading": {
+    "message": "正在汇总统计…"
+  },
+  "app.stats.hours": {
+    "message": "{hours} 小时 {minutes} 分钟"
+  },
+  "app.stats.hours-only": {
+    "message": "{hours} 小时"
+  },
+  "app.stats.minutes": {
+    "message": "{minutes} 分钟"
+  },
+  "app.stats.no-play": {
+    "message": "暂无游玩记录"
+  },
+  "app.stats.refresh": {
+    "message": "刷新"
+  },
+  "app.stats.retry": {
+    "message": "重试"
+  },
+  "app.stats.load-error": {
+    "message": "无法加载统计数据。"
+  },
+  "app.stats.year-playtime": {
+    "message": "{year} 年游玩时长"
+  },
+  "app.stats.year-achievements": {
+    "message": "{year} 年解锁成就"
+  },
+  "app.stats.weekday-mon": {
+    "message": "一"
+  },
+  "app.stats.weekday-wed": {
+    "message": "三"
+  },
+  "app.stats.weekday-fri": {
+    "message": "五"
+  },
+  "app.instance.advancements.heading": {
+    "message": "成就"
+  },
+  "app.instance.advancements.empty": {
+    "message": "还没有单人存档。进入一个世界后进度会显示在这里。"
+  },
+  "app.instance.advancements.loading": {
+    "message": "正在读取存档…"
+  },
+  "app.instance.advancements.last-played": {
+    "message": "上次游玩于{when}"
+  },
+  "app.instance.advancements.refresh": {
+    "message": "刷新"
+  },
+  "app.instance.advancements.catalog-missing": {
+    "message": "先启动一次游戏，成就列表才能从文件里读取。"
+  },
+  "app.instance.advancements.hidden": {
+    "message": "隐藏成就"
+  },
+  "app.instance.advancements.hidden-hint": {
+    "message": "继续游玩即可发现。"
+  },
+  "app.instance.advancements.completed-on": {
+    "message": "{date} 解锁"
+  },
+  "app.instance.advancements.player": {
+    "message": "玩家"
+  },
+  "app.instance.advancements.no-player": {
+    "message": "这个世界没有玩家进度"
+  },
+  "app.instance.advancements.unknown-player": {
+    "message": "未知玩家（{id}）"
+  },
+  "app.instance.advancements.category.story": {
+    "message": "主线"
+  },
+  "app.instance.advancements.category.nether": {
+    "message": "下界"
+  },
+  "app.instance.advancements.category.end": {
+    "message": "末地"
+  },
+  "app.instance.advancements.category.adventure": {
+    "message": "冒险"
+  },
+  "app.instance.advancements.category.husbandry": {
+    "message": "农牧"
+  },
+  "app.instance.tabs.advancements": {
+    "message": "成就"
   }
 }
