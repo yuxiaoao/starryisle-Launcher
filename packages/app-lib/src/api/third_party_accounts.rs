@@ -13,7 +13,7 @@ use uuid::Uuid;
 use crate::state::store::secrets;
 use crate::util::oauth_credentials::{self, Store};
 
-const REDIRECT_URI: &str = "axolotl://oauth/callback";
+const REDIRECT_URI: &str = "starryisle://oauth/callback";
 const HOST: &str = "https://www.mcimg.com";
 const CLIENT_ID: &str = "axolotl";
 const FLOW_TTL: u64 = 300;

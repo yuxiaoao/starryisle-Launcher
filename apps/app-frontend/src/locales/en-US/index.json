@@ -13077,13 +13077,13 @@
     "message": "Allow external links"
   },
   "app.settings.privacy.external-scheme-description": {
-    "message": "Respond to axolotl:// links from browsers and other apps. Turning this off blocks launches, installs and page jumps from outside."
+    "message": "Respond to starryisle:// links from browsers and other apps. Turning this off blocks launches, installs and page jumps from outside."
   },
   "app.settings.privacy.privileged-scheme": {
     "message": "Allow privileged link actions"
   },
   "app.settings.privacy.privileged-scheme-description": {
-    "message": "Let axolotl:// links change settings and stop game processes. Turning this on requires reading a risk warning; every action still asks for your confirmation."
+    "message": "Let starryisle:// links change settings and stop game processes. Turning this on requires reading a risk warning; every action still asks for your confirmation."
   },
   "app.settings.privacy.section-title": {
     "message": "Privacy & data sharing"

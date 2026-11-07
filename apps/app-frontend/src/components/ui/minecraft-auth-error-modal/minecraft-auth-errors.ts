@@ -65,7 +65,7 @@ export const minecraftAuthErrors: MinecraftAuthError[] = [
             'Sign in with the <a href="https://www.minecraft.net/en-us/download">official Minecraft Launcher</a>',
             'Launch Minecraft: Java Edition once from the official launcher',
             'Wait up to an hour if the purchase or profile setup was recent',
-            'Make sure you are using the Microsoft account that owns Minecraft. Visit <a href="https://github.com/Mystic-Stars/Axolotl/issues">Axolotl support</a> for help',
+            'Make sure you are using the Microsoft account that owns Minecraft. Visit <a href="https://github.com/yuxiaoao/starryisle-Launcher/issues">StarryIsle support</a> for help',
             'Try signing in to Axolotl Launcher again',
         ],
     },

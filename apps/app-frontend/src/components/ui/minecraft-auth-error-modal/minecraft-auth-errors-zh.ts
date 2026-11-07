@@ -39,8 +39,8 @@ const translations: Record<string, string> = {
         '通过官方启动器至少启动一次 Minecraft：Java 版',
     'Wait up to an hour if the purchase or profile setup was recent':
         '如果刚购买游戏或刚设置档案，请等待最多一小时',
-    'Make sure you are using the Microsoft account that owns Minecraft. Visit <a href="https://github.com/Mystic-Stars/Axolotl/issues">Axolotl support</a> for help':
-        '确认当前使用的是拥有 Minecraft 的 Microsoft 账号。如需帮助，请访问 <a href="https://github.com/Mystic-Stars/Axolotl/issues">Axolotl 支持</a>',
+    'Make sure you are using the Microsoft account that owns Minecraft. Visit <a href="https://github.com/yuxiaoao/starryisle-Launcher/issues">StarryIsle support</a> for help':
+        '确认当前使用的是拥有 Minecraft 的 Microsoft 账号。如需帮助，请访问 <a href="https://github.com/yuxiaoao/starryisle-Launcher/issues">StarryIsle 支持</a>',
     'Try signing in to Axolotl Launcher again': '再次尝试登录 Axolotl Launcher',
     'Axolotl Launcher could not connect to a Microsoft, Xbox, or Minecraft service needed for sign-in. This is usually caused by a local network, DNS, proxy, firewall, hosts file, VPN, or antivirus issue.':
         'Axolotl Launcher 无法连接登录所需的 Microsoft、Xbox 或 Minecraft 服务。通常是本地网络、DNS、代理、防火墙、hosts 文件、VPN 或杀毒软件导致的。',

@@ -956,14 +956,14 @@ mod command_tests {
     #[test]
     fn opening_events_preserve_every_command_in_order() {
         assert_eq!(
-            command_strings("axolotl://browse/mod".into()),
-            ["axolotl://browse/mod"]
+            command_strings("starryisle://browse/mod".into()),
+            ["starryisle://browse/mod"]
         );
         assert_eq!(
             command_strings(
-                r#"["axolotl://browse/mod","example.mrpack"]"#.into()
+                r#"["starryisle://browse/mod","example.mrpack"]"#.into()
             ),
-            ["axolotl://browse/mod", "example.mrpack"]
+            ["starryisle://browse/mod", "example.mrpack"]
         );
         assert!(command_strings("[]".into()).is_empty());
     }

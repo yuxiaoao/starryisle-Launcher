@@ -122,12 +122,12 @@ fn unavailable_or_locked_stores_cannot_report_successful_disconnect() {
 fn only_the_registered_callback_shape_is_accepted() {
     for url in [
         "https://oauth/callback?code=secret",
-        "axolotl://oauth/other?code=secret",
-        "axolotl://oauth/callback/extra?code=secret",
-        "axolotl://user@oauth/callback?code=secret",
-        "axolotl://oauth:1234/callback?code=secret",
-        "axolotl://oauth/callback?code=secret#fragment",
-        "axolotl://oauth.evil/callback?code=secret",
+        "starryisle://oauth/other?code=secret",
+        "starryisle://oauth/callback/extra?code=secret",
+        "starryisle://user@oauth/callback?code=secret",
+        "starryisle://oauth:1234/callback?code=secret",
+        "starryisle://oauth/callback?code=secret#fragment",
+        "starryisle://oauth.evil/callback?code=secret",
     ] {
         assert!(callback_url(url).is_none(), "{url}");
         assert!(!is_callback(url), "{url}");
@@ -374,16 +374,16 @@ fn successful_checks_cannot_restore_expired_or_replaced_credentials() {
 #[test]
 fn invalid_callback_candidates_are_redacted_but_not_intercepted() {
     for url in [
-        "axolotl://oauth/other?code=secret",
-        "axolotl://oauth/callback?code=secret#fragment",
-        "axolotl://user@oauth/callback?code=secret",
-        "axolotl://oauth:1234/callback?code=secret",
+        "starryisle://oauth/other?code=secret",
+        "starryisle://oauth/callback?code=secret#fragment",
+        "starryisle://user@oauth/callback?code=secret",
+        "starryisle://oauth:1234/callback?code=secret",
     ] {
         assert!(is_callback_candidate(url));
         assert!(!is_callback(url));
     }
     assert!(is_callback(REDIRECT_URI));
-    assert!(!is_callback_candidate("axolotl://settings"));
+    assert!(!is_callback_candidate("starryisle://settings"));
 }
 
 #[test]

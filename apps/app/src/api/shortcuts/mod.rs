@@ -222,8 +222,8 @@ fn instance_launch_url(
     server: Option<String>,
     singleplayer_world: Option<String>,
 ) -> Url {
-    let mut launch_url =
-        Url::parse("axolotl://launch").expect("static launch URL should parse");
+    let mut launch_url = Url::parse("starryisle://launch")
+        .expect("static launch URL should parse");
 
     launch_url
         .query_pairs_mut()
@@ -314,7 +314,7 @@ mod tests {
 
         assert_eq!(
             url.as_str(),
-            "axolotl://launch?instance_id=instance+id%2F%E6%B5%8B%E8%AF%95&server=example.org%3A25565"
+            "starryisle://launch?instance_id=instance+id%2F%E6%B5%8B%E8%AF%95&server=example.org%3A25565"
         );
     }
 

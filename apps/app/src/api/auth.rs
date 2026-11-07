@@ -145,11 +145,11 @@ pub async fn login<R: Runtime>(
                     return link;
                 }};
 
-                bar.append(createLink(labels.browserLogin, 'axolotl-auth://browser'));
+                bar.append(createLink(labels.browserLogin, 'starryisle-auth://browser'));
                 const separator = document.createElement('span');
                 separator.textContent = '|';
                 bar.append(separator);
-                bar.append(createLink(labels.deviceCode, 'axolotl-auth://device-code'));
+                bar.append(createLink(labels.deviceCode, 'starryisle-auth://device-code'));
                 document.body.prepend(bar);
             }};
 
@@ -179,10 +179,10 @@ pub async fn login<R: Runtime>(
     .initialization_script(help_bar_script)
     .on_navigation(move |url| {
         let alternative = match url.host_str() {
-            Some("browser") if url.scheme() == "axolotl-auth" => {
+            Some("browser") if url.scheme() == "starryisle-auth" => {
                 Some(MinecraftLoginAlternative::Browser)
             }
-            Some("device-code") if url.scheme() == "axolotl-auth" => {
+            Some("device-code") if url.scheme() == "starryisle-auth" => {
                 Some(MinecraftLoginAlternative::DeviceCode)
             }
             _ => None,

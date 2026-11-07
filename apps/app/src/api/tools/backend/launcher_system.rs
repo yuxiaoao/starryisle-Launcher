@@ -382,10 +382,10 @@ pub(super) async fn execute(
             Ok(json!({"opened":true}))
         }
         Command::LauncherParseLink { link } => {
-            if !link.starts_with("axolotl://") {
+            if !link.starts_with("starryisle://") {
                 return Err(ToolError::new(
                     "invalid_launcher_link",
-                    "Only axolotl:// links are accepted",
+                    "Only starryisle:// links are accepted",
                 ));
             }
             let payload = theseus::handler::parse_command(&link)

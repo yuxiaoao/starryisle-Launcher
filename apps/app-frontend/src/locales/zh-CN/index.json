@@ -15675,13 +15675,13 @@
     "message": "已清除正版 Minecraft 登录记录"
   },
   "app.settings.privacy.external-scheme-description": {
-    "message": "响应来自浏览器及其他应用的 axolotl:// 链接。关闭后，外部的启动、安装与页面跳转将被阻止。"
+    "message": "响应来自浏览器及其他应用的 starryisle:// 链接。关闭后，外部的启动、安装与页面跳转将被阻止。"
   },
   "app.settings.privacy.external-scheme": {
     "message": "接受外部 Scheme URL"
   },
   "app.settings.privacy.privileged-scheme-description": {
-    "message": "允许 axolotl:// 链接修改设置与停止游戏进程。开启时需阅读风险警告，每次执行仍需你确认。"
+    "message": "允许 starryisle:// 链接修改设置与停止游戏进程。开启时需阅读风险警告，每次执行仍需你确认。"
   },
   "app.settings.privacy.privileged-scheme": {
     "message": "允许敏感scheme操作"

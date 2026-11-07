@@ -68,7 +68,7 @@
   "plugins": {
     "deep-link": {
       "desktop": {
-        "schemes": ["starryisle"]
+        "schemes": ["starryisle", "starryisle-auth"]
       },
       "mobile": []
     }
