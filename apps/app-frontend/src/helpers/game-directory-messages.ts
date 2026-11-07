@@ -7,10 +7,10 @@ export const gameDirectoryMessages = defineMessages({
     },
     managed: {
         id: 'app.instances.game-directory.managed',
-        defaultMessage: 'Axolotl data directory',
+        defaultMessage: 'StarryIsle data directory',
     },
     managedShort: {
         id: 'app.instances.game-directory.managed-short',
-        defaultMessage: 'Axolotl',
+        defaultMessage: 'StarryIsle',
     },
 })
