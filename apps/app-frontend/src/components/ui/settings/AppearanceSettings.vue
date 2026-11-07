@@ -79,6 +79,16 @@ const currentHueHex = computed(() =>
     themeStore.selectedTheme === 'light' ? hueSwatches.value.lightHex : hueSwatches.value.darkHex,
 )
 
+function toggleHueTint(enabled: boolean) {
+    themeStore.setHueTint(enabled ? (themeStore.hueTint ?? 180) : null)
+}
+
+function setHueFromHex(value: string) {
+    const match = /^#?([0-9a-f]{6})$/i.exec(value.trim())
+    if (!match) return
+    themeStore.setHueTint(Math.round(hexToHsl(`#${match[1].toLowerCase()}`).h))
+}
+
 const { formatMessage } = useVIntl()
 const { handleError } = injectNotificationManager()
 
@@ -154,6 +164,23 @@ const messages = defineMessages({
     accentColorSystemUnsupportedLabel: {
         id: 'app.appearance-settings.accent-color.system-unsupported-label',
         defaultMessage: 'Follow system: System unsupported',
+    },
+    interfaceTintTitle: {
+        id: 'app.appearance-settings.interface-tint.title',
+        defaultMessage: 'Interface tint',
+    },
+    interfaceTintDescription: {
+        id: 'app.appearance-settings.interface-tint.description',
+        defaultMessage:
+            'Tints the sidebar and the title bar with the chosen hue. Icons and the accent colour stay unchanged.',
+    },
+    interfaceTintEnable: {
+        id: 'app.appearance-settings.interface-tint.enable',
+        defaultMessage: 'Enable interface tint',
+    },
+    interfaceTintEnableDescription: {
+        id: 'app.appearance-settings.interface-tint.enable-description',
+        defaultMessage: 'Gives the sidebar and the title bar a background of the chosen hue.',
     },
     accentColorCustomHue: {
         id: 'app.appearance-settings.accent-color.custom-hue',
@@ -968,9 +995,24 @@ watch(
         <SettingsSection v-if="props.scope === 'interface'">
             <template #header>
                 <h2 class="m-0 text-lg font-semibold text-[var(--color-text-primary)]">
-                    {{ formatMessage(messages.accentColorCustomHue) }}
+                    {{ formatMessage(messages.interfaceTintTitle) }}
                 </h2>
+                <p class="m-0 mt-1 text-sm leading-relaxed text-[var(--color-text-tertiary)]">
+                    {{ formatMessage(messages.interfaceTintDescription) }}
+                </p>
             </template>
+            <SettingsRow
+                :label="formatMessage(messages.interfaceTintEnable)"
+                :description="formatMessage(messages.interfaceTintEnableDescription)"
+            >
+                <template #control>
+                    <Toggle
+                        id="interface-tint-enabled"
+                        :model-value="themeStore.hueTint !== null"
+                        @update:model-value="(value) => toggleHueTint(!!value)"
+                    />
+                </template>
+            </SettingsRow>
             <div class="flex flex-col gap-4 p-4 appearance-panel--divided">
                 <input
                     type="range"
@@ -978,8 +1020,9 @@ watch(
                     max="359"
                     step="1"
                     :value="themeStore.hueTint ?? 180"
+                    :disabled="themeStore.hueTint === null"
                     class="hue-slider"
-                    :aria-label="formatMessage(messages.accentColorCustomHue)"
+                    :aria-label="formatMessage(messages.interfaceTintTitle)"
                     @input="
                         themeStore.setHueTint(Number(($event.target as HTMLInputElement).value))
                     "
@@ -990,9 +1033,15 @@ watch(
                         <span class="text-sm font-semibold text-[var(--color-text-primary)]">
                             {{ formatMessage(messages.accentColorCustomHex) }}
                         </span>
-                        <span class="font-mono text-sm text-[var(--color-text-tertiary)]">
-                            {{ currentHueHex }}
-                        </span>
+                        <input
+                            type="text"
+                            maxlength="7"
+                            spellcheck="false"
+                            :value="currentHueHex"
+                            :disabled="themeStore.hueTint === null"
+                            class="w-28 font-mono"
+                            @input="setHueFromHex(($event.target as HTMLInputElement).value)"
+                        />
                     </label>
                     <div class="flex items-center gap-2">
                         <span

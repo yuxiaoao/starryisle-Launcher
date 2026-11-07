@@ -1905,7 +1905,18 @@
   "app.ai-settings.visit-website": {
     "message": "访问官网"
   },
-  "app.appearance-settings.accent-color.blue": {
+"app.appearance-settings.interface-tint.title": {
+  "message": "界面色调"
+},
+"app.appearance-settings.interface-tint.description": {
+  "message": "用选定的色相给左侧导航栏与顶栏着色，不影响图标与强调色。"
+},
+"app.appearance-settings.interface-tint.enable": {
+  "message": "启用界面色调"
+},
+"app.appearance-settings.interface-tint.enable-description": {
+  "message": "用选定的色相给左侧导航栏与顶栏换个底色。"
+},  "app.appearance-settings.accent-color.blue": {
     "message": "蓝色"
   },
   "app.appearance-settings.accent-color.custom": {
