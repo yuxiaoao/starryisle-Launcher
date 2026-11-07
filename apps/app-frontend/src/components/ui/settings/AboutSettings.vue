@@ -323,7 +323,7 @@ const projectLinks = [
         label: messages.qqChannel,
         icon: QqChannelIcon,
     },
-]
+].filter((link) => Boolean(link.href))
 </script>
 
 <template>
@@ -453,6 +453,7 @@ const projectLinks = [
                             ? formatMessage(messages.copiedQqGroup)
                             : formatMessage(messages.copyQqGroup)
                     "
+                    v-if="AxolotlBrandConfig.qqGroupNumber"
                     class="flex w-full min-w-0 items-center gap-3 rounded-xl bg-surface-4 p-4 text-left transition-colors hover:bg-surface-5 disabled:cursor-default"
                     @click="copyQqGroupNumber"
                 >
@@ -483,6 +484,7 @@ const projectLinks = [
                 </button>
 
                 <a
+                    v-if="AxolotlBrandConfig.sponsorUrl"
                     :href="AxolotlBrandConfig.sponsorUrl"
                     target="_blank"
                     rel="noopener noreferrer"

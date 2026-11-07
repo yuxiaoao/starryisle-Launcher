@@ -272,7 +272,7 @@ function normalizeDownloadSettings(settings: AppSettings & LegacyMirrorSettings)
     settings.ignore_ssl_errors ??= false
     settings.mojang_auth_source ??= 'auto'
     settings.terracotta_public_nodes ??= ['wss://center.node.1tmc.top']
-    settings.hidden_nav_items ??= []
+    settings.hidden_nav_items ??= ['stats']
     settings.oobe_completed_steps ??= []
     settings.allow_external_scheme ??= true
     settings.allow_privileged_scheme ??= false

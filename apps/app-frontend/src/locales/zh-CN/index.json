@@ -21037,5 +21037,155 @@
   },
   "app.instance.tabs.advancements": {
     "message": "成就"
+  },
+  "app.settings.appearance.nav.stats": {
+    "message": "统计"
+  },
+  "app.home.insights.total": {
+    "message": "总游玩时长：{duration}"
+  },
+  "app.home.weather.title": {
+    "message": "天气"
+  },
+  "app.home.weather.change-city": {
+    "message": "更换城市"
+  },
+  "app.home.weather.search-placeholder": {
+    "message": "搜索城市"
+  },
+  "app.home.weather.searching": {
+    "message": "搜索中…"
+  },
+  "app.home.weather.no-results": {
+    "message": "没有匹配的城市"
+  },
+  "app.home.weather.loading": {
+    "message": "正在加载天气…"
+  },
+  "app.home.weather.load-failed": {
+    "message": "天气数据暂不可用，请稍后重试。"
+  },
+  "app.home.weather.refresh": {
+    "message": "刷新"
+  },
+  "app.home.weather.feels-like": {
+    "message": "体感"
+  },
+  "app.home.weather.high": {
+    "message": "最高"
+  },
+  "app.home.weather.low": {
+    "message": "最低"
+  },
+  "app.home.weather.humidity": {
+    "message": "湿度"
+  },
+  "app.home.weather.wind": {
+    "message": "风速"
+  },
+  "app.home.weather.updated-at": {
+    "message": "更新于 {time}"
+  },
+  "app.home.weather.condition.sunny": {
+    "message": "晴"
+  },
+  "app.home.weather.condition.mostly-clear": {
+    "message": "大致晴朗"
+  },
+  "app.home.weather.condition.partly-cloudy": {
+    "message": "局部多云"
+  },
+  "app.home.weather.condition.overcast": {
+    "message": "阴"
+  },
+  "app.home.weather.condition.fog": {
+    "message": "雾"
+  },
+  "app.home.weather.condition.rime-fog": {
+    "message": "雾凇"
+  },
+  "app.home.weather.condition.drizzle": {
+    "message": "毛毛雨"
+  },
+  "app.home.weather.condition.light-drizzle": {
+    "message": "小毛毛雨"
+  },
+  "app.home.weather.condition.dense-drizzle": {
+    "message": "浓毛毛雨"
+  },
+  "app.home.weather.condition.freezing-drizzle": {
+    "message": "冻毛毛雨"
+  },
+  "app.home.weather.condition.light-freezing-drizzle": {
+    "message": "轻度冻毛毛雨"
+  },
+  "app.home.weather.condition.rain": {
+    "message": "雨"
+  },
+  "app.home.weather.condition.light-rain": {
+    "message": "小雨"
+  },
+  "app.home.weather.condition.heavy-rain": {
+    "message": "大雨"
+  },
+  "app.home.weather.condition.freezing-rain": {
+    "message": "冻雨"
+  },
+  "app.home.weather.condition.light-freezing-rain": {
+    "message": "轻度冻雨"
+  },
+  "app.home.weather.condition.showers": {
+    "message": "阵雨"
+  },
+  "app.home.weather.condition.light-showers": {
+    "message": "小阵雨"
+  },
+  "app.home.weather.condition.violent-showers": {
+    "message": "强阵雨"
+  },
+  "app.home.weather.condition.snow": {
+    "message": "雪"
+  },
+  "app.home.weather.condition.light-snow": {
+    "message": "小雪"
+  },
+  "app.home.weather.condition.heavy-snow": {
+    "message": "大雪"
+  },
+  "app.home.weather.condition.snow-grains": {
+    "message": "米雪"
+  },
+  "app.home.weather.condition.snow-showers": {
+    "message": "阵雪"
+  },
+  "app.home.weather.condition.light-snow-showers": {
+    "message": "小阵雪"
+  },
+  "app.home.weather.condition.thunderstorm": {
+    "message": "雷暴"
+  },
+  "app.home.weather.condition.thunderstorm-hail": {
+    "message": "雷暴伴冰雹"
+  },
+  "app.home.weather.condition.severe-thunderstorm-hail": {
+    "message": "强雷暴伴冰雹"
+  },
+  "app.screenshots.note.edit": {
+    "message": "编辑备注"
+  },
+  "app.screenshots.note.placeholder": {
+    "message": "添加备注…"
+  },
+  "app.screenshots.timeline.day": {
+    "message": "{date} · {count}"
+  },
+  "app.screenshots.timeline.empty": {
+    "message": "暂无内容"
+  },
+  "app.screenshots.view.grid": {
+    "message": "网格"
+  },
+  "app.screenshots.view.timeline": {
+    "message": "时间线"
   }
 }
