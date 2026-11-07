@@ -284,9 +284,29 @@ function categoryLabel(category: string): string {
     return key ? formatMessage(messages[key]) : category
 }
 
-function iconUrl(path: string | null): string | null {
-    if (!path) return null
-    return convertFileSrc(path)
+const bundledIcons = import.meta.glob('/src/assets/advancement-icons/*.png', {
+    eager: true,
+    query: '?url',
+    import: 'default',
+}) as Record<string, string>
+const bundledBySlug = new Map(
+    Object.entries(bundledIcons).map(([file, url]) => [
+        file
+            .split('/')
+            .pop()!
+            .replace(/\.png$/, ''),
+        url as string,
+    ]),
+)
+
+// Bundled wiki icons win over the textures extracted from the game jar, so the
+// page looks the same offline as it does with a warm wiki cache.
+function iconUrl(entry: { id: string; iconPath: string | null }): string | null {
+    const slug = entry.id.replace(/[^a-z0-9]/gi, '_')
+    const bundled = bundledBySlug.get(slug)
+    if (bundled) return bundled
+    if (!entry.iconPath) return null
+    return convertFileSrc(entry.iconPath)
 }
 
 function percent(done: number): number {
@@ -579,8 +599,8 @@ onBeforeUnmount(() => {
                             >
                                 <div class="flex size-8 shrink-0 items-center justify-center">
                                     <img
-                                        v-if="!item.masked && iconUrl(item.entry.iconPath)"
-                                        :src="iconUrl(item.entry.iconPath) ?? ''"
+                                        v-if="!item.masked && iconUrl(item.entry)"
+                                        :src="iconUrl(item.entry) ?? ''"
                                         :alt="item.entry.title"
                                         class="size-8 object-contain [image-rendering:pixelated]"
                                     />
