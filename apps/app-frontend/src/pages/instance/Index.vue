@@ -383,7 +383,6 @@
 <script setup lang="ts">
 import type { Labrinth } from '@modrinth/api-client'
 import {
-    TagCategoryTrophyIcon,
     BoxesIcon,
     BoxIcon,
     CheckCircleIcon,
@@ -406,6 +405,7 @@ import {
     SettingsIcon,
     SpinnerIcon,
     StopCircleIcon,
+    TagCategoryTrophyIcon,
     TerminalSquareIcon,
     UpdatedIcon,
     UserPlusIcon,

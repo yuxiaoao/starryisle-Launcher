@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import steveSkin from '@/assets/skins/steve.png?inline'
-import { getPlayerHeadUrl } from '@/helpers/rendering/batch-skin-renderer'
-import type { Skin } from '@/helpers/skins'
+import { defineMessages, useVIntl } from '@modrinth/ui'
 import { convertFileSrc, invoke } from '@tauri-apps/api/core'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import steveSkin from '@/assets/skins/steve.png?inline'
 import {
     type AdvancementDef,
     type WorldAdvancements,
@@ -10,8 +10,8 @@ import {
     getWorldAdvancements,
     listWorlds,
 } from '@/helpers/advancements'
-import { defineMessages, useVIntl } from '@modrinth/ui'
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { getPlayerHeadUrl } from '@/helpers/rendering/batch-skin-renderer'
+import type { Skin } from '@/helpers/skins'
 
 const { formatMessage } = useVIntl()
 
@@ -458,13 +458,15 @@ onBeforeUnmount(() => {
             </button>
         </div>
 
-        <p v-if="loading" class="m-0 text-secondary">{{ formatMessage(messages.loading) }}</p>
+        <p v-if="loading" class="m-0 text-[var(--color-text-tertiary)]">
+            {{ formatMessage(messages.loading) }}
+        </p>
 
-        <p v-else-if="catalog.length === 0" class="m-0 text-secondary">
+        <p v-else-if="catalog.length === 0" class="m-0 text-[var(--color-text-tertiary)]">
             {{ formatMessage(messages.catalogMissing) }}
         </p>
 
-        <p v-else-if="rows.length === 0" class="m-0 text-secondary">
+        <p v-else-if="rows.length === 0" class="m-0 text-[var(--color-text-tertiary)]">
             {{ formatMessage(messages.empty) }}
         </p>
 
@@ -533,7 +535,7 @@ onBeforeUnmount(() => {
                         </button>
                     </header>
 
-                    <div v-if="detailLoading" class="p-5 text-secondary">…</div>
+                    <div v-if="detailLoading" class="p-5 text-[var(--color-text-tertiary)]">…</div>
 
                     <template v-else-if="detail">
                         <div class="flex items-center gap-2 px-5 py-3">

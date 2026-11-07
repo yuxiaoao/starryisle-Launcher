@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { convertFileSrc } from '@tauri-apps/api/core'
-import { type StatsOverview, getStatsOverview } from '@/helpers/stats'
 import { defineMessages, useVIntl } from '@modrinth/ui'
+import { convertFileSrc } from '@tauri-apps/api/core'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { type StatsOverview, getStatsOverview } from '@/helpers/stats'
 
 const { formatMessage, locale } = useVIntl()
 
@@ -269,7 +269,9 @@ onBeforeUnmount(() => {
             </button>
         </div>
 
-        <p v-if="loading" class="m-0 text-secondary">{{ formatMessage(messages.loading) }}</p>
+        <p v-if="loading" class="m-0 text-[var(--color-text-tertiary)]">
+            {{ formatMessage(messages.loading) }}
+        </p>
 
         <div v-else-if="error" class="flex flex-col items-start gap-2 rounded-xl bg-surface-2 p-4">
             <p class="m-0 text-sm text-[var(--color-text-primary)]">
@@ -285,7 +287,9 @@ onBeforeUnmount(() => {
             </button>
         </div>
 
-        <p v-else-if="!data" class="m-0 text-secondary">{{ formatMessage(messages.empty) }}</p>
+        <p v-else-if="!data" class="m-0 text-[var(--color-text-tertiary)]">
+            {{ formatMessage(messages.empty) }}
+        </p>
 
         <template v-else>
             <div class="grid grid-cols-2 gap-3 lg:grid-cols-4">
