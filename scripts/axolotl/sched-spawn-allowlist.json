@@ -10,6 +10,32 @@
       ]
     },
     {
+      "file": "apps/app/src/api/background.rs",
+      "form": "spawn_blocking",
+      "count": 1,
+      "reason": "reviewed operation-scoped animated background decoding and encoding; the command awaits this blocking task while holding only its conversion permit, and the worker acquires no managed resource (D17)",
+      "sites": [
+        "background_convert_animated: let result = tokio::task::spawn_blocking(move || {"
+      ]
+    },
+    {
+      "file": "apps/app/src/api/background.rs",
+      "form": "std::fs import",
+      "count": 9,
+      "reason": "reviewed background source reads in the awaited blocking conversion, path validation before admission, and temporary output publication/cleanup under the single conversion permit; command-scoped work outside L0 with no nested managed acquisition (D17)",
+      "sites": [
+        "convert_background: let bytes = fs::read(input_path).map_err(|error| {",
+        "convert_background: let metadata = fs::metadata(input_path).map_err(|error| {",
+        "validate_output_path: fs::canonicalize(&background_directory).map_err(|error| {",
+        "validate_output_path: fs::create_dir_all(&background_directory).map_err(|error| {",
+        "validate_output_path: fs::create_dir_all(parent).map_err(|error| {",
+        "validate_output_path: let canonical_parent = fs::canonicalize(parent).map_err(|error| {",
+        "write_atomically: fs::write(&temporary_path, bytes).map_err(|error| {",
+        "write_atomically: if let Err(error) = fs::rename(&temporary_path, output_path) {",
+        "write_atomically: let _ = fs::remove_file(&temporary_path);"
+      ]
+    },
+    {
       "file": "apps/app/src/api/cache.rs",
       "form": "tauri::async_runtime::spawn",
       "count": 1,
@@ -627,7 +653,7 @@
         "start_uninstall: let _ = fs::remove_file(&status_path);",
         "start_uninstall: let _ = fs::remove_file(status_path);",
         "validate_request: if fs::create_dir_all(&resource_dir).is_err() {",
-        "validate_request: if fs::write(&write_test, b\"Axolotl Launcher\").is_err() {",
+        "validate_request: if fs::write(&write_test, b\"StarryIsle Launcher\").is_err() {",
         "validate_request: let _ = fs::remove_file(write_test);",
         "webview_data_directory: fs::create_dir_all(&directory).map_err(|error| {"
       ]
@@ -843,6 +869,8 @@
       "reason": "ported achievement catalogue: reads the game jar and its cache directly",
       "sites": [
         "<module>: archive: &mut ZipArchive<std::fs::File>,",
+        "<module>: archive: &mut ZipArchive<std::fs::File>,",
+        "<module>: archive: &mut ZipArchive<std::fs::File>,",
         "advancement_catalog: if let Ok(text) = std::fs::read_to_string(&catalog_file) {",
         "advancement_catalog: let _ = std::fs::write(&catalog_file, text);",
         "advancement_catalog: let _ = std::fs::write(&catalog_file, text);",
@@ -863,9 +891,7 @@
         "download_wiki_icons: let _ = std::fs::write(&marker, b\"{}\");",
         "download_wiki_icons: let fresh = std::fs::metadata(&marker)",
         "download_wiki_icons: std::fs::write(&file, bytes).ok()?;",
-        "read_asset: std::fs::read(path).ok()",
-        "read_bytes: fn read_bytes(archive: &mut ZipArchive<std::fs::File>, name: &str) -> Option<Vec<u8>> {",
-        "read_entry: fn read_entry(archive: &mut ZipArchive<std::fs::File>, name: &str) -> Option<String> {"
+        "read_asset: std::fs::read(path).ok()"
       ]
     },
     {
@@ -887,7 +913,7 @@
         "list_worlds: tokio::task::spawn_blocking(move || -> crate::Result<Vec<WorldSummary>> {",
         "version_jar: tokio::task::spawn_blocking(move || -> crate::Result<Option<PathBuf>> {",
         "world_advancements: tokio::task::spawn_blocking(move || -> crate::Result<WorldAdvancements> {",
-        "world_completed_all_players: tokio::task::spawn_blocking(move || -> crate::Result<Vec<CompletedAdvancement>> {"
+        "world_completed_all_players: tokio::task::spawn_blocking("
       ]
     },
     {
@@ -899,10 +925,10 @@
         "last_played_from_level: let file = std::fs::File::open(world_dir.join(\"level.dat\")).ok()?;",
         "list_worlds: let entries = match std::fs::read_dir(&dir) {",
         "player_ids: let Ok(entries) = std::fs::read_dir(dir) else {",
-        "player_names: let Ok(text) = std::fs::read_to_string(instance_root.join(\"usercache.json\")) else {",
-        "version_jar: if let Ok(text) = std::fs::read_to_string(root.join(\"axolotl_config.json\")) {",
+        "player_names: std::fs::read_to_string(instance_root.join(\"usercache.json\"))",
         "version_jar: let Ok(entries) = std::fs::read_dir(&versions) else {",
         "version_jar: let Ok(files) = std::fs::read_dir(&dir) else {",
+        "version_jar: std::fs::read_to_string(root.join(\"axolotl_config.json\"))",
         "world_advancements: if let Ok(text) = std::fs::read_to_string(&file) {",
         "world_completed_all_players: let Ok(text) = std::fs::read_to_string(&file) else {"
       ]
@@ -1379,19 +1405,22 @@
     {
       "file": "packages/app-lib/src/api/pack/install_from.rs",
       "form": "spawn_blocking",
-      "count": 1,
-      "reason": "upstream baseline (merged from main 99422786d): blocking file hashing on the shared blocking pool, which L0 must stop using (T3.6)",
+      "count": 3,
+      "reason": "reviewed operation-scoped local pack identity reads, format detection and MRPack manifest parsing on the shared blocking pool; each task is awaited, not an L0 background task (D17)",
       "sites": [
+        "get_instance_from_pack: return tokio::task::spawn_blocking(move || {",
+        "get_instance_from_pack: tokio::task::spawn_blocking(move || {",
         "local_pack_retry_identity: tokio::task::spawn_blocking(move || {"
       ]
     },
     {
       "file": "packages/app-lib/src/api/pack/install_from.rs",
       "form": "std::fs",
-      "count": 2,
-      "reason": "phase-0 baseline: synchronous file I/O; must not appear in L0 or inside a critical section (D17); the second site came with upstream main 99422786d",
+      "count": 3,
+      "reason": "reviewed local pack archive validation, retry identity reads and MRPack preview file I/O; local_mrpack_preview runs in an awaited blocking task before instance creation, not in L0 or under a managed lock (D17)",
       "sites": [
         "get_instance_from_pack: let file = std::fs::File::open(&path)",
+        "local_mrpack_preview: let file = std::fs::File::open(path)?;",
         "local_pack_retry_identity: let file = std::fs::File::open(&path)?;"
       ]
     },
@@ -1534,6 +1563,18 @@
         "collect_mod_metadata: let Ok(entries) = std::fs::read_dir(&current) else {",
         "find_manifest_entry: let file = std::fs::File::open(&archive_path)",
         "read_mod_metadata: let file = std::fs::File::open(path).ok()?;"
+      ]
+    },
+    {
+      "file": "packages/app-lib/src/api/stats.rs",
+      "form": "std::fs",
+      "count": 4,
+      "reason": "ported statistics page: reads the instance list and advancement files to aggregate playtime",
+      "sites": [
+        "modified_stamp: std::fs::metadata(path)",
+        "saves_stamp: let Ok(entries) = std::fs::read_dir(&saves) else {",
+        "screenshots_stamp: let Ok(entries) = std::fs::read_dir(&shots) else {",
+        "walk: let Ok(entries) = std::fs::read_dir(dir) else {"
       ]
     },
     {

@@ -19,6 +19,14 @@ import { useQueryClient } from '@tanstack/vue-query'
 import { computed, inject, onUnmounted, provide, type Ref, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
+import HomeCalendar from '@/components/home/HomeCalendar.vue'
+import HomeDailyChallenge from '@/components/home/HomeDailyChallenge.vue'
+import HomeDashboard from '@/components/home/HomeDashboard.vue'
+import HomeGreetingAccountModal from '@/components/home/HomeGreetingAccountModal.vue'
+import HomeInstancePickerModal from '@/components/home/HomeInstancePickerModal.vue'
+import HomeMinecraftNews from '@/components/home/HomeMinecraftNews.vue'
+import HomeMinimal from '@/components/home/HomeMinimal.vue'
+import HomePlayInsights from '@/components/home/HomePlayInsights.vue'
 import {
     createDefaultHomeDashboard,
     createHomeDashboardSaveQueue,
@@ -29,20 +37,12 @@ import {
     pruneHomeGreetingOverrides,
     setHomeGreetingOverride,
 } from '@/components/home/home-dashboard'
+import { provideHomeDashboardRuntime } from '@/components/home/home-dashboard-runtime'
 import {
     HOME_GREETING_EDITOR_KEY,
     type HomeGreetingEditorContext,
 } from '@/components/home/home-greeting-editor'
 import { getActivePlayerAccount } from '@/components/home/home-utils'
-import HomeCalendar from '@/components/home/HomeCalendar.vue'
-import { provideHomeDashboardRuntime } from '@/components/home/home-dashboard-runtime'
-import HomeDailyChallenge from '@/components/home/HomeDailyChallenge.vue'
-import HomeDashboard from '@/components/home/HomeDashboard.vue'
-import HomeGreetingAccountModal from '@/components/home/HomeGreetingAccountModal.vue'
-import HomeInstancePickerModal from '@/components/home/HomeInstancePickerModal.vue'
-import HomeMinecraftNews from '@/components/home/HomeMinecraftNews.vue'
-import HomeMinimal from '@/components/home/HomeMinimal.vue'
-import HomePlayInsights from '@/components/home/HomePlayInsights.vue'
 import { useNetworkStatus } from '@/composables/useNetworkStatus'
 import { get_default_user, users } from '@/helpers/auth'
 import { DIRECT_LINKS_CHANGED_EVENT } from '@/helpers/direct-link-sync'

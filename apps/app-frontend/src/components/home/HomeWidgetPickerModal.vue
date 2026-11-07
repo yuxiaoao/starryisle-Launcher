@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import {
-    CalendarIcon,
     ChevronLeftIcon,
     ChevronRightIcon,
     CollectionIcon,
