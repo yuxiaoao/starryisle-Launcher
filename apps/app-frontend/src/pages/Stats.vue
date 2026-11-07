@@ -69,7 +69,11 @@ async function load(force = false) {
         scheduleIconPoll()
     } catch (cause) {
         if (sequence !== loadSequence) return
-        const message =\n            cause && typeof cause === 'object' && 'message' in cause\n                ? String((cause as { message: unknown }).message)\n                : String(cause)\n        error.value = message
+        const message =
+            cause && typeof cause === 'object' && 'message' in cause
+                ? String((cause as { message: unknown }).message)
+                : String(cause)
+        error.value = message
     } finally {
         if (sequence === loadSequence) loading.value = false
     }
