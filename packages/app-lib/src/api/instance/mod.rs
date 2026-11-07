@@ -6,6 +6,12 @@ mod core_components;
 
 mod advancement_catalog;
 mod advancements;
+
+pub use self::advancement_catalog::{AdvancementDef, advancement_catalog};
+pub use self::advancements::{
+    CompletedAdvancement, PlayerRef, WorldAdvancements, WorldSummary,
+    list_worlds, world_advancements, world_completed_all_players,
+};
 mod get;
 mod groups;
 mod home;

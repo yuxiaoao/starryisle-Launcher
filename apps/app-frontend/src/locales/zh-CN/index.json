@@ -8652,6 +8652,9 @@
   "app.navigation.skin-selector": {
     "message": "皮肤选择器"
   },
+  "app.navigation.stats": {
+  "message": "统计"
+},
   "app.navigation.worlds": {
     "message": "世界"
   },

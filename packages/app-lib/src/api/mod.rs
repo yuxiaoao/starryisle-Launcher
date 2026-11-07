@@ -30,6 +30,7 @@ pub mod schematics;
 pub mod server_address;
 pub mod servers;
 pub mod settings;
+pub mod stats;
 pub mod symlink;
 pub mod tags;
 pub mod terracotta;

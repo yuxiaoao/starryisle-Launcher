@@ -27,6 +27,10 @@ pub fn init<R: tauri::Runtime>() -> tauri::plugin::TauriPlugin<R> {
     tauri::plugin::Builder::new("instance")
         .invoke_handler(tauri::generate_handler![
             instance_remove,
+            instance_list_worlds,
+            instance_world_advancements,
+            instance_advancement_catalog,
+            stats_overview,
             instance_get_backup_repository_status,
             instance_move_backup_repository,
             instance_get_backup_config,
@@ -1579,6 +1583,39 @@ pub async fn instance_delete_screenshots(
 ) -> Result<()> {
     Ok(theseus::instance::delete_screenshots(&keys).await?)
 }
+#[tauri::command]
+pub async fn instance_list_worlds(
+    instance_id: String,
+) -> Result<Vec<theseus::instance::WorldSummary>> {
+    Ok(theseus::instance::list_worlds(&instance_id).await?)
+}
+#[tauri::command]
+pub async fn instance_world_advancements(
+    instance_id: String,
+    world: String,
+    player: Option<String>,
+) -> Result<theseus::instance::WorldAdvancements> {
+    Ok(theseus::instance::world_advancements(
+        &instance_id,
+        &world,
+        player.as_deref(),
+    )
+    .await?)
+}
+#[tauri::command]
+pub async fn instance_advancement_catalog(
+    instance_id: Option<String>,
+) -> Result<Vec<theseus::instance::AdvancementDef>> {
+    Ok(theseus::instance::advancement_catalog(instance_id).await?)
+}
+#[tauri::command]
+pub async fn stats_overview(
+    year: Option<i32>,
+    force: Option<bool>,
+) -> Result<theseus::stats::StatsOverview> {
+    Ok(theseus::stats::overview(year, force.unwrap_or(false)).await?)
+}
+
 #[tauri::command]
 pub async fn instance_export_screenshots(
     keys: Vec<theseus::instance::ScreenshotKey>,

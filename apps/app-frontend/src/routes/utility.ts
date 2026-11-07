@@ -13,6 +13,14 @@ export const utilityRoutes: RouteRecordRaw[] = [
         },
     },
     {
+        path: '/stats',
+        name: 'Stats',
+        component: () => import('@/pages/Stats.vue'),
+        meta: {
+            breadcrumb: [{ name: 'Statistics' }],
+        },
+    },
+    {
         path: '/create',
         name: 'Create',
         component: () => import('@/pages/Create.vue'),

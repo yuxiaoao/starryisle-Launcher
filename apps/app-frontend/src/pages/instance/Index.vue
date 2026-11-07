@@ -383,6 +383,7 @@
 <script setup lang="ts">
 import type { Labrinth } from '@modrinth/api-client'
 import {
+    TagCategoryTrophyIcon,
     BoxesIcon,
     BoxIcon,
     CheckCircleIcon,
@@ -524,6 +525,7 @@ const messages = defineMessages({
     contentTab: { id: 'app.instance.tabs.content', defaultMessage: 'Content' },
     filesTab: { id: 'app.instance.tabs.files', defaultMessage: 'Files' },
     worldsTab: { id: 'app.instance.tabs.worlds', defaultMessage: 'Worlds' },
+    advancementsTab: { id: 'app.instance.tabs.advancements', defaultMessage: 'Advancements' },
     screenshotsTab: { id: 'app.instance.tabs.screenshots', defaultMessage: 'Screenshots' },
     logsTab: { id: 'app.instance.tabs.logs', defaultMessage: 'Logs' },
     offlineInstalledOnly: {
@@ -790,6 +792,11 @@ const tabs = computed(() => [
         label: formatMessage(messages.worldsTab),
         href: `${basePath.value}/worlds`,
         icon: GlobeIcon,
+    },
+    {
+        label: formatMessage(messages.advancementsTab),
+        href: `${basePath.value}/advancements`,
+        icon: TagCategoryTrophyIcon,
     },
     {
         label: formatMessage(messages.logsTab),

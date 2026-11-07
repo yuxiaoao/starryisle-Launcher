@@ -4,6 +4,7 @@ import '@/assets/stylesheets/window-frame.css'
 import { AuthFeature, TauriModrinthClient, VerboseLoggingFeature } from '@modrinth/api-client'
 import {
     ChangeSkinIcon,
+    ChartSplineIcon,
     CompassIcon,
     ExternalIcon,
     FlaskConicalIcon,
@@ -1105,6 +1106,10 @@ const messages = defineMessages({
     home: {
         id: 'app.navigation.home',
         defaultMessage: 'Home',
+    },
+    stats: {
+        id: 'app.navigation.stats',
+        defaultMessage: 'Statistics',
     },
     worlds: {
         id: 'app.navigation.worlds',
@@ -3039,6 +3044,14 @@ provideAppUpdateDownloadProgress(appUpdateDownload)
                     :is-primary="(r) => r.path.startsWith('/lab')"
                 >
                     <FlaskConicalIcon />
+                </NavButton>
+                <NavButton
+                    v-if="!themeStore.isNavItemHidden('stats')"
+                    v-tooltip.right="formatMessage(messages.stats)"
+                    to="/stats"
+                    :is-primary="(r) => r.path.startsWith('/stats')"
+                >
+                    <ChartSplineIcon />
                 </NavButton>
             </NavRail>
             <div class="h-px w-6 mx-auto my-2 bg-surface-5"></div>
