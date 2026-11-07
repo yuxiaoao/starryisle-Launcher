@@ -30,6 +30,40 @@ export const ANNOUNCEMENT_CHANGE_TYPES: readonly AnnouncementChangeType[] = [
 
 export const launcherAnnouncements: readonly LauncherAnnouncement[] = [
     {
+        id: 'launcher-1.0.8',
+        version: '1.0.8',
+        publishedAt: '2026-11-07',
+        title: {
+            'en-US': 'StarryIsle Launcher 1.0.8',
+            'zh-CN': 'StarryIsle Launcher 1.0.8',
+        },
+        changes: {
+            added: [
+                {
+                    'en-US': 'An advancements tab on every instance, reading the saved worlds.',
+                    'zh-CN': '每个实例新增「成就」标签，读取存档里的进度。',
+                },
+                {
+                    'en-US':
+                        'A statistics page with playtime, library size and achievement progress.',
+                    'zh-CN': '新增统计页面：游玩时长、整合包规模与成就进度。',
+                },
+            ],
+            fixed: [
+                {
+                    'en-US':
+                        'The hue slider shows its gradient again and matches the accent slider.',
+                    'zh-CN': '色相滑块恢复彩虹渐变，与强调色滑块一致。',
+                },
+                {
+                    'en-US': 'The interface hue now tints the nav rail and the title bar.',
+                    'zh-CN': '界面色相现在真正作用于导航栏与顶栏。',
+                },
+            ],
+        },
+    },
+
+    {
         id: 'launcher-1.0.7',
         version: '1.0.7',
         publishedAt: '2026-11-07',
