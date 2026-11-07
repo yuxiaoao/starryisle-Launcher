@@ -1988,6 +1988,52 @@ watch(
     border-bottom: 1px solid var(--settings-divider, var(--surface-4));
 }
 
+.hue-slider {
+    appearance: none;
+    display: block;
+    width: 100%;
+    height: 0.75rem;
+    min-height: 0;
+    padding: 0;
+    border: none;
+    border-radius: var(--radius-max);
+    background: linear-gradient(
+        to right,
+        hsl(0, 80%, 55%),
+        hsl(60, 80%, 55%),
+        hsl(120, 80%, 55%),
+        hsl(180, 80%, 55%),
+        hsl(240, 80%, 55%),
+        hsl(300, 80%, 55%),
+        hsl(360, 80%, 55%)
+    );
+    cursor: pointer;
+
+    &:focus-visible {
+        outline: 2px solid var(--color-focus-ring);
+        outline-offset: 2px;
+    }
+
+    &::-webkit-slider-thumb {
+        appearance: none;
+        width: 1.25rem;
+        height: 1.25rem;
+        border-radius: 50%;
+        background: var(--color-brand);
+        border: 0.1875rem solid var(--surface-4);
+        box-shadow: var(--shadow-button);
+    }
+
+    &::-moz-range-thumb {
+        width: 1.25rem;
+        height: 1.25rem;
+        border-radius: 50%;
+        background: var(--color-brand);
+        border: 0.1875rem solid var(--surface-4);
+        box-shadow: var(--shadow-button);
+    }
+}
+
 .custom-bg-preview-dim {
     background-color: color-mix(
         in srgb,
