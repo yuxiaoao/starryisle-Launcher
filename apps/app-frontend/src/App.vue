@@ -152,7 +152,13 @@ import {
 } from '@/helpers/install'
 import { type DirectLinkSyncReport, get as getInstance, run } from '@/helpers/instance'
 import { type BackupOperation, cancelBackup, listBackupOperations } from '@/helpers/instance-backup'
-import { cancelLogin, get as getCreds, login, logout, type ModrinthCredentials } from '@/helpers/mr_auth.ts'
+import {
+    cancelLogin,
+    get as getCreds,
+    login,
+    logout,
+    type ModrinthCredentials,
+} from '@/helpers/mr_auth.ts'
 import { installNativeEditMenuBoundary } from '@/helpers/native-edit-menu'
 import { getNavShortcutEnabled } from '@/helpers/nav-shortcut-state'
 import { runWhenIdle } from '@/helpers/page-transition'

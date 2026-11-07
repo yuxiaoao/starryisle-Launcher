@@ -168,7 +168,8 @@ const messages = defineMessages({
     },
     stateDatabaseNewerFixUpdate: {
         id: 'app.error.state-database-newer-fix-update',
-        defaultMessage: 'Reinstall the newer version of StarryIsle - it opens this database as it is.',
+        defaultMessage:
+            'Reinstall the newer version of StarryIsle - it opens this database as it is.',
     },
     stateDatabaseNewerFixDowngrade: {
         id: 'app.error.state-database-newer-fix-downgrade',

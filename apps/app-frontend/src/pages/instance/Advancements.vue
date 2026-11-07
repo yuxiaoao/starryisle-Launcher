@@ -618,9 +618,7 @@ onBeforeUnmount(() => {
                                                 : item.entry.title
                                         }}
                                     </p>
-                                    <p
-                                        class="m-0 mt-0.5 text-xs text-[var(--color-text-tertiary)]"
-                                    >
+                                    <p class="m-0 mt-0.5 text-xs text-[var(--color-text-tertiary)]">
                                         {{
                                             item.masked
                                                 ? formatMessage(messages.hiddenHint)

@@ -52,8 +52,10 @@ vi.mock('vue-router', () => ({
 vi.mock('@modrinth/ui', async () => {
     const { defineComponent, h } = await import('vue')
     const { default: IntlMessageFormat } = await import('intl-messageformat')
-    const catalogs: Record<string, Record<string, { message?: string; defaultMessage?: string }>> =
-        {
+    const catalogs: Record<
+        string,
+        Record<string, { message?: string; defaultMessage?: string }>
+    > = {
         'en-US': (await import('@/locales/en-US/index.json')).default,
         'zh-CN': (await import('@/locales/zh-CN/index.json')).default,
     }
