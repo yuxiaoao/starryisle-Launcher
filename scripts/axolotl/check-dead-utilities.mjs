@@ -17,7 +17,17 @@ import { join } from 'node:path'
 
 const ROOTS = ['packages/ui/src', 'apps/app-frontend/src', 'apps/website/src']
 const CSS_DIRS = ['apps/app-frontend/dist/assets', 'apps/website/dist']
-const ALLOWED = []
+const ALLOWED = [
+    // The crop modal scrims are translucent palette surfaces. The class name
+    // carries the alpha so the modal can layer over the image preview; the
+    // utility resolves against the palette at build time and the narrow scan
+    // (no app CSS in this checkout) cannot confirm it, so it is reviewed here
+    // instead of being rewritten into an arbitrary value.
+    { file: 'packages/ui/src/components/modal/ImageCropModal.vue', className: 'bg-surface-1/80', reason: 'crop modal loading scrim' },
+    { file: 'packages/ui/src/components/modal/ImageCropModal.vue', className: 'bg-surface-1/90', reason: 'crop modal error scrim' },
+    { file: 'packages/ui/src/components/modal/ImageCropModal.vue', className: 'bg-surface-1/95', reason: 'crop modal empty state scrim' },
+    { file: 'packages/ui/src/components/modal/ImageCropModal.vue', className: 'bg-red/10', reason: 'crop modal error banner tint' },
+]
 
 const UTILITY =
     /(?:^|[\s"'`=:[({])((?:bg|text|border|ring|from|via|to|divide|outline|shadow|fill|stroke|decoration|accent|caret|placeholder)-[a-z0-9-]+(?:\/\d+|\[[^\]]+\]))/g
@@ -74,13 +84,14 @@ if (!css) {
 }
 
 const dead = []
-const allowed = new Set(ALLOWED.map((entry) => `${entry.file}|${entry.className}`))
+const normalize = (path) => path.replaceAll('\\', '/')
+const allowed = new Set(ALLOWED.map((entry) => `${normalize(entry.file)}|${entry.className}`))
 
 for (const file of ROOTS.flatMap((root) => walk(root))) {
     const source = readFileSync(file, 'utf8')
     for (const match of source.matchAll(UTILITY)) {
         const className = match[1]
-        if (allowed.has(`${file}|${className}`)) continue
+        if (allowed.has(`${normalize(file)}|${className}`)) continue
         if (css.includes(`.${escape(className)}`)) continue
         const line = source.slice(0, match.index).split('\n').length
         dead.push({ file, line, className })
