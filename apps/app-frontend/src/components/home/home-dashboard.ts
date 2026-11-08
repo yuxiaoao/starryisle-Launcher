@@ -265,7 +265,36 @@ function normalizeOptions(kind: HomeWidgetKind, value: unknown): HomeWidgetOptio
         }
     }
 
+    if (kind === 'weather') {
+        return {
+            weatherCity: normalizeWeatherCity(isRecord(value) ? value.weatherCity : undefined),
+        }
+    }
+
     return undefined
+}
+
+function normalizeWeatherCity(value: unknown): HomeWeatherCity {
+    if (!isRecord(value)) return { ...HOME_WEATHER_DEFAULT_CITY }
+
+    const id = typeof value.id === 'string' ? value.id.trim() : ''
+    const name = typeof value.name === 'string' ? value.name.trim() : ''
+    const region = typeof value.region === 'string' ? value.region.trim() : ''
+    const latitude = typeof value.latitude === 'number' ? value.latitude : Number.NaN
+    const longitude = typeof value.longitude === 'number' ? value.longitude : Number.NaN
+
+    if (!id || !name) return { ...HOME_WEATHER_DEFAULT_CITY }
+    if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+        return { ...HOME_WEATHER_DEFAULT_CITY }
+    }
+
+    return {
+        id,
+        name,
+        ...(region ? { region } : {}),
+        latitude,
+        longitude,
+    }
 }
 
 function normalizeGreetingOverride(value: unknown): HomeGreetingOverride | null {

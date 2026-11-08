@@ -423,7 +423,7 @@ it('groups by game directory, keeps the full-set badge threshold, and persists c
 
     let sections = wrapper.findAll('[data-instance-section]')
     expect(sections.map((section) => section.attributes('data-group-name'))).toEqual([
-        'Axolotl data directory',
+        'StarryIsle data directory',
         String.raw`D:\Minecraft\.minecraft`,
     ])
     expect(sections.map((section) => section.attributes('data-count'))).toEqual(['1', '2'])
@@ -438,7 +438,7 @@ it('groups by game directory, keeps the full-set badge threshold, and persists c
     await wrapper.get('input[type="text"]').setValue('Managed')
     sections = wrapper.findAll('[data-instance-section]')
     expect(sections).toHaveLength(1)
-    expect(sections[0].attributes('data-group-name')).toBe('Axolotl data directory')
+    expect(sections[0].attributes('data-group-name')).toBe('StarryIsle data directory')
     expect(sections[0].attributes('data-count')).toBe('1')
     expect(sections[0].attributes('data-show-game-directory')).toBe('true')
 
