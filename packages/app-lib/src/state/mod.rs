@@ -178,6 +178,7 @@ pub struct State {
     fetch_concurrency_limit: AtomicUsize,
     api_concurrency_limit: AtomicUsize,
     auto_concurrent_downloads: AtomicBool,
+    force_multiconnection_downloads: AtomicBool,
     auto_concurrency_ceiling: AtomicUsize,
     download_active_connections: AtomicUsize,
     download_sample_bytes: AtomicU64,
@@ -534,7 +535,7 @@ impl Drop for InstanceLockGuard {
     }
 }
 
-fn grow_semaphore(
+pub(crate) fn grow_semaphore(
     semaphore: &Semaphore,
     current_limit: &AtomicUsize,
     target: usize,
@@ -557,7 +558,7 @@ fn grow_semaphore(
     }
 }
 
-async fn shrink_semaphore(
+pub(crate) async fn shrink_semaphore(
     semaphore: &Semaphore,
     current_limit: &AtomicUsize,
     target: &AtomicUsize,
@@ -977,6 +978,10 @@ impl State {
         self.configured_http_client.read().clone()
     }
 
+    pub(crate) fn force_multiconnection_downloads(&self) -> bool {
+        self.force_multiconnection_downloads.load(Ordering::Acquire)
+    }
+
     pub(crate) fn download_concurrency(&self) -> usize {
         self.download_concurrency_target.load(Ordering::Acquire)
     }
@@ -1037,13 +1042,20 @@ impl State {
         }
         self.auto_prefers_mirror
             .store(settings.auto_prefers_mirror(), Ordering::Relaxed);
+        let was_forced = self
+            .force_multiconnection_downloads
+            .swap(settings.force_multiconnection_downloads, Ordering::AcqRel);
         let was_auto = self
             .auto_concurrent_downloads
             .swap(settings.auto_concurrent_downloads, Ordering::AcqRel);
         self.auto_concurrency_ceiling
             .store(AUTO_DOWNLOAD_CONCURRENCY_MAX, Ordering::Release);
-        if settings.auto_concurrent_downloads {
-            if !was_auto {
+        if settings.force_multiconnection_downloads {
+            self.resize_download_concurrency(
+                settings.effective_max_concurrent_downloads(),
+            );
+        } else if settings.auto_concurrent_downloads {
+            if !was_auto || was_forced {
                 self.resize_download_concurrency(
                     AUTO_DOWNLOAD_CONCURRENCY_INITIAL,
                 );
@@ -1075,7 +1087,9 @@ impl State {
             crate::util::download::local_resources::sample_cpu().await;
             crate::util::download::h2_pool::observe_adaptive_connections()
                 .await;
-            if !self.auto_concurrent_downloads.load(Ordering::Acquire) {
+            if !self.auto_concurrent_downloads.load(Ordering::Acquire)
+                || self.force_multiconnection_downloads()
+            {
                 controller = AutoConcurrencyController::default();
                 trial_lease = None;
                 self.download_sample_bytes.swap(0, Ordering::AcqRel);
@@ -1165,6 +1179,10 @@ impl State {
         self.download_concurrency_target
             .store(target, Ordering::Release);
 
+        if self.force_multiconnection_downloads() {
+            crate::util::download::native_budget::set_forced_capacity(target);
+        }
+
         grow_semaphore(
             &self.fetch_semaphore.0,
             &self.fetch_concurrency_limit,
@@ -1193,7 +1211,9 @@ impl State {
             });
         }
 
-        if self.download_concurrency_limit.load(Ordering::Acquire) > target {
+        if self.download_concurrency_limit.load(Ordering::Acquire) > target
+            || crate::util::download::native_budget::forced_capacity_needs_shrink()
+        {
             let state = Arc::clone(self);
             tokio::spawn(async move {
                 shrink_semaphore(
@@ -1202,6 +1222,7 @@ impl State {
                     &state.download_concurrency_target,
                 )
                 .await;
+                crate::util::download::native_budget::shrink_forced_capacity().await;
             });
         }
 
@@ -1322,6 +1343,14 @@ impl State {
         );
         let download_concurrency =
             settings.effective_max_concurrent_downloads();
+        crate::util::download::native_budget::set_forced_capacity(
+            if settings.force_multiconnection_downloads {
+                download_concurrency
+            } else {
+                settings.forced_max_concurrent_downloads
+            },
+        );
+        crate::util::download::native_budget::shrink_forced_capacity().await;
         let fetch_semaphore =
             FetchSemaphore(Semaphore::new(download_concurrency));
         let download_semaphore =
@@ -1433,6 +1462,9 @@ impl State {
             api_concurrency_limit: AtomicUsize::new(download_concurrency),
             auto_concurrent_downloads: AtomicBool::new(
                 settings.auto_concurrent_downloads,
+            ),
+            force_multiconnection_downloads: AtomicBool::new(
+                settings.force_multiconnection_downloads,
             ),
             auto_concurrency_ceiling: AtomicUsize::new(
                 AUTO_DOWNLOAD_CONCURRENCY_MAX,
@@ -1648,6 +1680,7 @@ pub(crate) async fn test_state(
         fetch_concurrency_limit: AtomicUsize::new(8),
         api_concurrency_limit: AtomicUsize::new(8),
         auto_concurrent_downloads: AtomicBool::new(false),
+        force_multiconnection_downloads: AtomicBool::new(false),
         auto_concurrency_ceiling: AtomicUsize::new(8),
         download_active_connections: AtomicUsize::new(0),
         download_sample_bytes: AtomicU64::new(0),

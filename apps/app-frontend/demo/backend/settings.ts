@@ -21,6 +21,8 @@ const settings: AppSettings = {
     max_concurrent_downloads: 10,
     max_concurrent_writes: 10,
     auto_concurrent_downloads: true,
+    force_multiconnection_downloads: false,
+    forced_max_concurrent_downloads: 72,
     minecraft_metadata_source: 'auto',
     minecraft_file_source: 'auto',
     modrinth_source: 'auto',

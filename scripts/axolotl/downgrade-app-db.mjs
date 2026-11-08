@@ -56,11 +56,17 @@ const CHANNELS = ['release', 'beta']
 // Only recent migrations are listed. Dropping to a threshold before them is
 // refused rather than guessed at; --allow-unmapped accepts the risk explicitly.
 const REVERTIBLE_SCHEMA = {
+    20261108120000: {
+        columns: [{ table: 'settings', column: 'forced_max_concurrent_downloads' }],
+    },
+    20261107120000: {
+        columns: [{ table: 'settings', column: 'force_multiconnection_downloads' }],
+    },
     // Screenshots gain a notes table keyed by instance and file name.
-    20261105130000: { tables: ["screenshot_notes"] },
     20261106150000: {
         columns: [{ table: 'settings', column: 'minecraft_use_console_java' }],
     },
+    20261105130000: { tables: ["screenshot_notes"] },
     // settings.oobe_completed_steps
     20261104120000: {
         columns: [{ table: 'settings', column: 'oobe_completed_steps' }],
