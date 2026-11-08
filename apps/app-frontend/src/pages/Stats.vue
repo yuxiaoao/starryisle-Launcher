@@ -2,7 +2,8 @@
 import { defineMessages, useVIntl } from '@modrinth/ui'
 import { convertFileSrc } from '@tauri-apps/api/core'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
-import { type StatsOverview, getStatsOverview } from '@/helpers/stats'
+
+import { getStatsOverview, type StatsOverview } from '@/helpers/stats'
 
 const { formatMessage, locale } = useVIntl()
 

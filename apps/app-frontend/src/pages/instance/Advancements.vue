@@ -2,13 +2,14 @@
 import { defineMessages, useVIntl } from '@modrinth/ui'
 import { convertFileSrc, invoke } from '@tauri-apps/api/core'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+
 import steveSkin from '@/assets/skins/steve.png?inline'
 import {
     type AdvancementDef,
-    type WorldAdvancements,
     getAdvancementCatalog,
     getWorldAdvancements,
     listWorlds,
+    type WorldAdvancements,
 } from '@/helpers/advancements'
 import { getPlayerHeadUrl } from '@/helpers/rendering/batch-skin-renderer'
 import type { Skin } from '@/helpers/skins'
