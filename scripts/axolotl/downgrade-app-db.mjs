@@ -58,6 +58,9 @@ const CHANNELS = ['release', 'beta']
 const REVERTIBLE_SCHEMA = {
     // Screenshots gain a notes table keyed by instance and file name.
     20261105130000: { tables: ["screenshot_notes"] },
+    20261106150000: {
+        columns: [{ table: 'settings', column: 'minecraft_use_console_java' }],
+    },
     // settings.oobe_completed_steps
     20261104120000: {
         columns: [{ table: 'settings', column: 'oobe_completed_steps' }],

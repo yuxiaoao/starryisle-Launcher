@@ -2021,6 +2021,15 @@
   "app.appearance-settings.color-theme.title": {
     "message": "色彩主题"
   },
+  "app.appearance-settings.custom-background.adjust": {
+    "message": "调整背景裁切"
+  },
+  "app.appearance-settings.custom-background.animated-unsupported": {
+    "message": "此图片格式不支持用作启动器背景。"
+  },
+  "app.appearance-settings.custom-background.backend-unavailable": {
+    "message": "AVIF 和 MP4 背景需要 FFmpeg 支持，目前尚未提供。"
+  },
   "app.appearance-settings.custom-background.blur": {
     "message": "背景模糊"
   },
@@ -2039,6 +2048,21 @@
   "app.appearance-settings.custom-background.component-opacity-description": {
     "message": "自定义背景图启用时，界面组件与顶栏/侧栏保持多不透明。100% 时组件完全不透明；调低可让背景图透出界面。"
   },
+  "app.appearance-settings.custom-background.conversion-failed": {
+    "message": "动画背景转换失败。"
+  },
+  "app.appearance-settings.custom-background.converting": {
+    "message": "正在转换动画背景…"
+  },
+  "app.appearance-settings.custom-background.crop-aspect-window": {
+    "message": "当前窗口"
+  },
+  "app.appearance-settings.custom-background.crop-confirm": {
+    "message": "用作背景"
+  },
+  "app.appearance-settings.custom-background.crop-title": {
+    "message": "裁剪启动器背景"
+  },
   "app.appearance-settings.custom-background.description": {
     "message": "选择或拖入自定义图片，并调整它与启动器界面的融合效果。"
   },
@@ -2054,6 +2078,24 @@
   "app.appearance-settings.custom-background.opacity-description": {
     "message": "调整背景图片透过界面显示的强度。"
   },
+  "app.appearance-settings.custom-background.picker-all-files": {
+    "message": "所有文件"
+  },
+  "app.appearance-settings.custom-background.picker-media": {
+    "message": "图片或视频"
+  },
+  "app.appearance-settings.custom-background.preview-close": {
+    "message": "关闭预览"
+  },
+  "app.appearance-settings.custom-background.preview-expand": {
+    "message": "展开预览"
+  },
+  "app.appearance-settings.custom-background.preview-pin": {
+    "message": "固定展开"
+  },
+  "app.appearance-settings.custom-background.preview-unpin": {
+    "message": "取消固定"
+  },
   "app.appearance-settings.custom-background.remove": {
     "message": "移除"
   },
@@ -2062,6 +2104,9 @@
   },
   "app.appearance-settings.custom-background.title": {
     "message": "启动器背景"
+  },
+  "app.appearance-settings.custom-background.too-large": {
+    "message": "图片过大，无法用作启动器背景。"
   },
   "app.appearance-settings.default-landing-page.description": {
     "message": "更改启动器打开的页面。"
@@ -5192,26 +5237,14 @@
   "app.java-arguments.presets.use": {
     "message": "使用预设"
   },
-  "app.java-download-confirmation.body": {
-    "message": "未找到兼容的 Java {version} 安装。你可以立即下载，也可以稍后设置 Java；其他游戏资源仍会继续下载。"
+  "app.install.missing-java.body": {
+    "message": "因未找到可用的 Java {version}，本次安装无法继续。你可以前往 Java 设置安装或配置 Java {version}，完成后再重新安装。"
   },
-  "app.java-download-confirmation.download": {
-    "message": "下载 Java"
+  "app.install.missing-java.open-settings": {
+    "message": "前往 Java 设置"
   },
-  "app.java-download-confirmation.later-description": {
-    "message": "稍后配置 Java {version} 后，请修复实例以完成安装。"
-  },
-  "app.java-download-confirmation.postponed-body": {
-    "message": "实例将继续完成安装。启动前请先配置 Java {version}。"
-  },
-  "app.java-download-confirmation.postponed-title": {
-    "message": "Java 设置已推迟"
-  },
-  "app.java-download-confirmation.set-up-later": {
-    "message": "稍后设置"
-  },
-  "app.java-download-confirmation.title": {
-    "message": "下载 Java {version}？"
+  "app.install.missing-java.title": {
+    "message": "安装此实例需要 Java {version}"
   },
   "app.java.already-installed": {
     "message": "已安装"
@@ -7904,6 +7937,9 @@
   "app.library.view.cards": {
     "message": "实例库卡片"
   },
+  "app.library.view.list": {
+    "message": "详细列表"
+  },
   "app.library.view.standard": {
     "message": "标准网格"
   },
@@ -8890,6 +8926,54 @@
   },
   "app.oobe.migration.use-folder": {
     "message": "使用此文件夹"
+  },
+  "app.oobe.java.add.action": {
+    "message": "添加"
+  },
+  "app.oobe.java.add.added": {
+    "message": "已添加 Java {version}，现在用作 Java {major}。"
+  },
+  "app.oobe.java.add.description": {
+    "message": "填入 java 可执行文件的路径，或者浏览选择。"
+  },
+  "app.oobe.java.add.invalid": {
+    "message": "无法从这个路径启动 Java。"
+  },
+  "app.oobe.java.add.placeholder": {
+    "message": "/path/to/java"
+  },
+  "app.oobe.java.add.title": {
+    "message": "填入已有的 Java"
+  },
+  "app.oobe.java.description": {
+    "message": "Minecraft 需要 Java 才能运行。可以使用已有的 Java，也可以下载一个。"
+  },
+  "app.oobe.java.download.description": {
+    "message": "选择发行版和版本。下载期间可以继续设置。"
+  },
+  "app.oobe.java.download.done": {
+    "message": "Java 已下载。"
+  },
+  "app.oobe.java.download.downloading": {
+    "message": "正在下载 Java…"
+  },
+  "app.oobe.java.download.title": {
+    "message": "下载 Java"
+  },
+  "app.oobe.java.found.description": {
+    "message": "为每个 Java 版本选择要使用的那一个。"
+  },
+  "app.oobe.java.found.title": {
+    "message": "在此设备上找到"
+  },
+  "app.oobe.java.label": {
+    "message": "Java"
+  },
+  "app.oobe.java.none-found": {
+    "message": "没有在此设备上找到 Java。"
+  },
+  "app.oobe.java.title": {
+    "message": "选择或下载 Java。"
   },
   "app.oobe.progress": {
     "message": "设置进度"
@@ -11368,6 +11452,9 @@
   },
   "app.settings.groups.support": {
     "message": "应用与支持"
+  },
+  "app.settings.java.use-console-java": {
+    "message": "启动 Minecraft 时使用 java 而不是 javaw"
   },
   "app.settings.java.auto-high-performance-mode": {
     "message": "自动为 Java 使用高性能显卡"
@@ -20784,7 +20871,7 @@
     "message": "高级下载信息"
   },
   "app.settings.feature-flags.advanced-download-info-description": {
-    "message": "在下载详情中显示文件用时、请求速度与远端地址。开启时采集观测数据，并在导出网络连接时包含这些数据。"
+    "message": "下载时，在下载详细信息页面提供详细信息。当你遇到问题时，可以打开这个选项并将信息提供给开发者，有助于排查问题。"
   },
   "app.downloads.diagnostics.elapsed-help": {
     "message": "处理此文件的总用时，包含资源等待、已有文件检查、传输、写入及校验用时。"

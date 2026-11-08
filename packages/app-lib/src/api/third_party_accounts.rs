@@ -420,13 +420,14 @@ pub fn is_callback(command: &str) -> bool {
 /// Includes malformed OAuth links so rejected callbacks never expose codes in logs.
 pub fn is_callback_candidate(command: &str) -> bool {
     Url::parse(command).is_ok_and(|url| {
-        url.scheme() == "axolotl" && url.host_str() == Some("oauth")
+        url.scheme() == crate::brand::DEEP_LINK_SCHEME
+            && url.host_str() == Some("oauth")
     })
 }
 
 fn callback_url(command: &str) -> Option<Url> {
     let url = Url::parse(command).ok()?;
-    (url.scheme() == "axolotl"
+    (url.scheme() == crate::brand::DEEP_LINK_SCHEME
         && url.host_str() == Some("oauth")
         && url.path() == "/callback"
         && url.username().is_empty()

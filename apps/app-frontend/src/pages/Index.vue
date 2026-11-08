@@ -29,13 +29,13 @@ import {
     pruneHomeGreetingOverrides,
     setHomeGreetingOverride,
 } from '@/components/home/home-dashboard'
+import { provideHomeDashboardRuntime } from '@/components/home/home-dashboard-runtime'
 import {
     HOME_GREETING_EDITOR_KEY,
     type HomeGreetingEditorContext,
 } from '@/components/home/home-greeting-editor'
 import { getActivePlayerAccount } from '@/components/home/home-utils'
 import HomeCalendar from '@/components/home/HomeCalendar.vue'
-import { provideHomeDashboardRuntime } from '@/components/home/home-dashboard-runtime'
 import HomeDailyChallenge from '@/components/home/HomeDailyChallenge.vue'
 import HomeDashboard from '@/components/home/HomeDashboard.vue'
 import HomeGreetingAccountModal from '@/components/home/HomeGreetingAccountModal.vue'

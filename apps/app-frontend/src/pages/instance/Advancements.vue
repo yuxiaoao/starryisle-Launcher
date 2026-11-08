@@ -1,17 +1,18 @@
 <script setup lang="ts">
-import steveSkin from '@/assets/skins/steve.png?inline'
-import { getPlayerHeadUrl } from '@/helpers/rendering/batch-skin-renderer'
-import type { Skin } from '@/helpers/skins'
+import { defineMessages, useVIntl } from '@modrinth/ui'
 import { convertFileSrc, invoke } from '@tauri-apps/api/core'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+
+import steveSkin from '@/assets/skins/steve.png?inline'
 import {
     type AdvancementDef,
-    type WorldAdvancements,
     getAdvancementCatalog,
     getWorldAdvancements,
     listWorlds,
+    type WorldAdvancements,
 } from '@/helpers/advancements'
-import { defineMessages, useVIntl } from '@modrinth/ui'
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { getPlayerHeadUrl } from '@/helpers/rendering/batch-skin-renderer'
+import type { Skin } from '@/helpers/skins'
 
 const { formatMessage } = useVIntl()
 
@@ -458,13 +459,15 @@ onBeforeUnmount(() => {
             </button>
         </div>
 
-        <p v-if="loading" class="m-0 text-secondary">{{ formatMessage(messages.loading) }}</p>
+        <p v-if="loading" class="m-0 text-[var(--color-text-tertiary)]">
+            {{ formatMessage(messages.loading) }}
+        </p>
 
-        <p v-else-if="catalog.length === 0" class="m-0 text-secondary">
+        <p v-else-if="catalog.length === 0" class="m-0 text-[var(--color-text-tertiary)]">
             {{ formatMessage(messages.catalogMissing) }}
         </p>
 
-        <p v-else-if="rows.length === 0" class="m-0 text-secondary">
+        <p v-else-if="rows.length === 0" class="m-0 text-[var(--color-text-tertiary)]">
             {{ formatMessage(messages.empty) }}
         </p>
 
@@ -496,7 +499,7 @@ onBeforeUnmount(() => {
                     </div>
                 </div>
                 <span
-                    class="w-24 shrink-0 text-right text-sm tabular-nums text-[var(--color-text-secondary)]"
+                    class="w-24 shrink-0 text-right text-sm tabular-nums text-[var(--color-text-tertiary)]"
                 >
                     {{ progressLabelFor(row.done) }}
                 </span>
@@ -521,23 +524,23 @@ onBeforeUnmount(() => {
                             >
                                 {{ openWorld }}
                             </p>
-                            <p class="m-0 mt-1 text-sm text-[var(--color-text-secondary)]">
+                            <p class="m-0 mt-1 text-sm text-[var(--color-text-tertiary)]">
                                 {{ progressLabel }}
                             </p>
                         </div>
                         <button
-                            class="cursor-pointer rounded-lg border-0 bg-transparent px-2 py-1 text-xl leading-none text-[var(--color-text-secondary)] hover:bg-surface-3"
+                            class="cursor-pointer rounded-lg border-0 bg-transparent px-2 py-1 text-xl leading-none text-[var(--color-text-tertiary)] hover:bg-surface-3"
                             @click="closeDetail"
                         >
                             ×
                         </button>
                     </header>
 
-                    <div v-if="detailLoading" class="p-5 text-secondary">…</div>
+                    <div v-if="detailLoading" class="p-5 text-[var(--color-text-tertiary)]">…</div>
 
                     <template v-else-if="detail">
                         <div class="flex items-center gap-2 px-5 py-3">
-                            <span class="text-sm text-[var(--color-text-secondary)]">
+                            <span class="text-sm text-[var(--color-text-tertiary)]">
                                 {{ formatMessage(messages.player) }}
                             </span>
                             <span
@@ -577,7 +580,7 @@ onBeforeUnmount(() => {
                                 :class="
                                     activeCategory === category
                                         ? 'bg-brand text-[var(--color-accent-contrast)]'
-                                        : 'bg-surface-3 text-[var(--color-text-secondary)] hover:bg-surface-4'
+                                        : 'bg-surface-3 text-[var(--color-text-tertiary)] hover:bg-surface-4'
                                 "
                                 @click="activeCategory = category"
                             >
@@ -618,9 +621,7 @@ onBeforeUnmount(() => {
                                                 : item.entry.title
                                         }}
                                     </p>
-                                    <p
-                                        class="m-0 mt-0.5 text-xs text-[var(--color-text-secondary)]"
-                                    >
+                                    <p class="m-0 mt-0.5 text-xs text-[var(--color-text-tertiary)]">
                                         {{
                                             item.masked
                                                 ? formatMessage(messages.hiddenHint)
