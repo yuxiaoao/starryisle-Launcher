@@ -1056,7 +1056,7 @@ async function onImportFileReceived({
         // ── Unknown (no extraction) → error ──
         if (classification.item_type === 'unknown') {
             addNotification({
-                title: formatMessage(messages.dropUnknownTitle),
+                title: unknownTitleMessage(classification.reason),
                 text: unknownReasonMessage(classification.reason),
                 type: 'error',
             })
@@ -2295,6 +2295,7 @@ const {
     clearDropProcessingNotification,
     showNestedUnpackPrompt,
     showForceAnalysisPrompt,
+    unknownTitleMessage,
     unknownReasonMessage,
 } = dropImport
 
@@ -3800,21 +3801,36 @@ provideAppUpdateDownloadProgress(appUpdateDownload)
 
     &.has-custom-background,
     &.has-transparent-background {
-        border-top-left-radius: 0;
-
+        // Keep the rounded top-left corner over the image as well: a square
+        // corner against the nav rail and titlebar reads as a hard seam.
         &::before {
             border: none;
             box-shadow: none;
         }
     }
+}
 
-    &.has-custom-background {
-        // The page already reads `--color-bg` from the base rule above; neither
-        // opacity setting applies to it (see `global.scss`).
-        .loading-indicator-container {
-            border-top-left-radius: 0;
-        }
-    }
+// The rounded content corner leaves a concave quarter-circle notch over the
+// launcher background. A transparent circle with a spread shadow fills the
+// area outside its edge; clipping to the top-left quadrant leaves exactly the
+// notch, and the browser antialiases the shadow's arc.
+.app-grid-layout::after {
+    content: '';
+    position: absolute;
+    left: var(--left-bar-width);
+    top: var(--top-bar-height);
+    z-index: 2;
+    width: calc(var(--radius-xl) * 2);
+    height: calc(var(--radius-xl) * 2);
+    border-radius: 50%;
+    box-shadow: 0 0 0 var(--radius-xl) var(--surface-3);
+    clip-path: inset(0 50% 50% 0);
+    pointer-events: none;
+}
+
+.app-grid-layout.has-transparent-background::after {
+    box-shadow: 0 0 0 var(--radius-xl)
+        color-mix(in srgb, var(--surface-3-opaque) var(--opacity-ratio-chrome), transparent);
 }
 
 @media (prefers-reduced-motion: no-preference) {

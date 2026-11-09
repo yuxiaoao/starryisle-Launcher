@@ -1,4 +1,22 @@
 {
+  "app.downloads.slow-downloads.title": {
+    "message": "下载缓慢？"
+  },
+  "app.downloads.slow-downloads.description": {
+    "message": "可以前往 <settings-link>下载设置</settings-link> 开启强制多连接下载功能，可能会帮助提升你的下载速度。"
+  },
+  "app.downloads.slow-downloads.dismiss": {
+    "message": "不再提示"
+  },
+  "app.settings.resources.force-multiconnection": {
+    "message": "强制多连接下载"
+  },
+  "app.settings.resources.force-multiconnection-description": {
+    "message": "使用更激进的下载逻辑，可能会优化你的下载速度。当你遇到问题时，请考虑开启这个选项。"
+  },
+  "app.settings.resources.experimental": {
+    "message": "实验性"
+  },
   "app.schematics.source.reden": {
     "message": "Reden"
   },
@@ -3308,6 +3326,12 @@
   "app.drop.content-installed-title": {
     "message": "内容已安装"
   },
+  "app.drop.error.invalid-folder-text": {
+    "message": "该文件夹中没有有效的游戏实例或支持的内容，请选择其他文件夹。"
+  },
+  "app.drop.error.invalid-folder-title": {
+    "message": "无法导入文件夹"
+  },
   "app.drop.error.multiple-files-text": {
     "message": "一次只能拖放一个文件或文件夹。"
   },
@@ -3397,6 +3421,9 @@
   },
   "app.drop.no-instances": {
     "message": "未找到实例"
+  },
+  "app.drop.no-instances-text": {
+    "message": "该文件夹中没有有效的游戏实例，请选择包含游戏版本的启动器文件夹或 .minecraft 文件夹。"
   },
   "app.drop.overlay-subtitle": {
     "message": "松开以分类并导入"
@@ -11780,11 +11807,20 @@
   "app.settings.resources.ignore-ssl-errors-description": {
     "message": "允许通过会替换 HTTPS 证书的代理或网络工具下载。启用后将关闭证书验证，下载内容可能遭到篡改；请仅在必要时启用。"
   },
+  "app.settings.resources.forced-connection-limit": {
+    "message": "实验性连接数上限"
+  },
+  "app.settings.resources.forced-connection-limit-description": {
+    "message": "按各文件剩余大小的比例分配连接，默认 72。手动下载额度更低时仍遵守该值。提高上限可能增加网络负载和重试。通常来说，上限越高下载速度越快。如果你认为下载速度不够快，请酌情提升该值。如果起到反作用，请降低该值。"
+  },
+  "app.settings.resources.forced-connection-limit-custom": {
+    "message": "自定义"
+  },
   "app.settings.resources.maximum-downloads": {
     "message": "最大并发下载数"
   },
   "app.settings.resources.maximum-downloads-description": {
-    "message": "自动模式会根据设备在 16 到 64 之间选择并发下载数；手动更改会立即生效。"
+    "message": "自动模式会调整连接额度。强制多连接下载使用实验性连接数上限；手动设置更低额度时遵守该值。手动调整会立即生效。"
   },
   "app.settings.resources.maximum-writes": {
     "message": "最大并发写入数"

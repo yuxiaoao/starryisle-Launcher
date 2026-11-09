@@ -648,22 +648,23 @@
         "install_dir_requires_elevation: let can_write = fs::OpenOptions::new()",
         "install_dir_requires_elevation: let removed = fs::remove_file(&write_test).is_ok();",
         "read_installer_status: let bytes = fs::read(status_path)?;",
+        "remove_webview_data_directory: match fs::remove_dir_all(directory) {",
         "start_install: let _ = fs::remove_file(&status_path);",
         "start_install: let _ = fs::remove_file(status_path);",
         "start_uninstall: let _ = fs::remove_file(&status_path);",
         "start_uninstall: let _ = fs::remove_file(status_path);",
         "validate_request: if fs::create_dir_all(&resource_dir).is_err() {",
         "validate_request: if fs::write(&write_test, b\"StarryIsle Launcher\").is_err() {",
-        "validate_request: let _ = fs::remove_file(write_test);",
-        "webview_data_directory: fs::create_dir_all(&directory).map_err(|error| {"
+        "validate_request: let _ = fs::remove_file(write_test);"
       ]
     },
     {
       "file": "apps/installer-ui/src/windows.rs",
       "form": "std::thread::sleep",
-      "count": 1,
+      "count": 2,
       "reason": "phase-0 baseline: blocking sleep outside async code",
       "sites": [
+        "remove_webview_data_directory: thread::sleep(Duration::from_millis(50));",
         "wait_for_installer: Ok(None) => thread::sleep(Duration::from_millis(120)),"
       ]
     },

@@ -1,6 +1,7 @@
 <script setup>
 import { BoxIcon, FolderOpenIcon, FolderSearchIcon, PlusIcon, TrashIcon } from '@modrinth/assets'
 import {
+    Badge,
     Combobox,
     defineMessages,
     IconButton,
@@ -509,6 +510,32 @@ const messages = defineMessages({
         id: 'app.settings.resources.source.mojang-official-only',
         defaultMessage: 'Official source only',
     },
+    forceMulticonnection: {
+        id: 'app.settings.resources.force-multiconnection',
+        defaultMessage: 'Force multi-connection downloads',
+    },
+    forceMulticonnectionDescription: {
+        id: 'app.settings.resources.force-multiconnection-description',
+        defaultMessage:
+            'Uses more aggressive download logic that may improve your download speed. Consider enabling this option if you encounter problems.',
+    },
+    forcedConnectionLimit: {
+        id: 'app.settings.resources.forced-connection-limit',
+        defaultMessage: 'Experimental connection limit',
+    },
+    forcedConnectionLimitDescription: {
+        id: 'app.settings.resources.forced-connection-limit-description',
+        defaultMessage:
+            'Connections are shared across files in proportion to their remaining size. Default: 72. A lower manual download limit still applies. Higher limits may increase network load and retries.',
+    },
+    forcedConnectionLimitCustom: {
+        id: 'app.settings.resources.forced-connection-limit-custom',
+        defaultMessage: 'Custom',
+    },
+    experimental: {
+        id: 'app.settings.resources.experimental',
+        defaultMessage: 'Experimental',
+    },
     maximumDownloads: {
         id: 'app.settings.resources.maximum-downloads',
         defaultMessage: 'Maximum concurrent downloads',
@@ -525,7 +552,7 @@ const messages = defineMessages({
     maximumDownloadsDescription: {
         id: 'app.settings.resources.maximum-downloads-description',
         defaultMessage:
-            'Automatic mode uses 64 concurrent downloads. Manual changes apply immediately.',
+            'Automatic mode adjusts the connection limit. Forced multi-connection downloads use the experimental connection limit, or a lower manual limit. Manual changes apply immediately.',
     },
     manualConcurrency: {
         id: 'app.settings.resources.concurrency.manual',
@@ -805,6 +832,53 @@ const downloadConcurrencyOptions = computed(() => [
         label: formatMessage(messages.manualConcurrency),
     },
 ])
+const forcedConnectionPresets = [72, 128, 256]
+const forcedConnectionMode = ref(
+    forcedConnectionPresets.includes(settings.value.forced_max_concurrent_downloads)
+        ? String(settings.value.forced_max_concurrent_downloads)
+        : 'custom',
+)
+watch(settings, (value) => {
+    forcedConnectionMode.value = forcedConnectionPresets.includes(
+        value.forced_max_concurrent_downloads,
+    )
+        ? String(value.forced_max_concurrent_downloads)
+        : 'custom'
+})
+const forcedConnectionOptions = computed(() => [
+    ...forcedConnectionPresets.map((value) => ({ value: String(value), label: String(value) })),
+    { value: 'custom', label: formatMessage(messages.forcedConnectionLimitCustom) },
+])
+const forcedConnectionSelection = computed({
+    get: () => forcedConnectionMode.value,
+    set: (mode) => {
+        forcedConnectionMode.value = mode
+        if (mode !== 'custom') settings.value.forced_max_concurrent_downloads = Number(mode)
+    },
+})
+const forcedConnectionLimit = computed({
+    get: () => settings.value.forced_max_concurrent_downloads,
+    set: (value) => {
+        if (Number.isFinite(value)) {
+            settings.value.forced_max_concurrent_downloads = Math.min(
+                256,
+                Math.max(1, Math.trunc(value)),
+            )
+        }
+    },
+})
+const manualDownloadConcurrency = computed({
+    get: () =>
+        Math.min(
+            settings.value.max_concurrent_downloads,
+            settings.value.force_multiconnection_downloads
+                ? settings.value.forced_max_concurrent_downloads
+                : 256,
+        ),
+    set: (value) => {
+        settings.value.max_concurrent_downloads = value
+    },
+})
 const proxyModeOptions = computed(() => [
     {
         value: 'none',
@@ -1298,6 +1372,63 @@ function validateMinecraftDirectory(_value) {
                     <Toggle id="ignore-ssl-errors" v-model="settings.ignore_ssl_errors" />
                 </template>
             </SettingsRow>
+            <SettingsRow>
+                <template #label>
+                    <span
+                        id="settings-target-resources-force-multiconnection"
+                        tabindex="-1"
+                        class="flex flex-wrap items-center gap-2"
+                    >
+                        {{ formatMessage(messages.forceMulticonnection) }}
+                        <Badge color="orange" :type="formatMessage(messages.experimental)" />
+                    </span>
+                </template>
+                <template #description>{{
+                    formatMessage(messages.forceMulticonnectionDescription)
+                }}</template>
+                <template #copy>
+                    <PinnedOverrideHint
+                        key-name="force_multiconnection_downloads"
+                        @cleared="reloadSettings"
+                    />
+                </template>
+                <template #control>
+                    <Toggle
+                        id="force-multiconnection-downloads"
+                        v-model="settings.force_multiconnection_downloads"
+                    />
+                </template>
+            </SettingsRow>
+            <SettingsRow v-if="settings.force_multiconnection_downloads" stacked>
+                <template #label>{{ formatMessage(messages.forcedConnectionLimit) }}</template>
+                <template #description>{{
+                    formatMessage(messages.forcedConnectionLimitDescription)
+                }}</template>
+                <template #copy>
+                    <PinnedOverrideHint
+                        key-name="forced_max_concurrent_downloads"
+                        @cleared="reloadSettings"
+                    />
+                </template>
+                <template #control>
+                    <div class="flex w-full flex-col gap-3">
+                        <div class="w-48 max-w-full">
+                            <Combobox
+                                v-model="forcedConnectionSelection"
+                                :options="forcedConnectionOptions"
+                            />
+                        </div>
+                        <Slider
+                            v-if="forcedConnectionMode === 'custom'"
+                            id="forced-connection-limit"
+                            v-model="forcedConnectionLimit"
+                            :min="1"
+                            :max="256"
+                            :step="1"
+                        />
+                    </div>
+                </template>
+            </SettingsRow>
             <SettingsRow stacked>
                 <template #label>
                     <span id="settings-target-resources-maximum-downloads" tabindex="-1">
@@ -1318,9 +1449,13 @@ function validateMinecraftDirectory(_value) {
                         <Slider
                             v-if="!settings.auto_concurrent_downloads"
                             id="max-downloads"
-                            v-model="settings.max_concurrent_downloads"
+                            v-model="manualDownloadConcurrency"
                             :min="1"
-                            :max="256"
+                            :max="
+                                settings.force_multiconnection_downloads
+                                    ? settings.forced_max_concurrent_downloads
+                                    : 256
+                            "
                             :step="1"
                         />
                     </div>
