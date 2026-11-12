@@ -1,5 +1,5 @@
 {
-  "source": "LobeHub 700c8349e35477cb602975f8089c942e96bc9601 model-bank chat models",
+  "source": "LobeHub 47bd681c0b3f91edc5e1bc6ab5d634a4b1311d31 model-bank chat models",
   "providers": {
     "ai21": [
       {
@@ -8514,6 +8514,11 @@
         "enabled": true
       },
       {
+        "id": "claude-fable-5-2",
+        "name": "Claude Fable 5.2",
+        "enabled": true
+      },
+      {
         "id": "claude-haiku-4-5-20251001",
         "name": "Claude Haiku 4.5",
         "enabled": true
@@ -8561,6 +8566,11 @@
       {
         "id": "claude-sonnet-5-5",
         "name": "Claude Sonnet 5.5",
+        "enabled": true
+      },
+      {
+        "id": "deepseek-ai/DeepSeek-V4.1-Flash",
+        "name": "DeepSeek V4.1 Flash 1017",
         "enabled": true
       },
       {

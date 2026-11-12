@@ -117,5 +117,10 @@ run(
         },
     },
 )
+if (profile === 'release') {
+    const archive = path.join(destination, `Axolotl_Launcher_${version()}_x64_portable.zip`)
+    run('pnpm', ['tauri', 'signer', 'sign', archive], { cwd: app })
+    requireFile(`${archive}.sig`)
+}
 for (const file of files(destination).filter((file) => path.dirname(file) === destination))
     console.log(file)
