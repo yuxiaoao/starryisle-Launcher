@@ -64,6 +64,8 @@ jobs:
             MERGE_ARGS="-X ours"
           fi
 
+          PRE_MERGE=$(git rev-parse HEAD)
+
           # A real merge: upstream content lands in the tree, our side wins only
           # where the two edits overlap. Modify/delete conflicts cannot be resolved
           # by -X, so every remaining conflict is settled explicitly.
@@ -82,6 +84,12 @@ jobs:
             done < /tmp/conflicts.txt
             git commit -m "chore(sync): merge upstream main into the StarryIsle fork"
           fi
+
+          # The runner token cannot update workflow files, so keep this fork's
+          # workflows exactly as they were before the merge.
+          git checkout "$PRE_MERGE" -- .github/workflows
+          git add .github/workflows
+          git commit --amend --no-edit
 
           echo "### After merge"
           git rev-list --count HEAD..upstream/main | sed 's/^/commits behind: /'
