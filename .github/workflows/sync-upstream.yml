@@ -1,0 +1,98 @@
+name: Sync upstream
+
+# Merges the upstream Axolotl branch into this fork for real: the merge commit
+# records upstream/main as a parent, so later syncs are ordinary merges.
+# Conflict hunks keep our side; every other upstream change lands in the tree.
+on:
+  workflow_dispatch:
+    inputs:
+      upstream:
+        description: Upstream repository (owner/name)
+        required: false
+        default: Axolotl-Launcher/Axolotl
+      strategy:
+        description: Which side wins when both changed the same lines
+        required: false
+        default: ours
+        type: choice
+        options:
+          - ours
+          - theirs
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sync-upstream
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    name: Merge upstream into main
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out main with full history
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Merge upstream
+        env:
+          UPSTREAM: ${{ inputs.upstream }}
+          STRATEGY: ${{ inputs.strategy }}
+        run: |
+          set -euo pipefail
+          git config user.name "starryisle-sync"
+          git config user.email "sync@users.noreply.github.com"
+
+          git remote add upstream "https://github.com/${UPSTREAM}.git" 2>/dev/null || \
+            git remote set-url upstream "https://github.com/${UPSTREAM}.git"
+          git fetch upstream main --no-tags
+
+          echo "### Before merge"
+          git rev-list --count HEAD..upstream/main | sed 's/^/commits behind: /'
+
+          if git merge-base --is-ancestor upstream/main HEAD; then
+            echo "already up to date; nothing to merge"
+            exit 0
+          fi
+
+          if [ "${STRATEGY}" = "theirs" ]; then
+            MERGE_ARGS="-X theirs"
+          else
+            MERGE_ARGS="-X ours"
+          fi
+
+          # A real merge: upstream content lands in the tree, our side wins only
+          # where the two edits overlap. Modify/delete conflicts cannot be resolved
+          # by -X, so every remaining conflict is settled explicitly.
+          if ! git merge --no-ff ${MERGE_ARGS} \
+            -m "chore(sync): merge upstream main into the StarryIsle fork" \
+            upstream/main; then
+            echo "### Conflicts"
+            git diff --name-only --diff-filter=U | tee /tmp/conflicts.txt
+            while IFS= read -r path; do
+              [ -z "$path" ] && continue
+              if git checkout --ours -- "$path" 2>/dev/null; then
+                git add -- "$path"
+              else
+                git add -A -- "$path" || true
+              fi
+            done < /tmp/conflicts.txt
+            git commit -m "chore(sync): merge upstream main into the StarryIsle fork"
+          fi
+
+          echo "### After merge"
+          git rev-list --count HEAD..upstream/main | sed 's/^/commits behind: /'
+
+          git push --force origin HEAD:main
+
+      - name: Summary
+        if: always()
+        run: |
+          {
+            echo "### Sync result"
+            echo "- upstream: \`${{ inputs.upstream }}\`"
+            echo "- strategy: \`${{ inputs.strategy }}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
