@@ -91,8 +91,8 @@ ${StrLoc}
 !define MUI_FINISHPAGE_TITLE "$(axlFinishTitle)"
 !define MUI_FINISHPAGE_TEXT "$(axlFinishText)"
 !define MUI_ABORTWARNING
-!define MUI_CUSTOMFUNCTION_GUIINIT ApplyAxolotlTheme
-!define MUI_CUSTOMFUNCTION_UNGUIINIT un.ApplyAxolotlTheme
+!define MUI_CUSTOMFUNCTION_GUIINIT ApplyStarryIsleTheme
+!define MUI_CUSTOMFUNCTION_UNGUIINIT un.ApplyStarryIsleTheme
 
 Var PassiveMode
 Var UpdateMode
@@ -514,7 +514,7 @@ Function PageLeaveReinstall
   reinst_done:
 FunctionEnd
 
-Function ApplyAxolotlTheme
+Function ApplyStarryIsleTheme
   CreateFont $InstallerBodyFont "Segoe UI" 9 400
   CreateFont $InstallerTitleFont "Segoe UI" 16 700
   CreateFont $InstallerSmallFont "Segoe UI" 8 400
@@ -783,7 +783,7 @@ Function PageLeaveOptions
     ${NSD_SetText} $OptionsError "$(axlResourceDirectoryNotWritable)"
     Abort
   ${EndIf}
-  FileWrite $0 "Axolotl Launcher"
+  FileWrite $0 "StarryIsle Launcher"
   FileClose $0
   Delete "$ResourceDir\.axolotl-write-test"
 FunctionEnd
@@ -877,7 +877,7 @@ FunctionEnd
 !define MUI_PAGE_CUSTOMFUNCTION_SHOW un.FinishShow
 !insertmacro MUI_UNPAGE_FINISH
 
-Function un.ApplyAxolotlTheme
+Function un.ApplyStarryIsleTheme
   CreateFont $InstallerBodyFont "Segoe UI" 9 400
   CreateFont $InstallerTitleFont "Segoe UI" 16 700
   CreateFont $InstallerSmallFont "Segoe UI" 8 400
@@ -927,18 +927,18 @@ FunctionEnd
   !include "{{this}}"
 {{/each}}
 
-LangString axlWelcomeTitle ${LANG_ENGLISH} "Install Axolotl Launcher"
+LangString axlWelcomeTitle ${LANG_ENGLISH} "Install StarryIsle Launcher"
 LangString axlWelcomeText ${LANG_ENGLISH} "A modern home for your Minecraft instances.$\r$\n$\r$\nVersion ${VERSION} · 64-bit · Current user"
 LangString axlStart ${LANG_ENGLISH} "Start"
 LangString axlOptionsTitle ${LANG_ENGLISH} "Installation settings"
 LangString axlInstallDirectoryLabel ${LANG_ENGLISH} "Program installation location"
 LangString axlResourceDirectoryLabel ${LANG_ENGLISH} "Application directory"
 LangString axlResourceDirectoryDescription ${LANG_ENGLISH} "Stores game instances, Java runtimes, resources, and caches. This directory can grow significantly."
-LangString axlAssociateFileTypes ${LANG_ENGLISH} "Associate .mrpack modpack files with Axolotl"
+LangString axlAssociateFileTypes ${LANG_ENGLISH} "Associate .mrpack modpack files with StarryIsle"
 LangString axlBrowse ${LANG_ENGLISH} "Browse..."
 LangString axlSelectInstallDirectory ${LANG_ENGLISH} "Select the program installation location"
 LangString axlSelectResourceDirectory ${LANG_ENGLISH} "Select the application directory"
-LangString axlExistingDirectoryNotice ${LANG_ENGLISH} "This directory already contains files. Axolotl will keep them."
+LangString axlExistingDirectoryNotice ${LANG_ENGLISH} "This directory already contains files. StarryIsle will keep them."
 LangString axlExistingInstallDirectoryPreserved ${LANG_ENGLISH} "Your existing application directory will be preserved. You can change it later in Settings > Resource management."
 LangString axlInstallButton ${LANG_ENGLISH} "Install"
 LangString axlBack ${LANG_ENGLISH} "Back"
@@ -946,23 +946,23 @@ LangString axlInstallDirectoryInvalid ${LANG_ENGLISH} "Choose an absolute progra
 LangString axlResourceDirectoryAbsolute ${LANG_ENGLISH} "Choose an absolute application directory."
 LangString axlResourceDirectoryRoot ${LANG_ENGLISH} "The root of a drive or network share cannot be used as the application directory."
 LangString axlResourceDirectoryInsideInstall ${LANG_ENGLISH} "The application directory must be separate from the program installation location."
-LangString axlResourceDirectoryNotWritable ${LANG_ENGLISH} "Axolotl cannot write to this application directory. Choose another location or change its permissions."
-LangString axlFinishTitle ${LANG_ENGLISH} "Axolotl Launcher is installed"
+LangString axlResourceDirectoryNotWritable ${LANG_ENGLISH} "StarryIsle cannot write to this application directory. Choose another location or change its permissions."
+LangString axlFinishTitle ${LANG_ENGLISH} "StarryIsle Launcher is installed"
 LangString axlFinishText ${LANG_ENGLISH} "Everything is ready. Your application directory is:$\r$\n$ResourceDir"
 LangString axlFinishButton ${LANG_ENGLISH} "Finish"
 
-LangString axlWelcomeTitle ${LANG_SIMPCHINESE} "安装 Axolotl Launcher"
+LangString axlWelcomeTitle ${LANG_SIMPCHINESE} "安装 StarryIsle Launcher"
 LangString axlWelcomeText ${LANG_SIMPCHINESE} "为你的 Minecraft 实例准备的现代化启动器。$\r$\n$\r$\n版本 ${VERSION} · 64 位 · 当前用户"
 LangString axlStart ${LANG_SIMPCHINESE} "开始"
 LangString axlOptionsTitle ${LANG_SIMPCHINESE} "安装设置"
 LangString axlInstallDirectoryLabel ${LANG_SIMPCHINESE} "程序安装位置"
 LangString axlResourceDirectoryLabel ${LANG_SIMPCHINESE} "应用目录"
 LangString axlResourceDirectoryDescription ${LANG_SIMPCHINESE} "用于保存游戏实例、Java、游戏资源和缓存，后续可能占用较多空间。"
-LangString axlAssociateFileTypes ${LANG_SIMPCHINESE} "将 .mrpack 整合包文件关联到 Axolotl"
+LangString axlAssociateFileTypes ${LANG_SIMPCHINESE} "将 .mrpack 整合包文件关联到 StarryIsle"
 LangString axlBrowse ${LANG_SIMPCHINESE} "浏览..."
 LangString axlSelectInstallDirectory ${LANG_SIMPCHINESE} "选择程序安装位置"
 LangString axlSelectResourceDirectory ${LANG_SIMPCHINESE} "选择应用目录"
-LangString axlExistingDirectoryNotice ${LANG_SIMPCHINESE} "此目录中已有文件，Axolotl 会保留这些内容。"
+LangString axlExistingDirectoryNotice ${LANG_SIMPCHINESE} "此目录中已有文件，StarryIsle 会保留这些内容。"
 LangString axlExistingInstallDirectoryPreserved ${LANG_SIMPCHINESE} "将保留现有应用目录。之后仍可在“设置 > 资源管理”中修改。"
 LangString axlInstallButton ${LANG_SIMPCHINESE} "安装"
 LangString axlBack ${LANG_SIMPCHINESE} "上一步"
@@ -970,8 +970,8 @@ LangString axlInstallDirectoryInvalid ${LANG_SIMPCHINESE} "请选择有效的绝
 LangString axlResourceDirectoryAbsolute ${LANG_SIMPCHINESE} "请选择有效的绝对应用目录。"
 LangString axlResourceDirectoryRoot ${LANG_SIMPCHINESE} "不能将磁盘或网络共享根目录直接用作应用目录。"
 LangString axlResourceDirectoryInsideInstall ${LANG_SIMPCHINESE} "应用目录必须与程序安装位置分开。"
-LangString axlResourceDirectoryNotWritable ${LANG_SIMPCHINESE} "Axolotl 无法写入该应用目录，请更换位置或调整目录权限。"
-LangString axlFinishTitle ${LANG_SIMPCHINESE} "Axolotl Launcher 已安装"
+LangString axlResourceDirectoryNotWritable ${LANG_SIMPCHINESE} "StarryIsle 无法写入该应用目录，请更换位置或调整目录权限。"
+LangString axlFinishTitle ${LANG_SIMPCHINESE} "StarryIsle Launcher 已安装"
 LangString axlFinishText ${LANG_SIMPCHINESE} "一切准备就绪。当前应用目录：$\r$\n$ResourceDir"
 LangString axlFinishButton ${LANG_SIMPCHINESE} "完成"
 
@@ -1528,7 +1528,7 @@ FunctionEnd
 
 Function un.onUninstFailed
   ${If} $UninstallFailure == ""
-    StrCpy $UninstallFailure "Uninstallation stopped. Close Axolotl Launcher and retry."
+    StrCpy $UninstallFailure "Uninstallation stopped. Close StarryIsle Launcher and retry."
   ${EndIf}
   Push "error:$UninstallFailure"
   Call un.ReportInstallerProgress

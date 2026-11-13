@@ -23,6 +23,9 @@
     "windows": {
       "nsis": {
         "installMode": "currentUser",
+        "installerIcon": "icons/icon.ico",
+        "uninstallerIcon": "icons/icon.ico",
+        "template": "./nsis/installer.nsi",
         "installerHooks": "./nsis/hooks.nsi"
       }
     },
