@@ -297,6 +297,7 @@ export function applyBarTint(hue: number | null) {
     html.style.removeProperty('--app-nav-bg')
     html.style.removeProperty('--app-top-bg')
     html.style.removeProperty('--app-shell-bg')
+    html.removeAttribute('data-hue-tint')
     if (hue === null) return
 
     const computed = getComputedStyle(html)
@@ -311,6 +312,8 @@ export function applyBarTint(hue: number | null) {
     html.style.setProperty('--app-nav-bg', bar)
     html.style.setProperty('--app-top-bg', bar)
     html.style.setProperty('--app-shell-bg', bar)
+    // Lets the stylesheet drop the neutral corner seam while the tint is active.
+    html.setAttribute('data-hue-tint', '')
 }
 
 export const useTheming = defineStore('themeStore', {

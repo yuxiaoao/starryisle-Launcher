@@ -3998,6 +3998,12 @@ provideAppUpdateDownloadProgress(appUpdateDownload)
     }
 }
 
+// 色调开启时，内容面板圆角处的浅色描边会露出一圈中性色，改成跟随外壳色调。
+:global(html[data-hue-tint]) .app-contents::before {
+    border-color: var(--app-top-bg, var(--surface-5));
+    box-shadow: none;
+}
+
 .app-contents::before {
     z-index: 30;
     content: '';

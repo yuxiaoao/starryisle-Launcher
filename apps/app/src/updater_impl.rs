@@ -19,7 +19,6 @@ use tokio::time::Instant;
 use url::Url;
 
 const UPDATE_SERVER_LATEST_URL: &str = "https://github.com/yuxiaoao/starryisle-Launcher/releases/latest/download/latest.json";
-// Only used for Debian packages, which this fork does not publish yet.
 const UPDATE_SERVER_API: &str = "https://update.axlmc.org/api/versions";
 const UPDATE_ARTIFACT_BASE: &str = "https://dist.axlmc.org/";
 
@@ -295,11 +294,20 @@ fn select_portable_artifact(
     release: &VersionEntry,
     arch: &str,
 ) -> Result<UpdateArtifact> {
+    let suffix = match arch {
+        "x86_64" => "x64",
+        "aarch64" => "arm64",
+        _ => {
+            return Err(Error::Network(
+                "Unsupported portable update architecture".into(),
+            )
+            .into());
+        }
+    };
     let expected =
-        format!("Axolotl_Launcher_{}_x64_portable.zip", release.version);
+        format!("Axolotl_Launcher_{}_{suffix}_portable.zip", release.version);
     let mut matches = release.artifacts.iter().filter(|entry| {
-        arch == "x86_64"
-            && entry.kind == "portable"
+        entry.kind == "portable"
             && entry.variant.as_deref() == Some("portable")
             && entry.platform == "windows"
             && entry.architecture == arch
@@ -388,6 +396,7 @@ fn update_channel(channel: &str) -> Result<&str> {
 fn update_platform() -> Result<&'static str> {
     match (std::env::consts::OS, std::env::consts::ARCH) {
         ("windows", "x86_64") => Ok("windows-x86_64"),
+        ("windows", "aarch64") => Ok("windows-aarch64"),
         ("linux", "x86_64") => Ok("linux-x86_64"),
         ("linux", "aarch64") => Ok("linux-aarch64"),
         ("macos", "x86_64") => Ok("darwin-x86_64"),
@@ -433,13 +442,19 @@ fn update_artifact_url(relative_path: &str) -> Result<Url> {
     Ok(url)
 }
 
-/// GitHub manifests carry absolute artifact URLs, while the legacy Update
-/// Server manifest carries paths relative to the distribution origin.
-fn resolve_update_download_url(url: &Url) -> Result<Url> {
-    if matches!(url.scheme(), "http" | "https") && url.host_str().is_some() {
-        return Ok(url.clone());
+/// The Windows updater launches the NSIS installer and exits with
+/// `std::process::exit(0)` without returning to the `Exit` handler. The
+/// plugin's hook is the last point where the database can be closed cleanly.
+fn close_database_before_installer() {
+    if let Some(state) = theseus::State::get_if_initialized()
+        && let Err(error) =
+            tauri::async_runtime::block_on(state.finish_database_session())
+    {
+        tracing::warn!(
+            %error,
+            "Could not record a clean database shutdown before the Windows installer"
+        );
     }
-    update_artifact_url(url.path())
 }
 
 /// Build the platform-updater with the given endpoints and run a check.
@@ -508,16 +523,21 @@ async fn check_with_updater<R: Runtime>(
     };
     update.timeout = Some(UPDATE_DOWNLOAD_TIMEOUT);
 
-    // On Debian and derivatives the plugin's minisign signature check cannot
-    // validate the unsigned .deb, so point the download at the deb from the
-    // Update Server catalog instead of the AppImage artifact. Its integrity
-    // is verified with the catalog's sha256/size during the download.
-    if is_apt_linux() {
-        update.download_url =
-            fetch_update_artifact(&update.version, None).await?.url;
-    } else {
-        update.download_url =
-            resolve_update_download_url(&update.download_url)?;
+    let install_method = *webview.state::<UpdateMethod>();
+
+    // Linux packages carry their own signature; AppImages and other platforms
+    // keep the updater manifest signature for their own archive.
+    if let Some(installer) = install_method.package_installer() {
+        let package =
+            fetch_package_update(&update.version, installer.variant).await?;
+        update.download_url = package.url;
+        update.signature = package.signature;
+    } else if install_method != UpdateMethod::Manual {
+        // Only the upstream artifact host needs its path rewritten; GitHub
+        // release assets are already absolute download URLs.
+        if update.download_url.host_str() == Some("dist.axlmc.org") {
+            update.download_url = update_artifact_url(update.download_url.path())?;
+        }
     }
 
     let published_at = update
@@ -1606,6 +1626,16 @@ mod tests {
             select_portable_artifact(&release(portable.clone()), "aarch64")
                 .is_err()
         );
+        let mut arm64 = portable.clone();
+        arm64["architecture"] = serde_json::json!("aarch64");
+        arm64["relative_path"] = serde_json::json!(
+            "dist/1.11.0/Axolotl_Launcher_1.11.0_arm64_portable.zip"
+        );
+        assert!(
+            select_portable_artifact(&release(arm64.clone()), "aarch64")
+                .is_ok()
+        );
+        assert!(select_portable_artifact(&release(arm64), "x86_64").is_err());
         for (key, value) in [
             ("kind", serde_json::json!("installer")),
             ("variant", serde_json::json!("modern")),
@@ -1678,20 +1708,12 @@ mod tests {
     }
 
     #[test]
-    fn the_update_manifest_comes_from_this_fork() {
+    fn metadata_endpoints_stay_on_update_server() {
         assert_eq!(
             update_endpoint().unwrap().as_str(),
-            "https://github.com/yuxiaoao/starryisle-Launcher/releases/latest/download/latest.json"
+            "https://update.axlmc.org/latest"
         );
-    }
-
-    #[test]
-    fn absolute_artifact_urls_are_used_verbatim() {
-        let url = url::Url::parse(
-            "https://github.com/yuxiaoao/starryisle-Launcher/releases/download/v1.0.5/StarryIsle.Launcher_1.0.5_x64-setup.exe",
-        )
-        .unwrap();
-        assert_eq!(resolve_update_download_url(&url).unwrap(), url);
+        assert_eq!(UPDATE_SERVER_API, "https://update.axlmc.org/api/versions");
     }
 
     #[test]
