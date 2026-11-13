@@ -23,6 +23,11 @@
     pointer-events: none;
 }
 
+/* 开启界面色调时，圆角缺口要跟随外壳颜色，否则会露出一小块中性灰。 */
+html[data-hue-tint] .app-grid-layout::before {
+    box-shadow: 0 0 0 var(--radius-xl) var(--app-top-bg, var(--surface-3));
+}
+
 .app-grid-layout.has-transparent-background::before {
     box-shadow: 0 0 0 var(--radius-xl)
         color-mix(in srgb, var(--surface-3-opaque) var(--opacity-ratio-chrome), transparent);
