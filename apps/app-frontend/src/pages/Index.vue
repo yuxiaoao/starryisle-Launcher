@@ -606,7 +606,7 @@ if (!instancesLoaded || instances.value.length > 0) void fetchPlayerName()
             <div
                 class="flex-none border-0 border-b-[1px] border-solid border-[--brand-gradient-border]"
             >
-                <div class="home-rail-calendar h-[21rem] min-h-0">
+                <div class="home-rail-calendar min-h-0">
                     <HomeCalendar :instances="instances" />
                 </div>
             </div>
@@ -618,9 +618,29 @@ if (!instancesLoaded || instances.value.length > 0) void fetchPlayerName()
 
 <style scoped>
 .home-rail-calendar {
-    /* 侧栏日历整体等比缩小到 75%，宽度反向补偿以占满栏宽。 */
-    zoom: 0.75;
-    width: calc(100% / 0.75);
+    /* 侧栏日历走紧凑版：格子缩小、去掉大号统计行、高度随内容收缩。 */
+    min-height: 0;
+}
+
+.home-rail-calendar :deep(.home-calendar) {
+    padding-top: 0.25rem;
+    padding-bottom: 0.25rem;
+}
+
+.home-rail-calendar :deep(.home-calendar-stats) {
+    display: none;
+}
+
+.home-rail-calendar :deep(.home-heat-month) {
+    gap: 2px;
+}
+
+.home-rail-calendar :deep(.home-heat-month .home-heat-cell) {
+    height: 1.1rem !important;
+}
+
+.home-rail-calendar :deep(.home-heat-weekdays) {
+    margin-bottom: 2px;
 }
 
 .home-floating-controls {
