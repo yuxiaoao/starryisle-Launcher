@@ -620,9 +620,9 @@ if (!instancesLoaded || instances.value.length > 0) void fetchPlayerName()
 .home-rail-calendar {
     /* 侧栏日历走紧凑版：右侧多留一点，避开滚动条。 */
     min-height: 0;
-    /* 与上下相邻的侧栏区块同宽：不加左右留白，避免窄一截。 */
+    /* 与上下相邻的侧栏区块同宽，只留 4px 内边距防止贴死边缘。 */
     margin: 0.5rem 0;
-    padding: 0;
+    padding: 0 0.25rem;
     box-sizing: border-box;
 }
 
