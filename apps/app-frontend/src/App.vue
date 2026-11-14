@@ -3,6 +3,10 @@ import '@/assets/stylesheets/window-frame.css'
 
 import { ModrinthApiError, TauriModrinthClient, VerboseLoggingFeature } from '@modrinth/api-client'
 import {
+    ChangeSkinIcon,
+    ChartSplineIcon,
+    CompassIcon,
+    FlaskConicalIcon,
     FolderOpenIcon,
     RefreshCwIcon,
     RightArrowIcon,
@@ -227,11 +231,25 @@ import { setupContentInstallPreviews } from '@/providers/setup/content-install-p
 import { setupLoadingStateProvider } from '@/providers/setup/loading-state'
 import { useError } from '@/store/error.js'
 import { useTheming } from '@/store/state'
+import { applyBarTint, HUE_TINT_STORAGE_KEY } from '@/store/theme'
 
 import { AppNotificationManager } from './providers/app-notifications'
 import { AppPopupNotificationManager } from './providers/app-popup-notifications'
 
 const themeStore = useTheming()
+
+// Restore the saved interface hue and keep the bars in sync with theme changes.
+try {
+    const storedHue = localStorage.getItem(HUE_TINT_STORAGE_KEY)
+    if (storedHue !== null) themeStore.setHueTint(Number(storedHue))
+} catch {
+    // storage may be unavailable; the in-memory default still applies
+}
+onMounted(() => applyBarTint(themeStore.hueTint))
+watch(
+    () => themeStore.selectedTheme,
+    () => applyBarTint(themeStore.hueTint),
+)
 /** While a dialog is open no shortcut fires, including the one being recorded. */
 const { hasModal } = useModalStack()
 const router = useRouter()
@@ -1109,7 +1127,7 @@ const messages = defineMessages({
     runningAsAdmin: {
         id: 'app.warning.running-as-admin',
         defaultMessage:
-            'Axolotl is running as administrator. Drag-and-drop file import is disabled in this mode; please restart the launcher without administrator privileges.',
+            'StarryIsle is running as administrator. Drag-and-drop file import is disabled in this mode; please restart the launcher without administrator privileges.',
     },
     restarting: {
         id: 'app.restarting',
@@ -1117,7 +1135,7 @@ const messages = defineMessages({
     },
     closeLauncherTitle: {
         id: 'app.close-launcher.title',
-        defaultMessage: 'Choose how to close Axolotl Launcher',
+        defaultMessage: 'Choose how to close StarryIsle Launcher',
     },
     closeLauncherDirect: {
         id: 'app.close-launcher.direct',
@@ -1159,6 +1177,10 @@ const messages = defineMessages({
     home: {
         id: 'app.navigation.home',
         defaultMessage: 'Home',
+    },
+    stats: {
+        id: 'app.navigation.stats',
+        defaultMessage: 'Statistics',
     },
     worlds: {
         id: 'app.navigation.worlds',
@@ -2632,7 +2654,7 @@ const updatePopupMessages = defineMessages({
     },
     meteredBody: {
         id: 'app.update-popup.body.metered',
-        defaultMessage: `Axolotl Launcher v{version} is available now! Since you're on a metered network, we didn't automatically download it.`,
+        defaultMessage: `StarryIsle Launcher v{version} is available now! Since you're on a metered network, we didn't automatically download it.`,
     },
     manualBody: {
         id: 'app.update-popup.body.manual',
@@ -2644,7 +2666,7 @@ const updatePopupMessages = defineMessages({
     },
     downloadedBody: {
         id: 'app.update-popup.body.download-complete',
-        defaultMessage: `Axolotl Launcher v{version} has finished downloading. Reload to update now, or automatically when you close Axolotl Launcher.`,
+        defaultMessage: `StarryIsle Launcher v{version} has finished downloading. Reload to update now, or automatically when you close StarryIsle Launcher.`,
     },
     reload: {
         id: 'app.update-popup.reload',
@@ -3210,6 +3232,14 @@ provideAppUpdateDownloadProgress(appUpdateDownload)
                         {{ page.title.slice(0, 1) }}
                     </span>
                 </NavButton>
+                <NavButton
+                    v-if="!themeStore.isNavItemHidden('stats')"
+                    v-tooltip.right="formatMessage(messages.stats)"
+                    to="/stats"
+                    :is-primary="(r) => r.path.startsWith('/stats')"
+                >
+                    <ChartSplineIcon />
+                </NavButton>
             </NavRail>
             <div class="h-px w-6 mx-auto my-2 bg-surface-5"></div>
             <div class="quick-instance-scroll flex-1 min-h-0 overflow-x-hidden overflow-y-auto">
@@ -3674,7 +3704,6 @@ provideAppUpdateDownloadProgress(appUpdateDownload)
         @finish="finishOobe"
     />
 </template>
-
 <style lang="scss" scoped>
 @property --right-bar-width {
     syntax: '<length>';
@@ -3717,7 +3746,7 @@ provideAppUpdateDownloadProgress(appUpdateDownload)
     grid-template-rows: auto 1fr;
     position: relative;
     //z-index: 0;
-    background-color: var(--surface-3);
+    background-color: var(--app-shell-bg, var(--surface-3));
     height: 100vh;
 }
 
@@ -3770,15 +3799,28 @@ provideAppUpdateDownloadProgress(appUpdateDownload)
 }
 
 .app-grid-layout.has-custom-background {
-    .app-grid-navbar,
-    .app-grid-statusbar {
-        // `--surface-3` carries the body-overridden "Component opacity" alpha in
-        // this mode (see `global.scss`), so this only paints the chrome.
-        background-color: var(--surface-3) !important;
+    .app-grid-navbar {
+        background-color: var(--app-nav-bg, var(--surface-3)) !important;
 
         backdrop-filter: none;
         -webkit-backdrop-filter: none;
     }
+
+    .app-grid-statusbar {
+        background-color: var(--app-top-bg, var(--surface-3)) !important;
+
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
+    }
+}
+
+// 色相着色：导航栏与顶栏读取运行时变量，未设置时回落到主题色。
+.app-grid-navbar {
+    background-color: var(--app-nav-bg, var(--surface-bar)) !important;
+}
+
+.app-grid-statusbar {
+    background-color: var(--app-top-bg, var(--surface-bar)) !important;
 }
 
 .app-grid-navbar {
@@ -4050,6 +4092,12 @@ provideAppUpdateDownloadProgress(appUpdateDownload)
     &:focus-visible {
         outline: none;
     }
+}
+
+// 色调开启时，内容面板圆角处的浅色描边会露出一圈中性色，改成跟随外壳色调。
+:global(html[data-hue-tint]) .app-contents::before {
+    border-color: var(--app-top-bg, var(--surface-5));
+    box-shadow: none;
 }
 
 .app-contents::before {
