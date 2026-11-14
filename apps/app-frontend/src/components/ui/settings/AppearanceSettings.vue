@@ -50,6 +50,7 @@ import LauncherBackgroundSettings from './LauncherBackgroundSettings.vue'
 import PinnedOverrideHint from './PinnedOverrideHint.vue'
 import SettingsRow from './SettingsRow.vue'
 import SettingsSection from './SettingsSection.vue'
+import ThemeSuiteModal from './theme-suite/ThemeSuiteModal.vue'
 
 const props = withDefaults(
     defineProps<{
@@ -79,6 +80,8 @@ function setHueFromHex(value: string) {
 const { formatMessage } = useVIntl()
 const { handleError } = injectNotificationManager()
 
+const themeSuiteModal = ref<InstanceType<typeof ThemeSuiteModal> | null>(null)
+
 themeStore.showScrollTop = getShowScrollTop()
 
 const skipNonEssentialWarningsFlag: FeatureFlag = 'skip_non_essential_warnings'
@@ -107,6 +110,19 @@ const messages = defineMessages({
     colorThemeDescription: {
         id: 'app.appearance-settings.color-theme.description',
         defaultMessage: 'Select your preferred color theme for StarryIsle Launcher.',
+    },
+    themeSuiteTitle: {
+        id: 'app.appearance-settings.theme-suite.title',
+        defaultMessage: 'Theme suite',
+    },
+    themeSuiteDescription: {
+        id: 'app.appearance-settings.theme-suite.description',
+        defaultMessage:
+            'Import a theme pack to customize colors, fonts, backgrounds, and launcher pages, or tune the colors yourself.',
+    },
+    themeSuiteManage: {
+        id: 'app.appearance-settings.theme-suite.manage',
+        defaultMessage: 'Manage theme suite',
     },
     accentColorTitle: {
         id: 'app.appearance-settings.accent-color.title',
@@ -323,6 +339,11 @@ const messages = defineMessages({
     homeLayoutDescription: {
         id: 'app.appearance-settings.home-layout.description',
         defaultMessage: 'Choose between Information Home and a focused instance launcher.',
+    },
+    homeLayoutMinimalHint: {
+        id: 'app.appearance-settings.home-layout.minimal-hint',
+        defaultMessage:
+            'What Minimal Home shows is set from "Customize Minimal Home" in the corner of the Home page.',
     },
     homeLayoutStandard: {
         id: 'app.appearance-settings.home-layout.standard',
@@ -878,6 +899,32 @@ watch(
         <SettingsSection v-if="props.scope === 'interface'">
             <template #header>
                 <h2
+                    id="settings-target-appearance-theme-suite"
+                    tabindex="-1"
+                    class="m-0 text-lg font-semibold text-[var(--color-text-primary)]"
+                >
+                    {{ formatMessage(messages.themeSuiteTitle) }}
+                </h2>
+            </template>
+            <SettingsRow>
+                <template #label>
+                    <span>{{ formatMessage(messages.themeSuiteTitle) }}</span>
+                </template>
+                <template #description>
+                    <span>{{ formatMessage(messages.themeSuiteDescription) }}</span>
+                </template>
+                <template #control>
+                    <Button type="outlined" @click="themeSuiteModal?.show()">
+                        {{ formatMessage(messages.themeSuiteManage) }}
+                    </Button>
+                </template>
+            </SettingsRow>
+            <ThemeSuiteModal ref="themeSuiteModal" />
+        </SettingsSection>
+
+        <SettingsSection v-if="props.scope === 'interface'">
+            <template #header>
+                <h2
                     id="settings-target-appearance-accent-color"
                     tabindex="-1"
                     class="m-0 text-lg font-semibold text-[var(--color-text-primary)]"
@@ -1222,9 +1269,10 @@ watch(
                         {{ formatMessage(messages.homeLayoutTitle) }}
                     </span>
                 </template>
-                <template #description>{{
-                    formatMessage(messages.homeLayoutDescription)
-                }}</template>
+                <template #description
+                    >{{ formatMessage(messages.homeLayoutDescription) }}
+                    {{ formatMessage(messages.homeLayoutMinimalHint) }}</template
+                >
                 <template #copy>
                     <PinnedOverrideHint key-name="home_layout" @cleared="reloadSettings" />
                 </template>

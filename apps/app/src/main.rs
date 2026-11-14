@@ -658,10 +658,10 @@ fn run_exit_steps(app: &tauri::AppHandle) {
     // could wake during database shutdown or the installer and start an
     // untimed Mojang request.
     theseus::minecraft_skins::begin_shutdown_flush();
-    let flush = tauri::async_runtime::block_on(tokio::time::timeout(
+    let flush = exit_barrier::block_on_with_timeout(
         exit_barrier::SKIN_FLUSH_TIMEOUT,
         theseus::minecraft_skins::flush_pending_skin_change(),
-    ));
+    );
     match flush {
         Ok(Ok(())) => {}
         Ok(Err(error)) => tracing::warn!(
@@ -895,26 +895,36 @@ fn main() {
         "Initialized tracing subscriber. Loading StarryIsle Launcher!"
     );
 
-    let mut builder = tauri::Builder::default().register_uri_scheme_protocol(
-        "axolotl-skin",
-        move |context, request| {
-            if !is_allowed_blockbench_skin_request(&request) {
-                return Response::builder()
+    let mut builder = tauri::Builder::default()
+        .register_uri_scheme_protocol(
+            "axolotl-skin",
+            move |context, request| {
+                if !is_allowed_blockbench_skin_request(&request) {
+                    return Response::builder()
                     .status(StatusCode::FORBIDDEN)
                     .body(Vec::new())
                     .expect(
                         "failed to build Blockbench skin forbidden response",
                     );
-            }
-            let resource_dir = context
-                .app_handle()
-                .path()
-                .resource_dir()
-                .expect("failed to resolve Tauri resource directory")
-                .join(BLOCKBENCH_SKIN_RESOURCE_DIR);
-            blockbench_skin_response(request.uri().path(), &resource_dir)
-        },
-    );
+                }
+                let resource_dir = context
+                    .app_handle()
+                    .path()
+                    .resource_dir()
+                    .expect("failed to resolve Tauri resource directory")
+                    .join(BLOCKBENCH_SKIN_RESOURCE_DIR);
+                blockbench_skin_response(request.uri().path(), &resource_dir)
+            },
+        )
+        .register_uri_scheme_protocol(
+            "axolotl-theme",
+            move |context, request| {
+                api::theme_pack::protocol_response(
+                    context.app_handle(),
+                    &request,
+                )
+            },
+        );
 
     #[cfg(feature = "updater")]
     {
@@ -1083,6 +1093,7 @@ fn main() {
         .plugin(api::worlds::init())
         .plugin(api::terracotta::init())
         .plugin(api::multiplayer::init())
+        .plugin(api::theme_pack::init())
         .manage(api::files::StudioWatchers::default())
         .plugin(api::servers::init())
         .manage(PendingUpdateData::default())
@@ -1210,13 +1221,13 @@ fn main() {
 
                         fn persist_update_notice(version: Option<String>, failure: Option<theseus::state::PendingUpdateFailure>) {
                             let toast_result =
-                                tauri::async_runtime::block_on(tokio::time::timeout(
+                                exit_barrier::block_on_with_timeout(
                                     CHANGELOG_TOAST_TIMEOUT,
                                     settings::patch(serde_json::json!({
                                         "pending_update_toast_for_version": version,
                                         "pending_update_failure": failure
                                     })),
-                                ));
+                                );
                             match toast_result {
                                 Ok(Ok(_)) => {}
                                 Ok(Err(e)) => tracing::warn!(

@@ -24,7 +24,7 @@ export const utilityRoutes: RouteRecordRaw[] = [
         path: '/create',
         name: 'Create',
         component: () => import('@/pages/Create.vue'),
-        meta: { useRootContext: false },
+        meta: { useRootContext: false, requiresNetwork: true },
     },
     {
         path: '/downloads',

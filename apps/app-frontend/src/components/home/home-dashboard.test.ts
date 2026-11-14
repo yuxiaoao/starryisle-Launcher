@@ -13,6 +13,7 @@ import {
     HOME_GREETING_GLOBAL_KEY,
     HOME_GREETING_NICKNAME_MAX,
     HOME_GREETING_TITLE_MAX,
+    homeWidgetCarriesGreeting,
     type HomeWidgetPlacement,
     moveHomeWidget,
     normalizeHomeDashboard,
@@ -30,8 +31,8 @@ import {
 } from './home-dashboard.ts'
 
 function greetingOptionsOf(config: ReturnType<typeof createDefaultHomeDashboard>) {
-    const widget = config.widgets.find((candidate) => candidate.kind === 'greeting')!
-    expect(widget, 'the default dashboard has a greeting widget').toBeTruthy()
+    const widget = config.widgets.find((candidate) => homeWidgetCarriesGreeting(candidate.kind))!
+    expect(widget, 'the default dashboard shows a greeting').toBeTruthy()
     return { widget, options: widget.options }
 }
 
@@ -155,10 +156,12 @@ it('normalizes a saved layout when entering Home again', () => {
 it('normalizes legacy layouts and persisted free positions', () => {
     const legacy = normalizeHomeDashboard({
         version: 1,
+        introduced: ['launch'],
         widgets: [{ id: 'legacy', kind: 'calendar', size: '1x2' }],
     })
     const free = normalizeHomeDashboard({
         version: 1,
+        introduced: ['launch'],
         layout: 'free',
         widgets: [
             { id: 'valid', kind: 'calendar', size: '1x2', position: { column: 2, row: 4 } },
@@ -206,9 +209,10 @@ it('packs widgets into the earliest available cells', () => {
 it('normalizes malformed sizes while retaining duplicate widgets', () => {
     const normalized = normalizeHomeDashboard({
         version: 1,
+        introduced: ['launch'],
         widgets: [
             { id: 'one', kind: 'calendar', size: '9x9' },
-            { id: 'two', kind: 'calendar', size: '1x1' },
+            { id: 'two', kind: 'calendar', size: '3x1' },
             { id: 'three', kind: 'world', size: '1x1', target: { instanceId: 'a' } },
         ],
     })
@@ -219,21 +223,25 @@ it('normalizes malformed sizes while retaining duplicate widgets', () => {
     ])
 })
 
-it('normalizes every persisted calendar placement to the fixed 1x2 size', () => {
+it('keeps the calendar heatmap sizes and resets the others to 1x2', () => {
     const normalized = normalizeHomeDashboard({
         version: 1,
+        introduced: ['launch'],
         widgets: [
-            { id: 'small', kind: 'calendar', size: '1x1' },
-            { id: 'wide', kind: 'calendar', size: '2x2' },
+            { id: 'week', kind: 'calendar', size: '1x1' },
+            { id: 'band', kind: 'calendar', size: '2x2' },
+            { id: 'strip', kind: 'calendar', size: '2x1' },
+            { id: 'tall', kind: 'calendar', size: '2x3' },
         ],
     })
 
-    expect(normalized?.widgets.map((widget) => widget.size)).toEqual(['1x2', '1x2'])
+    expect(normalized?.widgets.map((widget) => widget.size)).toEqual(['1x1', '2x2', '2x1', '1x2'])
 })
 
 it('normalizes every persisted greeting placement to the fixed 2x1 size', () => {
     const normalized = normalizeHomeDashboard({
         version: 1,
+        introduced: ['launch'],
         widgets: [
             { id: 'small', kind: 'greeting', size: '1x1' },
             {
@@ -272,6 +280,7 @@ it('normalizes every persisted greeting placement to the fixed 2x1 size', () => 
 it('normalizes greeting font settings and clamps font size', () => {
     const normalized = normalizeHomeDashboard({
         version: 1,
+        introduced: ['launch'],
         widgets: [
             {
                 id: 'large',
@@ -302,6 +311,7 @@ it('normalizes greeting font settings and clamps font size', () => {
 it('normalizes and updates recently played item limits', () => {
     const normalized = normalizeHomeDashboard({
         version: 1,
+        introduced: ['launch'],
         widgets: [
             { id: 'legacy', kind: 'recent', size: '2x2' },
             { id: 'valid', kind: 'recent', size: '2x1', options: { recentLimit: 8 } },
@@ -316,6 +326,7 @@ it('normalizes and updates recently played item limits', () => {
 it('accepts and resizes the recent widget to 3-column layouts', () => {
     const normalized = normalizeHomeDashboard({
         version: 1,
+        introduced: ['launch'],
         widgets: [{ id: 'recent', kind: 'recent', size: '3x2' }],
     })!
     const config = createDefaultHomeDashboard()
@@ -344,6 +355,34 @@ it('keeps greeting text per account and falls back when none is saved', () => {
     expect(getHomeGreetingOverride(savedOptions, 'account-b')).toBe(null)
     // The nickname is one tab and the title another, so one must not invent the other.
     expect(getHomeGreetingOverride(savedOptions, 'account-a')?.title).toBe(undefined)
+})
+
+it('keeps each account greeting when the greeting settings are saved', () => {
+    const config = createDefaultHomeDashboard()
+    const { widget } = greetingOptionsOf(config)
+    let saved = setHomeGreetingOverride(config, widget.id, 'account-a', {
+        nickname: 'Alex',
+        title: 'Hello there',
+    })
+    saved = setHomeGreetingOptions(saved, widget.id, 'text', 'Shared text', 'serif', 26)
+
+    const options = greetingOptionsOf(saved).options
+    expect(getHomeGreetingOverride(options, 'account-a')).toEqual({
+        nickname: 'Alex',
+        title: 'Hello there',
+    })
+    expect(options).toMatchObject({
+        greetingMode: 'text',
+        greetingText: 'Shared text',
+        greetingFont: 'serif',
+        greetingFontSize: 26,
+    })
+
+    // Saving an empty shared text clears that text and still keeps the accounts.
+    const cleared = setHomeGreetingOptions(saved, widget.id, 'greeting', '  ', 'sans', 22)
+    const clearedOptions = greetingOptionsOf(cleared).options
+    expect(clearedOptions?.greetingText).toBe(undefined)
+    expect(getHomeGreetingOverride(clearedOptions, 'account-a')?.nickname).toBe('Alex')
 })
 
 it('clears an override when both fields are empty', () => {
@@ -404,6 +443,7 @@ it('prunes overrides for accounts that no longer exist', () => {
 it('normalizes stored overrides and drops unusable entries', () => {
     const normalized = normalizeHomeDashboard({
         version: 1,
+        introduced: ['launch'],
         layout: 'grid',
         widgets: [
             {

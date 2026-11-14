@@ -187,6 +187,7 @@ pub(crate) const DOMAINS: &[(&str, &[&str], u32)] = &[
             "custom_background_component_opacity",
             "custom_background_opacity",
             "custom_background_path",
+            "custom_theme_colors",
             "custom_window_title_enabled",
             "default_page",
             "default_window_title",
@@ -210,13 +211,14 @@ pub(crate) const DOMAINS: &[(&str, &[&str], u32)] = &[
             "sidebar_instance_count",
             "sync_features_across_devices",
             "theme",
+            "theme_source",
             "toggle_sidebar",
             "transparent_background",
             "transparent_background_blur",
             "transparent_background_opacity",
             "ui_font",
         ],
-        1,
+        2,
     ),
     (
         "download",
@@ -2881,6 +2883,40 @@ mod tests {
                 (name.to_string(), contents, modified)
             })
             .collect()
+    }
+
+    #[tokio::test]
+    async fn forced_download_default_and_explicit_opt_out_round_trip() {
+        let pool = migrated_pool().await;
+        let handle = Handle::new(pool.clone());
+        let local = tempfile::tempdir().unwrap();
+        let documents = Documents::at(local.path().to_path_buf(), &pool);
+        let mut settings = Settings::default();
+
+        store(&documents, &settings).await.unwrap();
+        let download = local.path().join("download.json");
+        assert!(!download.exists());
+        std::fs::write(&download, r#"{"schema_version":1,"data":{}}"#).unwrap();
+        assert!(
+            read(&documents, &handle)
+                .await
+                .unwrap()
+                .force_multiconnection_downloads
+        );
+
+        settings.force_multiconnection_downloads = false;
+        store(&documents, &settings).await.unwrap();
+        assert_eq!(
+            data(local.path(), "download")
+                .get("force_multiconnection_downloads"),
+            Some(&Value::Bool(false))
+        );
+        assert!(
+            !read(&documents, &handle)
+                .await
+                .unwrap()
+                .force_multiconnection_downloads
+        );
     }
 
     /// A key holding the value the build defaults to says nothing: the read

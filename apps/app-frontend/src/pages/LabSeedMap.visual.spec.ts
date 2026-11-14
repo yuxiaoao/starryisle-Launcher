@@ -999,10 +999,13 @@ it('keeps real canvas pixels across LoD changes and progressively paints new det
     const { vm, canvas } = await openMap()
     const initial = backend.tiles.splice(0)
     for (const job of initial) await complete(job, '#ff0000')
-    for (let batch = 0; batch < 4 && !backend.features.mock.calls.length; batch++) {
-        await new Promise((resolve) => setTimeout(resolve, 30))
-        for (const job of backend.tiles.splice(0)) await complete(job, '#ff0000')
-    }
+    await vi.waitFor(
+        async () => {
+            for (const job of backend.tiles.splice(0)) await complete(job, '#ff0000')
+            expect(backend.features).toHaveBeenCalledTimes(1)
+        },
+        { timeout: 10000 },
+    )
     vm.drawMap()
     const sample = () => [
         ...canvas
@@ -1040,8 +1043,13 @@ it('keeps real canvas pixels across LoD changes and progressively paints new det
     const fine = backend.tiles.find(isTarget)!
     backend.tiles.splice(backend.tiles.indexOf(fine), 1)
     await complete(fine, '#00ff00')
-    vm.drawMap()
-    expect(sample()).toEqual([0, 255, 0, 255])
+    await vi.waitFor(
+        () => {
+            vm.drawMap()
+            expect(sample()).toEqual([0, 255, 0, 255])
+        },
+        { timeout: 10000 },
+    )
     expect(closed.every((spy) => spy.mock.calls.length === 0)).toBe(true)
 })
 
