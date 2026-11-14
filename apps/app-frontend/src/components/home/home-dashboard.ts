@@ -41,6 +41,27 @@ export type HomeWidgetKind =
     | 'instance'
     | 'world'
     | 'server'
+    | 'weather'
+
+/** A city the weather widget can be pointed at. Coordinates come from Open-Meteo. */
+export type HomeWeatherCity = {
+    id: string
+    name: string
+    region?: string
+    latitude: number
+    longitude: number
+}
+
+export const HOME_WEATHER_DEFAULT_CITY: HomeWeatherCity = {
+    id: 'hangzhou',
+    name: '杭州',
+    region: '浙江省',
+    latitude: 30.2741,
+    longitude: 120.1551,
+}
+
+/** How often the weather card refetches while it stays open. */
+export const HOME_WEATHER_REFRESH_MS = 15 * 60 * 1000
 
 export type HomeWidgetTarget = {
     instanceId: string
@@ -66,6 +87,7 @@ export type HomeWidgetOptions = {
     greetingFont?: HomeGreetingFont
     greetingFontSize?: number
     greetingOverrides?: Record<string, HomeGreetingOverride>
+    weatherCity?: HomeWeatherCity
 }
 
 export type HomeWidgetPosition = {
@@ -124,6 +146,7 @@ export const HOME_WIDGET_SIZE_OPTIONS: Record<HomeWidgetKind, readonly HomeWidge
     instance: ['1x1', '2x1'],
     world: ['1x1', '2x1'],
     server: ['1x1', '2x1'],
+    weather: ['2x1', '1x2', '2x2'],
 }
 
 export const HOME_WIDGET_DEFAULT_SIZE: Record<HomeWidgetKind, HomeWidgetSize> = {
@@ -137,6 +160,7 @@ export const HOME_WIDGET_DEFAULT_SIZE: Record<HomeWidgetKind, HomeWidgetSize> = 
     instance: '1x1',
     world: '1x1',
     server: '1x1',
+    weather: '2x1',
 }
 
 export function getHomeWidgetCardDensity(
@@ -168,7 +192,10 @@ function createPlacement(
         kind,
         size,
         ...(kind === 'recent' ? { options: { recentLimit: HOME_RECENT_DEFAULT_LIMIT } } : {}),
-        ...(homeWidgetCarriesGreeting(kind)
+        ...(kind === 'weather'
+            ? { options: { weatherCity: { ...HOME_WEATHER_DEFAULT_CITY } } }
+            : {}),
+        ...(kind === 'greeting'
             ? {
                   options: {
                       greetingMode: HOME_GREETING_DEFAULT_MODE,
@@ -191,16 +218,15 @@ export function createDefaultHomeDashboard(includeRecent = true): HomeDashboardC
         version: HOME_DASHBOARD_VERSION,
         layout: 'grid',
         widgets: [
-            createPlacement('launch'),
-            createPlacement('calendar'),
-            ...(includeRecent ? [createPlacement('recent', '2x1')] : []),
-            createPlacement('pinned-worlds', '1x1'),
+            createPlacement('greeting'),
+            createPlacement('pinned-worlds', '1x2'),
             createPlacement('pinned-servers', '2x1'),
-            createPlacement('pinned-instances', '1x1'),
+            ...(includeRecent ? [createPlacement('recent', '2x1')] : []),
+            createPlacement('weather', '1x2'),
+            createPlacement('pinned-instances', '2x1'),
         ],
         introduced: [...HOME_INTRODUCED_WIDGET_KINDS],
     }
-    return result
 }
 
 /**
@@ -318,7 +344,36 @@ function normalizeOptions(kind: HomeWidgetKind, value: unknown): HomeWidgetOptio
         }
     }
 
+    if (kind === 'weather') {
+        return {
+            weatherCity: normalizeWeatherCity(isRecord(value) ? value.weatherCity : undefined),
+        }
+    }
+
     return undefined
+}
+
+function normalizeWeatherCity(value: unknown): HomeWeatherCity {
+    if (!isRecord(value)) return { ...HOME_WEATHER_DEFAULT_CITY }
+
+    const id = typeof value.id === 'string' ? value.id.trim() : ''
+    const name = typeof value.name === 'string' ? value.name.trim() : ''
+    const region = typeof value.region === 'string' ? value.region.trim() : ''
+    const latitude = typeof value.latitude === 'number' ? value.latitude : Number.NaN
+    const longitude = typeof value.longitude === 'number' ? value.longitude : Number.NaN
+
+    if (!id || !name) return { ...HOME_WEATHER_DEFAULT_CITY }
+    if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+        return { ...HOME_WEATHER_DEFAULT_CITY }
+    }
+
+    return {
+        id,
+        name,
+        ...(region ? { region } : {}),
+        latitude,
+        longitude,
+    }
 }
 
 function normalizeGreetingOverride(value: unknown): HomeGreetingOverride | null {
@@ -501,6 +556,21 @@ export function setHomeRecentLimit(
         config.widgets.map((widget) =>
             widget.id === id && widget.kind === 'recent'
                 ? { ...widget, options: { ...widget.options, recentLimit } }
+                : widget,
+        ),
+    )
+}
+
+export function setHomeWeatherCity(
+    config: HomeDashboardConfig,
+    id: string,
+    city: HomeWeatherCity,
+): HomeDashboardConfig {
+    return replaceHomeDashboardWidgets(
+        config,
+        config.widgets.map((widget) =>
+            widget.id === id && widget.kind === 'weather'
+                ? { ...widget, options: { ...widget.options, weatherCity: city } }
                 : widget,
         ),
     )
