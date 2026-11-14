@@ -620,9 +620,9 @@ if (!instancesLoaded || instances.value.length > 0) void fetchPlayerName()
 .home-rail-calendar {
     /* 侧栏日历走紧凑版：右侧多留一点，避开滚动条。 */
     min-height: 0;
-    /* 折中：左侧 4px、右侧 16px，既不贴左也不贴右。 */
+    /* 左右各 8px，与相邻区块基本对齐。 */
     margin: 0.5rem 0;
-    padding: 0 1rem 0 0.25rem;
+    padding: 0 0.5rem;
     box-sizing: border-box;
 }
 
@@ -669,8 +669,10 @@ if (!instancesLoaded || instances.value.length > 0) void fetchPlayerName()
 }
 
 .home-rail-calendar :deep(.home-heat-cell) {
-    width: 100%;
+    /* 比列宽窄 6px：选中描边正好落在这 3px 空隙里，不会被容器裁掉。 */
+    width: calc(100% - 6px);
     min-width: 0;
+    margin-inline: auto;
 }
 
 .home-floating-controls {
