@@ -194,8 +194,6 @@ function createPlacement(
         ...(kind === 'recent' ? { options: { recentLimit: HOME_RECENT_DEFAULT_LIMIT } } : {}),
         ...(kind === 'weather'
             ? { options: { weatherCity: { ...HOME_WEATHER_DEFAULT_CITY } } }
-            : {}),
-        ...(kind === 'greeting'
         ...(homeWidgetCarriesGreeting(kind)
             ? {
                   options: {
@@ -225,14 +223,6 @@ export function createDefaultHomeDashboard(includeRecent = true): HomeDashboardC
             ...(includeRecent ? [createPlacement('recent', '2x1')] : []),
             createPlacement('weather', '1x2'),
             createPlacement('pinned-instances', '2x1'),
-        ],
-        introduced: [...HOME_INTRODUCED_WIDGET_KINDS],
-            createPlacement('launch'),
-            createPlacement('calendar'),
-            ...(includeRecent ? [createPlacement('recent', '2x1')] : []),
-            createPlacement('pinned-worlds', '1x1'),
-            createPlacement('pinned-servers', '2x1'),
-            createPlacement('pinned-instances', '1x1'),
         ],
         introduced: [...HOME_INTRODUCED_WIDGET_KINDS],
     }
