@@ -606,7 +606,7 @@ if (!instancesLoaded || instances.value.length > 0) void fetchPlayerName()
             <div
                 class="flex-none border-0 border-b-[1px] border-solid border-[--brand-gradient-border]"
             >
-                <div class="h-[21rem] min-h-0">
+                <div class="home-rail-calendar h-[21rem] min-h-0">
                     <HomeCalendar :instances="instances" />
                 </div>
             </div>
@@ -617,6 +617,12 @@ if (!instancesLoaded || instances.value.length > 0) void fetchPlayerName()
 </template>
 
 <style scoped>
+.home-rail-calendar {
+    /* 侧栏日历整体等比缩小到 75%，宽度反向补偿以占满栏宽。 */
+    zoom: 0.75;
+    width: calc(100% / 0.75);
+}
+
 .home-floating-controls {
     position: fixed;
     z-index: 40;
