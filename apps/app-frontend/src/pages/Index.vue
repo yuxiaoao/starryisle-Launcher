@@ -618,10 +618,11 @@ if (!instancesLoaded || instances.value.length > 0) void fetchPlayerName()
 
 <style scoped>
 .home-rail-calendar {
-    /* 侧栏日历走紧凑版：只保留左右留白，不画卡片背景。 */
+    /* 侧栏日历走紧凑版：右侧多留一点，避开滚动条。 */
     min-height: 0;
-    margin: 0.5rem 0.9rem;
+    margin: 0.5rem 1.25rem 0.5rem 0.9rem;
     padding: 0;
+    box-sizing: border-box;
 }
 
 .home-rail-calendar :deep(.home-calendar) {
