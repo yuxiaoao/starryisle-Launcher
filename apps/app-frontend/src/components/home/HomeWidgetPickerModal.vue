@@ -158,6 +158,21 @@ const messages = defineMessages({
     },
 })
 
+type KindMessage = { id: string; defaultMessage: string }
+
+const kindText: Record<string, readonly [KindMessage, KindMessage]> = {
+    launch: [messages.launch, messages.launchDescription],
+    greeting: [messages.greeting, messages.greetingDescription],
+    recent: [messages.recent, messages.recentDescription],
+    calendar: [messages.calendar, messages.calendarDescription],
+    'pinned-instances': [messages.pinnedInstances, messages.pinnedInstancesDescription],
+    'pinned-worlds': [messages.pinnedWorlds, messages.pinnedWorldsDescription],
+    'pinned-servers': [messages.pinnedServers, messages.pinnedServersDescription],
+    instance: [messages.instance, messages.instanceDescription],
+    world: [messages.world, messages.worldDescription],
+    server: [messages.server, messages.serverDescription],
+}
+
 const catalogSections = computed(() => [
     {
         id: 'overview',
@@ -257,14 +272,14 @@ const flashKind = ref<HomeWidgetKind | null>(null)
 let flashTimer: ReturnType<typeof setTimeout> | undefined
 
 function kindLabel(kind: HomeWidgetKind) {
-    return formatMessage(kindText[kind][0])
+    return formatMessage((kindText[kind] ?? kindText.launch)[0])
 }
 
 const catalog = computed(() =>
     HOME_WIDGET_CATALOG.map((entry) => ({
         ...entry,
         label: kindLabel(entry.kind),
-        description: formatMessage(kindText[entry.kind][1]),
+        description: formatMessage((kindText[entry.kind] ?? kindText.launch)[1]),
     })),
 )
 const filtered = computed(() =>
