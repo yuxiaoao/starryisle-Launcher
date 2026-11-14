@@ -620,9 +620,9 @@ if (!instancesLoaded || instances.value.length > 0) void fetchPlayerName()
 .home-rail-calendar {
     /* 侧栏日历走紧凑版：右侧多留一点，避开滚动条。 */
     min-height: 0;
-    /* 左右各 8px，与相邻区块基本对齐。 */
+    /* 左右各 16px：整块往里收，格子显得更小更居中。 */
     margin: 0.5rem 0;
-    padding: 0 0.5rem;
+    padding: 0 1rem;
     box-sizing: border-box;
 }
 
@@ -648,8 +648,8 @@ if (!instancesLoaded || instances.value.length > 0) void fetchPlayerName()
 }
 
 .home-rail-calendar :deep(.home-heat-month .home-heat-cell) {
-    height: 0.95rem !important;
-    font-size: 0.65rem;
+    height: 0.9rem !important;
+    font-size: 0.62rem;
 }
 
 .home-rail-calendar :deep(.home-heat-weekdays span) {
