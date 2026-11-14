@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import {
+    CheckIcon,
     ChevronLeftIcon,
     GameIcon,
     PlusIcon,
