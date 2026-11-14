@@ -92,12 +92,12 @@ it('accepts draggable order and restores the complete default layout', () => {
         original.widgets.map((widget) => widget.id).reverse(),
     )
     expect(createDefaultHomeDashboard().widgets.map(({ kind, size }) => ({ kind, size }))).toEqual([
-        { kind: 'greeting', size: '2x1' },
-        { kind: 'pinned-worlds', size: '1x2' },
-        { kind: 'pinned-servers', size: '2x1' },
+        { kind: 'launch', size: '2x2' },
+        { kind: 'calendar', size: '1x2' },
         { kind: 'recent', size: '2x1' },
-        { kind: 'weather', size: '1x2' },
-        { kind: 'pinned-instances', size: '2x1' },
+        { kind: 'pinned-worlds', size: '1x1' },
+        { kind: 'pinned-servers', size: '2x1' },
+        { kind: 'pinned-instances', size: '1x1' },
     ])
 })
 
@@ -177,33 +177,81 @@ it('normalizes legacy layouts and persisted free positions', () => {
 
 it('packs widgets into the earliest available cells', () => {
     const config = createDefaultHomeDashboard()
-    const COLUMNS = 4
-    const packed = packHomeWidgets(config.widgets, COLUMNS)
-    // The exact cell of every widget is an implementation detail that moves with the
-    // default layout, so assert the invariants the packing has to keep instead.
-    expect(packed).toHaveLength(config.widgets.length)
-    expect(packed[0]).toMatchObject({ column: 1, row: 1 })
+    const packed = packHomeWidgets(config.widgets, 4)
+    expect(
+        packed.map(({ column, row, effectiveColumns, effectiveRows }) => ({
+            column,
+            row,
+            effectiveColumns,
+            effectiveRows,
+        })),
+    ).toEqual([
+        { column: 1, row: 1, effectiveColumns: 2, effectiveRows: 2 },
+        { column: 3, row: 1, effectiveColumns: 1, effectiveRows: 2 },
+        { column: 1, row: 3, effectiveColumns: 2, effectiveRows: 1 },
+        { column: 4, row: 1, effectiveColumns: 1, effectiveRows: 1 },
+        { column: 3, row: 3, effectiveColumns: 2, effectiveRows: 1 },
+        { column: 4, row: 2, effectiveColumns: 1, effectiveRows: 1 },
+    ])
+})
 
-    for (const widget of packed) {
-        expect(Number.isInteger(widget.column)).toBe(true)
-        expect(Number.isInteger(widget.row)).toBe(true)
-        expect(widget.column).toBeGreaterThanOrEqual(1)
-        expect(widget.row).toBeGreaterThanOrEqual(1)
-        expect(widget.column + widget.effectiveColumns - 1).toBeLessThanOrEqual(COLUMNS)
-    }
+it('turns the greeting of a layout saved before the launch card into it, once', () => {
+    const grid = normalizeHomeDashboard({
+        version: 1,
+        widgets: [
+            { id: 'calendar', kind: 'calendar', size: '1x2' },
+            {
+                id: 'greeting',
+                kind: 'greeting',
+                size: '2x1',
+                options: { greetingMode: 'text', greetingOverrides: { a: { nickname: 'Alex' } } },
+            },
+            { id: 'recent', kind: 'recent', size: '2x2' },
+        ],
+    })!
 
-    for (let i = 0; i < packed.length; i++) {
-        for (let j = i + 1; j < packed.length; j++) {
-            const a = packed[i]
-            const b = packed[j]
-            const overlaps =
-                a.column < b.column + b.effectiveColumns &&
-                b.column < a.column + a.effectiveColumns &&
-                a.row < b.row + b.effectiveRows &&
-                b.row < a.row + a.effectiveRows
-            expect(overlaps).toBe(false)
-        }
-    }
+    // The launch card takes the greeting's place, id and text, since it shows the greeting.
+    expect(grid.widgets.map(({ id, kind, size }) => ({ id, kind, size }))).toEqual([
+        { id: 'calendar', kind: 'calendar', size: '1x2' },
+        { id: 'greeting', kind: 'launch', size: '2x2' },
+        { id: 'recent', kind: 'recent', size: '2x2' },
+    ])
+    expect(grid.widgets[1].options?.greetingMode).toBe('text')
+    expect(getHomeGreetingOverride(grid.widgets[1].options, 'a')).toEqual({ nickname: 'Alex' })
+    expect(grid.introduced).toEqual(['launch'])
+
+    // Saved again it stays as it is; removed, it does not come back.
+    expect(normalizeHomeDashboard(JSON.parse(JSON.stringify(grid)))).toEqual(grid)
+    const removed = removeHomeWidget(grid, 'greeting')
+    expect(
+        normalizeHomeDashboard(JSON.parse(JSON.stringify(removed)))?.widgets.map(
+            ({ kind }) => kind,
+        ),
+    ).toEqual(['calendar', 'recent'])
+
+    const withoutGreeting = normalizeHomeDashboard({
+        version: 1,
+        widgets: [{ id: 'recent', kind: 'recent', size: '2x2' }],
+    })!
+    expect(withoutGreeting.widgets.map(({ kind }) => kind)).toEqual(['launch', 'recent'])
+})
+
+it('moves the widgets below the greeting down by the extra row of the launch card', () => {
+    const free = normalizeHomeDashboard({
+        version: 1,
+        layout: 'free',
+        widgets: [
+            { id: 'greeting', kind: 'greeting', size: '2x1', position: { column: 1, row: 2 } },
+            { id: 'above', kind: 'calendar', size: '1x2', position: { column: 0, row: 0 } },
+            { id: 'below', kind: 'recent', size: '2x2', position: { column: 1, row: 3 } },
+        ],
+    })!
+
+    expect(free.widgets.map(({ id, kind, position }) => ({ id, kind, position }))).toEqual([
+        { id: 'greeting', kind: 'launch', position: { column: 1, row: 2 } },
+        { id: 'above', kind: 'calendar', position: { column: 0, row: 0 } },
+        { id: 'below', kind: 'recent', position: { column: 1, row: 4 } },
+    ])
 })
 
 it('normalizes malformed sizes while retaining duplicate widgets', () => {
