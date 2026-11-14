@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import {
-    CheckIcon,
     ChevronLeftIcon,
     GameIcon,
     PlusIcon,
@@ -158,18 +157,77 @@ const messages = defineMessages({
     },
 })
 
-const kindText = {
-    launch: [messages.launch, messages.launchDescription],
-    greeting: [messages.greeting, messages.greetingDescription],
-    recent: [messages.recent, messages.recentDescription],
-    calendar: [messages.calendar, messages.calendarDescription],
-    'pinned-instances': [messages.pinnedInstances, messages.pinnedInstancesDescription],
-    'pinned-worlds': [messages.pinnedWorlds, messages.pinnedWorldsDescription],
-    'pinned-servers': [messages.pinnedServers, messages.pinnedServersDescription],
-    instance: [messages.instance, messages.instanceDescription],
-    world: [messages.world, messages.worldDescription],
-    server: [messages.server, messages.serverDescription],
-} as const
+const catalogSections = computed(() => [
+    {
+        id: 'overview',
+        label: formatMessage(messages.overviewGroup),
+        icon: LayoutTemplateIcon,
+        items: [
+            {
+                kind: 'greeting' as const,
+                label: formatMessage(messages.greeting),
+                description: formatMessage(messages.greetingDescription),
+                icon: UserIcon,
+            },
+            {
+                kind: 'recent' as const,
+                label: formatMessage(messages.recent),
+                description: formatMessage(messages.recentDescription),
+                icon: HistoryIcon,
+            },
+        ],
+    },
+    {
+        id: 'collections',
+        label: formatMessage(messages.collectionsGroup),
+        icon: CollectionIcon,
+        items: [
+            {
+                kind: 'pinned-instances' as const,
+                label: formatMessage(messages.pinnedInstances),
+                description: formatMessage(messages.pinnedInstancesDescription),
+                icon: GridIcon,
+            },
+            {
+                kind: 'pinned-worlds' as const,
+                label: formatMessage(messages.pinnedWorlds),
+                description: formatMessage(messages.pinnedWorldsDescription),
+                icon: GameIcon,
+            },
+            {
+                kind: 'pinned-servers' as const,
+                label: formatMessage(messages.pinnedServers),
+                description: formatMessage(messages.pinnedServersDescription),
+                icon: ServerIcon,
+            },
+        ],
+    },
+    {
+        id: 'shortcuts',
+        label: formatMessage(messages.shortcutsGroup),
+        icon: LinkIcon,
+        items: [
+            {
+                kind: 'instance' as const,
+                label: formatMessage(messages.instance),
+                description: formatMessage(messages.instanceDescription),
+                icon: GridIcon,
+            },
+            {
+                kind: 'world' as const,
+                label: formatMessage(messages.world),
+                description: formatMessage(messages.worldDescription),
+                icon: GameIcon,
+            },
+            {
+                kind: 'server' as const,
+                label: formatMessage(messages.server),
+                description: formatMessage(messages.serverDescription),
+                icon: ServerIcon,
+            },
+        ],
+    },
+])
 
 const categoryText = {
     all: messages.categoryAll,
