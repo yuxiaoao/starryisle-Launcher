@@ -194,6 +194,7 @@ function createPlacement(
         ...(kind === 'recent' ? { options: { recentLimit: HOME_RECENT_DEFAULT_LIMIT } } : {}),
         ...(kind === 'weather'
             ? { options: { weatherCity: { ...HOME_WEATHER_DEFAULT_CITY } } }
+            : {}),
         ...(homeWidgetCarriesGreeting(kind)
             ? {
                   options: {
