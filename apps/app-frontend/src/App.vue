@@ -3980,13 +3980,19 @@ provideAppUpdateDownloadProgress(appUpdateDownload)
 }
 
 .disable-advanced-rendering {
-    // 侧栏滚动条改成不占位、不可见，避免压住最右侧的日期列。
-.app-sidebar-scrollable {
+    // 侧栏所有滚动容器都不显示滚动条，避免压住最右侧的日期列。
+.app-sidebar,
+.app-sidebar-scrollable,
+#sidebar-default-teleport-target {
     scrollbar-width: none;
+    -ms-overflow-style: none;
 }
 
-.app-sidebar-scrollable::-webkit-scrollbar {
+.app-sidebar::-webkit-scrollbar,
+.app-sidebar-scrollable::-webkit-scrollbar,
+#sidebar-default-teleport-target::-webkit-scrollbar {
     width: 0;
+    height: 0;
     display: none;
 }
 
