@@ -644,7 +644,7 @@ if (!instancesLoaded || instances.value.length > 0) void fetchPlayerName()
 }
 
 .home-rail-calendar :deep(.home-heat-month) {
-    gap: 2px;
+    gap: 1px;
 }
 
 .home-rail-calendar :deep(.home-heat-month .home-heat-cell) {
@@ -669,8 +669,8 @@ if (!instancesLoaded || instances.value.length > 0) void fetchPlayerName()
 }
 
 .home-rail-calendar :deep(.home-heat-cell) {
-    /* 比列宽窄 6px：选中描边正好落在这 3px 空隙里，不会被容器裁掉。 */
-    width: calc(100% - 6px);
+    /* 只比列宽窄 2px：格子之间更紧凑，描边仍有余量。 */
+    width: calc(100% - 2px);
     min-width: 0;
     margin-inline: auto;
 }
