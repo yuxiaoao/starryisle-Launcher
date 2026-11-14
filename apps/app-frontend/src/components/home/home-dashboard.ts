@@ -278,55 +278,6 @@ export function introduceHomeWidgets(
     return result
 }
 
-/**
- * Places each kind from `HOME_INTRODUCED_WIDGET_KINDS` that this layout has not
- * been offered yet. The launch card takes over the greeting's place, keeping
- * its options and per-account text, because it now shows the greeting itself;
- * without a greeting it goes first. In the free layout the widgets below it
- * move down by the extra rows it needs.
- */
-export function introduceHomeWidgets(
-    layout: HomeWidgetLayout,
-    widgets: readonly HomeWidgetPlacement[],
-    introduced: readonly HomeWidgetKind[],
-): HomeWidgetPlacement[] {
-    let result = [...widgets]
-    for (const kind of HOME_INTRODUCED_WIDGET_KINDS) {
-        if (introduced.includes(kind) || result.some((widget) => widget.kind === kind)) continue
-        const placement = createPlacement(kind)
-        const greetingIndex = result.findIndex((widget) => widget.kind === 'greeting')
-        const greeting = greetingIndex >= 0 ? result[greetingIndex] : null
-        const replacement: HomeWidgetPlacement = greeting
-            ? { ...placement, id: greeting.id, options: greeting.options ?? placement.options }
-            : placement
-
-        if (layout === 'free') {
-            const origin = greeting?.position ?? { column: 0, row: 0 }
-            const takenRows = greeting ? getHomeWidgetSpan(greeting.size, 1).rows : 0
-            const extraRows = getHomeWidgetSpan(placement.size, 1).rows - takenRows
-            const moved = result.map((widget) =>
-                widget !== greeting &&
-                widget.position &&
-                widget.position.row >= origin.row + takenRows
-                    ? {
-                          ...widget,
-                          position: { ...widget.position, row: widget.position.row + extraRows },
-                      }
-                    : widget,
-            )
-            const placed = { ...replacement, position: { ...origin } }
-            result = greeting
-                ? moved.map((widget) => (widget === greeting ? placed : widget))
-                : [placed, ...moved]
-        } else {
-            result = greeting
-                ? result.map((widget) => (widget === greeting ? replacement : widget))
-                : [replacement, ...result]
-        }
-    }
-    return result
-}
-
 function isRecord(value: unknown): value is Record<string, unknown> {
     return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
