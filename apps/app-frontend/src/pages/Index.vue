@@ -628,7 +628,15 @@ if (!instancesLoaded || instances.value.length > 0) void fetchPlayerName()
 }
 
 .home-rail-calendar :deep(.home-calendar-stats) {
-    display: none;
+    margin-bottom: 0.25rem;
+}
+
+.home-rail-calendar :deep(.home-calendar-stat > strong) {
+    font-size: 0.95rem;
+}
+
+.home-rail-calendar :deep(.home-calendar-stat > span) {
+    font-size: 0.7rem;
 }
 
 .home-rail-calendar :deep(.home-heat-month) {
