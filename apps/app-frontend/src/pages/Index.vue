@@ -665,12 +665,13 @@ if (!instancesLoaded || instances.value.length > 0) void fetchPlayerName()
 .home-rail-calendar :deep(.home-heat-weekdays) {
     width: 100%;
     min-width: 0;
-    grid-template-columns: repeat(7, minmax(0, 1fr)) !important;
+    grid-template-columns: repeat(7, 2.35rem) !important;
+    justify-content: center;
 }
 
 .home-rail-calendar :deep(.home-heat-cell) {
     /* 只比列宽窄 2px：格子之间更紧凑，描边仍有余量。 */
-    width: calc(100% - 2px);
+    width:  100%;
     min-width: 0;
     margin-inline: auto;
 }
