@@ -7185,7 +7185,7 @@ dependencies = [
 
 [[package]]
 name = "theseus"
-version = "1.0.5"
+version = "1.0.6"
 dependencies = [
  "async-minecraft-ping",
  "async-recursion",
@@ -7300,7 +7300,7 @@ dependencies = [
 
 [[package]]
 name = "theseus_gui"
-version = "1.0.5"
+version = "1.0.6"
 dependencies = [
  "ashpd",
  "async_zip",

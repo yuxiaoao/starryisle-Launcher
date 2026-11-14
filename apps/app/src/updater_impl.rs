@@ -19,6 +19,8 @@ use tokio::time::Instant;
 use url::Url;
 
 const UPDATE_SERVER_LATEST_URL: &str = "https://github.com/yuxiaoao/starryisle-Launcher/releases/latest/download/latest.json";
+// Beta 通道读固定 `beta` 标签下的清单，这样预发布版本不会影响正式版用户。
+const UPDATE_SERVER_BETA_URL: &str = "https://github.com/yuxiaoao/starryisle-Launcher/releases/download/beta/latest.json";
 const UPDATE_SERVER_API: &str = "https://update.axlmc.org/api/versions";
 const UPDATE_ARTIFACT_BASE: &str = "https://dist.axlmc.org/";
 
@@ -410,8 +412,13 @@ fn update_platform() -> Result<&'static str> {
     }
 }
 
-fn update_endpoint() -> Result<Url> {
-    Url::parse(UPDATE_SERVER_LATEST_URL).map_err(|error| {
+fn update_endpoint(channel: &str) -> Result<Url> {
+    let raw = if channel == "beta" {
+        UPDATE_SERVER_BETA_URL
+    } else {
+        UPDATE_SERVER_LATEST_URL
+    };
+    Url::parse(raw).map_err(|error| {
         theseus::Error::from(theseus::ErrorKind::OtherError(error.to_string()))
             .into()
     })
@@ -469,7 +476,7 @@ async fn check_with_endpoints<R: Runtime>(
     let app_handle = webview.app_handle().clone();
     let mut updater = webview
         .updater_builder()
-        .endpoints(vec![update_endpoint()?])?
+        .endpoints(vec![update_endpoint(channel)?])?
         .header("Accept", "application/json")?
         .header("X-Axolotl-Channel", channel)?
         .header("X-Axolotl-Platform", platform)?
