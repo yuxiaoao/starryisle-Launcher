@@ -28,12 +28,10 @@ const { values } = parseArgs({
 if (process.platform !== 'win32') throw new Error('Windows packaging requires Windows')
 const profile = values.profile
 requireProfile(profile)
-const tauriConfig = JSON.parse(fs.readFileSync(path.join(app, 'tauri.conf.json'), 'utf8'))
-const productName = tauriConfig.productName
-const binaryName = `${tauriConfig.mainBinaryName ?? tauriConfig.productName}.exe`
-const installerBase = productName.replaceAll(' ', '_')
 const source = path.join(root, 'target', profile)
-const binary = requireFile(path.join(source, binaryName))
+const binary = requireFile(path.join(source, 'Axolotl Launcher.exe'))
+const host = output('rustc', ['-vV']).match(/^host: (.+)$/m)?.[1]
+const architecture = windowsPackageArchitecture(host)
 const initialHash = sha256(binary)
 process.env.AXOLOTL_INSTALLER_UI_PATH = requireFile(path.join(source, 'axolotl-installer-ui.exe'))
 for (const file of [
@@ -51,7 +49,8 @@ process.env.CARGO_TARGET_DIR = target
 const bundleTarget = architecture === 'arm64' ? host : undefined
 const releaseDirectory = path.join(target, ...(bundleTarget ? [bundleTarget] : []), 'release')
 fs.mkdirSync(releaseDirectory, { recursive: true })
-if (profile !== 'release') fs.copyFileSync(binary, path.join(releaseDirectory, binaryName))
+if (profile !== 'release' || bundleTarget)
+    fs.copyFileSync(binary, path.join(releaseDirectory, 'Axolotl Launcher.exe'))
 const bundleDirectory = path.join(releaseDirectory, 'bundle/nsis')
 
 for (const variant of ['modern', 'native']) {
@@ -81,7 +80,7 @@ for (const variant of ['modern', 'native']) {
     if (installers.length !== 1) throw new Error(`Expected one ${variant} installer`)
     verifyWindowsBundleArchitecture(installers[0], architecture)
     const installer = path.join(bundleDirectory, installers[0])
-    const name = `${installerBase}_${version()}_x64_${variant === 'modern' ? 'modern' : 'nsis'}-setup.exe`
+    const name = `Axolotl_Launcher_${version()}_${architecture}_${variant === 'modern' ? 'modern' : 'nsis'}-setup.exe`
     fs.copyFileSync(installer, path.join(destination, name))
     if (variant === 'native' && fs.existsSync(`${installer}.sig`)) {
         fs.copyFileSync(`${installer}.sig`, path.join(destination, `${name}.sig`))
@@ -101,9 +100,13 @@ for (const variant of ['modern', 'native']) {
     }
 }
 if (sha256(binary) !== initialHash) throw new Error('Packaging changed the compiled application')
-const portable = path.join(root, 'target', `portable-${profile}`, installerBase)
-fs.mkdirSync(path.join(portable, `.${tauriConfig.identifier}`), { recursive: true })
-fs.copyFileSync(binary, path.join(portable, binaryName))
+const portable = path.join(
+    fs.mkdtempSync(path.join(root, 'target', `portable-${profile}-`)),
+    'Axolotl',
+)
+fs.mkdirSync(path.join(portable, '.Axolotl'), { recursive: true })
+fs.copyFileSync(binary, path.join(portable, 'Axolotl Launcher.exe'))
+fs.copyFileSync(process.env.AXOLOTL_INSTALLER_UI_PATH, path.join(portable, 'axolotl-updater.exe'))
 requireFile(path.join(app, 'resources/seed-map/axolotl-cubiomes.dll'))
 fs.cpSync(path.join(app, 'resources/seed-map'), path.join(portable, 'resources/seed-map'), {
     recursive: true,
@@ -129,7 +132,7 @@ run(
             AXOLOTL_PORTABLE_SOURCE: portable,
             AXOLOTL_PORTABLE_ZIP: path.join(
                 destination,
-                `${installerBase}_${version()}_x64_portable.zip`,
+                `Axolotl_Launcher_${version()}_${architecture}_portable.zip`,
             ),
         },
     },
