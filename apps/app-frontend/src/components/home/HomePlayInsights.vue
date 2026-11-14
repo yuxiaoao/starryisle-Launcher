@@ -16,9 +16,7 @@ const formatDayTitle = useFormatDateTime({ weekday: 'long', month: 'long', day: 
 
 const messages = defineMessages({
     insights: { id: 'app.home.insights.title', defaultMessage: 'Play insights' },
-    thisWeekLabel: { id: 'app.home.insights.this-week-label', defaultMessage: 'This week' },
-    vsLastWeek: { id: 'app.home.insights.vs-last-week', defaultMessage: 'vs last week' },
-    hoursShort: { id: 'app.home.playtime.hours-short', defaultMessage: '{hours}h' },
+    total: { id: 'app.home.insights.total', defaultMessage: 'Total playtime: {duration}' },
     thisWeek: { id: 'app.home.insights.this-week', defaultMessage: 'This week: {duration}' },
     thisWeekMore: {
         id: 'app.home.insights.this-week-more',
@@ -101,6 +99,14 @@ function rangeSeconds(start: Date, days: number): number {
 
 const weekStart = computed(() => startOfWeek(new Date()))
 const thisWeekSeconds = computed(() => rangeSeconds(weekStart.value, 7))
+
+const totalSeconds = computed(() =>
+    dailyPlaytime.value.reduce((sum, entry) => sum + entry.played_seconds, 0),
+)
+
+const totalLine = computed(() =>
+    formatMessage(messages.total, { duration: formatDuration(totalSeconds.value) }),
+)
 const lastWeekSeconds = computed(() => rangeSeconds(shiftedDate(weekStart.value, -7), 7))
 
 const streakDays = computed(() => {
@@ -310,20 +316,65 @@ onUnmounted(() => {
         :empty-tone="emptyState === 'error' ? 'warning' : 'neutral'"
         :empty-icon="ChartIcon"
     >
-        <template v-if="emptyState === 'error'" #empty-action>
-            <Button size="sm" type="quiet" color="brand" @click="playtimeQuery.refetch()">
-                <UpdatedIcon aria-hidden="true" />
-                {{ formatMessage(commonMessages.retryButton) }}
-            </Button>
-        </template>
-        <div class="home-insights flex min-w-0 flex-col">
-            <div class="home-insights-hero">
-                <strong v-if="weekIsEmpty" class="home-insights-empty-week">{{
-                    formatMessage(messages.weekEmpty)
-                }}</strong>
-                <span v-else v-tooltip="thisWeekLine" class="home-insights-figure">
-                    <strong>{{ heroFigure.value }}</strong>
-                    <span>{{ heroFigure.unit }}</span>
+        <div class="flex items-center gap-2">
+            <ChartIcon
+                class="size-4 shrink-0 text-[var(--color-text-tertiary)]"
+                aria-hidden="true"
+            />
+            <h2 class="m-0 truncate text-lg">
+                {{ formatMessage(messages.insights) }}
+            </h2>
+        </div>
+        <div v-if="playtimeQuery.isPending.value" class="flex flex-col gap-2" aria-hidden="true">
+            <div class="h-4 w-3/4 animate-pulse rounded bg-surface-4" />
+            <div class="h-4 w-1/2 animate-pulse rounded bg-surface-4" />
+        </div>
+        <Button
+            v-else-if="playtimeQuery.isError.value && !playtimeQuery.data.value"
+            @click="playtimeQuery.refetch()"
+        >
+            {{ formatMessage(commonMessages.retryButton) }}
+        </Button>
+        <p v-else-if="!hasAnyPlaytime" class="m-0 text-sm text-[var(--color-text-tertiary)]">
+            {{ formatMessage(messages.empty) }}
+        </p>
+        <ul v-else class="m-0 flex list-none flex-col gap-2 p-0">
+            <li class="flex min-w-0 items-center gap-2 text-sm text-[var(--color-text-default)]">
+                <ClockIcon
+                    class="size-4 shrink-0 text-[var(--color-text-tertiary)]"
+                    aria-hidden="true"
+                />
+                <span class="min-w-0">{{ totalLine }}</span>
+            </li>
+            <li class="flex min-w-0 items-center gap-2 text-sm text-[var(--color-text-default)]">
+                <ClockIcon
+                    class="size-4 shrink-0 text-[var(--color-text-tertiary)]"
+                    aria-hidden="true"
+                />
+                <span class="min-w-0">{{ thisWeekLine }}</span>
+            </li>
+            <li
+                v-if="streakDays > 0"
+                class="flex min-w-0 items-center gap-2 text-sm text-[var(--color-text-default)]"
+            >
+                <TrendingUpIcon
+                    class="size-4 shrink-0 text-[var(--color-text-tertiary)]"
+                    aria-hidden="true"
+                />
+                <span class="min-w-0">{{
+                    formatMessage(messages.streak, { days: streakDays })
+                }}</span>
+            </li>
+            <li
+                v-if="weekTopInstance"
+                class="flex min-w-0 items-center gap-2 text-sm text-[var(--color-text-default)]"
+            >
+                <GameIcon
+                    class="size-4 shrink-0 text-[var(--color-text-tertiary)]"
+                    aria-hidden="true"
+                />
+                <span class="min-w-0 truncate">
+                    {{ formatMessage(messages.weekTop, { name: weekTopInstance }) }}
                 </span>
                 <span
                     v-if="weekChange && !weekIsEmpty"
