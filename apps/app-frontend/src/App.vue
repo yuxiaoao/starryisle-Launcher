@@ -3980,7 +3980,17 @@ provideAppUpdateDownloadProgress(appUpdateDownload)
 }
 
 .disable-advanced-rendering {
-    .app-sidebar::before {
+    // 侧栏滚动条改成不占位、不可见，避免压住最右侧的日期列。
+.app-sidebar-scrollable {
+    scrollbar-width: none;
+}
+
+.app-sidebar-scrollable::-webkit-scrollbar {
+    width: 0;
+    display: none;
+}
+
+.app-sidebar::before {
         box-shadow: none;
     }
 
