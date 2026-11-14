@@ -659,6 +659,19 @@ if (!instancesLoaded || instances.value.length > 0) void fetchPlayerName()
     margin-bottom: 2px;
 }
 
+/* 收紧到栏宽，避免最右一列（周日）被裁掉。 */
+.home-rail-calendar :deep(.home-heat-month),
+.home-rail-calendar :deep(.home-heat-weekdays) {
+    width: 100%;
+    min-width: 0;
+    grid-template-columns: repeat(7, minmax(0, 1fr)) !important;
+}
+
+.home-rail-calendar :deep(.home-heat-cell) {
+    width: 100%;
+    min-width: 0;
+}
+
 .home-floating-controls {
     position: fixed;
     z-index: 40;
