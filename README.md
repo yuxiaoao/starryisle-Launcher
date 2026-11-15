@@ -1,259 +1,91 @@
 <div align="center">
-  <img src="./apps/app/icons/128x128.png" width="128" height="128" alt="Axolotl Launcher Logo" />
-  <h1>Axolotl Launcher</h1>
-  <p><strong>次世代 Minecraft 桌面客户端，全能、美观、全平台覆盖。</strong></p>
+  <img src="./apps/app-frontend/src/assets/branding/starryisle.png" width="128" height="128" alt="StarryIsle Launcher" />
+  <h1>StarryIsle Launcher</h1>
+  <p><strong>基于 Axolotl 二次开发，带成就、统计与截图管理的 Minecraft 启动器。</strong></p>
 
   <p>
-    <a href="https://github.com/Axolotl-Launcher/Axolotl/actions">
-      <img src="https://img.shields.io/github/actions/workflow/status/Axolotl-Launcher/Axolotl/axolotl-ci.yml?style=for-the-badge&logo=github" alt="Desktop CI" />
+    <a href="https://github.com/yuxiaoao/starryisle-Launcher/releases">
+      <img src="https://img.shields.io/github/downloads/yuxiaoao/starryisle-Launcher/total?style=for-the-badge&logo=github" alt="Downloads" />
     </a>
-    <a href="https://github.com/Axolotl-Launcher/Axolotl/releases">
-      <img src="https://img.shields.io/github/downloads/Axolotl-Launcher/Axolotl/total?style=for-the-badge&logo=github" alt="Downloads" />
-    </a>
-    <a href="https://github.com/Axolotl-Launcher/Axolotl/stargazers">
-      <img src="https://img.shields.io/github/stars/Axolotl-Launcher/Axolotl?style=for-the-badge&logo=github&color=ffb800" alt="Stars" />
+    <a href="https://github.com/yuxiaoao/starryisle-Launcher/stargazers">
+      <img src="https://img.shields.io/github/stars/yuxiaoao/starryisle-Launcher?style=for-the-badge&logo=github&color=ffb800" alt="Stars" />
     </a>
     <a href="COPYING.md">
       <img src="https://img.shields.io/badge/License-GPL_3.0-blue.svg?style=for-the-badge" alt="License" />
     </a>
-    <a href="https://www.gitlink.org.cn/xinvxueyuan/Axolotl">
-      <img src="https://img.shields.io/badge/GitLink-Mirror-2f81f7?style=for-the-badge&logo=git&logoColor=white" alt="GitLink Mirror" />
-    </a>
-    <a href="https://cnb.cool/axlmc/Axolotl">
-      <img src="https://img.shields.io/badge/CNB-Mirror-00c2ff?style=for-the-badge&logo=cloud&logoColor=white" alt="CNB Mirror" />
-    </a>
   </p>
 
   <p>
-    <a href="https://www.axlmc.org">官方网站</a> ｜
-    <a href="https://github.com/Axolotl-Launcher/Axolotl/releases/latest">下载最新版</a> ｜
-    <a href="CONTRIBUTING.md">参与贡献</a>
-    ｜ <a href="CODE_OF_CONDUCT.md">行为准则</a>
+    <a href="https://github.com/yuxiaoao/starryisle-Launcher/releases/latest">下载最新版</a> ｜
+    <a href="https://github.com/yuxiaoao/starryisle-Launcher">源代码</a> ｜
+    <a href="https://github.com/yuxiaoao/starryisle-Launcher/issues">问题与反馈</a>
+  </p>
+
+  <p>
+    <a href="CONTRIBUTING.md">参与贡献</a> ｜
+    <a href="CODE_OF_CONDUCT.md">行为准则</a>
   </p>
 </div>
 
-<details open>
-<summary><strong>赞助与合作</strong></summary>
-
-感谢以下赞助商与合作伙伴对 Axolotl Launcher 的支持。
-
-<table>
-  <tr>
-    <td width="105"><img src="./.github/assets/rainyun-logo.png" width="72" alt="Rainyun Logo" /></td>
-    <td><strong>雨云</strong><br>雨云是新一代国产云计算服务提供商，为广大服主提供简单易用、高性能、高性价比的游戏专用服务器。独家动态计费服务，自研高可用面板服，热门整合包一键快速安装。</td>
-    <td><a href="https://www.rainyun.com/mystic_">访问雨云</a></td>
-  </tr>
-  <tr>
-    <td width="105"><img src="./.github/assets/codeflow-logo.png" width="72" alt="CodeFlow Logo" /></td>
-    <td><strong>CodeFlow</strong><br>更稳、更省地调用顶级 AI 模型。原生协议转发，体验与官方一致，Claude Code、Codex 等工具开箱即用；多线路互为备份，请求失败自动切换；¥1 可充 $5 额度，余额永不过期；无需海外网络，支付宝即充即用。</td>
-    <td><a href="https://codeflow.sh/register?invite=4UHP2KYH">访问 CodeFlow</a></td>
-  </tr>
-  <tr>
-    <td width="105"><img src="./.github/assets/fastai-logo.png" width="72" alt="FastAI Logo" /></td>
-    <td><strong>FastAI</strong><br>面向开发者的 AI API 聚合平台，支持 OpenAI、Claude、Gemini 、Grok等主流大模型，兼容 OpenAI API 协议，可无缝接入 Claude Code、Codex等各类 AI 开发工具。平台采用 充值 1:1（1 元 = 1 美元 API 额度），对公后台自助开票，企业SLA保证，微信支付宝直充。</td>
-    <td><a href="https://www.fastaitoken.com/register?aff=KBGN38QZUXNZ">访问 FastAI</a></td>
-  </tr>
-</table>
-
-- [在爱发电支持 Axolotl Launcher](https://ifdian.net/a/Mystic-Stars) — 你的支持将帮助项目持续维护与改进
-
-</details>
-
 ---
 
-**Axolotl Launcher（美西螈启动器）** 是一款免费、开源、跨平台的 Minecraft Java 版第三方启动器，支持在一个客户端中搜索、安装和更新来自 Modrinth 与 CurseForge 的模组、整合包、资源包和光影，并提供实例管理、多种账户认证、个性化外观与 Axolotl 实验室工具。
+**StarryIsle Launcher** 是基于开源启动器 [Axolotl](https://github.com/Axolotl-Launcher/Axolotl)（美西螈）二次开发的开源 Minecraft Java 版第三方启动器。
 
-本项目基于 [Modrinth App](https://github.com/modrinth/code) 构建，移除了不适用于本项目的商业化模块，专注于提供纯净、无广告的桌面启动体验。
+它保留上游的完整能力：在同一个客户端里搜索、安装和更新来自 Modrinth 与 CurseForge 的模组、整合包、资源包与光影，管理多个实例与账户，并提供个性化外观与实验室工具。
+
+在此基础上，StarryIsle 补充了一批日常使用中更常用的功能：成就浏览、游玩统计、截图中心与首页信息组件。
 
 本项目与客户端项目 Axolotl Client 无任何关联。
 
-_(注：本项目是调用 Modrinth 公开 API 的独立客户端，与 Rinth, Inc. 无任何关联。)_
+_Modrinth 是 Rinth, Inc. 的商标。StarryIsle Launcher 与 Rinth, Inc. 无关联，亦未获得其认可。_
 
-## 核心优势
+## 核心特性
 
-- **真跨平台体验**：告别繁琐的环境配置，原生支持 Windows、macOS（完美兼容 Intel 与 Apple Silicon）及各类主流 Linux 发行版。
-- **现代化内容生态**：集成 Modrinth 和 CurseForge，可在启动器中一键浏览。游戏实例、整合包、模组、资源包及光影均可一键安装与升级，彻底告别手动管理依赖的痛苦。
-- **高度定制化**：无论是主题色调、背景图片，还是离线皮肤，核心功能与视觉展现均由你自由支配。
-- **All in one 全新体验**：启动器内置 “实验室” 功能，囊括种子地图、投影工坊等海量使用工具，带来全新原生轮椅体验。
-
-## 核心架构与技术栈
-
-Axolotl Launcher 采用现代化的混合架构（Hybrid Architecture），兼具原生应用的卓越性能与 Web 前端的灵活性：
-
-- **桌面运行时核心 (Rust / Tauri)**：
-  - **高效后端 (`packages/app-lib`)**：基于 Rust 构建，提供强类型实例管理、SQLite 状态持久化、迁移控制与多线程并发下载引擎。
-  - **安全容器 (`apps/app`)**：基于 Tauri 2 构建的轻量原生壳，实现高效的 IPC 调用与原生系统级集成。
-- **现代化前端界面 (Vue 3 / Nuxt 3 / Tailwind CSS)**：
-  - **桌面客户端 (`apps/app-frontend`)** 与 **官方网站 (`apps/website`)** 共享统一的设计系统 (`packages/ui`)，带来丝滑顺畅的交互体验。
-- **开放内容与生态集成 (`packages/content-management` & `packages/api-client`)**：
-  - 深度集成 Modrinth 与 CurseForge 公开 API，支持一键浏览、搜索、安装及自动更新模组、整合包、光影和资源包。
-- **账户与个性化 (`Minecraft Auth` & `Skins`)**：
-  - 支持正版微软登录（Microsoft Authentication）、Yggdrasil 第三方验证及离线皮肤管理。
-- **全能实验室工具箱 (`Launcher Tools`)**：
-  - 内置投影工坊、种子地图等实用辅助工具，打造一站式 Minecraft 游戏与创作体验。
+- **成就系统**：按实例浏览已解锁与未解锁成就，支持分类与进度统计，并与游玩数据联动。
+- **统计页面**：年度游玩时长、日历热力图、解锁成就数、截图数量，一眼看清自己玩了多久、玩了什么。
+- **截图中心**：网格与时间线两种浏览方式，可为每张截图写备注，支持导出、导入整包截图（含备注）。
+- **首页信息组件**：天气、日历、最近实例、游玩洞察、每日小挑战，可自由增删与排序。
+- **界面色调**：选定一个色相，导航栏、标题栏、窗口外壳与圆角处统一着色，浅色与深色主题都适用。
+- **更新走本仓库**：公告与更新检查均指向本项目，不再访问上游更新服务器。
+- **Beta 通道**：可与正式版分开接收预发布版本，两者数据库相互隔离，互不影响。
 
 ## 下载与安装
 
-请前往 [GitHub Releases](https://github.com/Axolotl-Launcher/Axolotl/releases/latest) 下载适合你操作系统的最新安装包。
-已安装的用户每次均可通过内置的 Tauri 签名校验机制，自动在后台完成更新，无需手动下载安装更新。
+前往 [GitHub Releases](https://github.com/yuxiaoao/starryisle-Launcher/releases/latest) 下载最新安装包。
 
-| 系统平台                | 推荐下载文件                              |
-| ----------------------- | ----------------------------------------- |
-| **Windows** (10/11 x64) | 下载 `.exe` (NSIS) 安装程序               |
-| **macOS**               | 下载 `通用 .dmg` 镜像文件                 |
-| **Linux** (x64)         | 提供 `.AppImage`，`.deb`，`.rpm` 多种格式 |
+安装后可在启动器内检查更新，更新包经过签名校验，校验通过后才会安装。
 
-<details>
-<summary><b>Linux 包管理器快捷安装指令</b></summary>
-<br>
+| 系统平台 | 推荐下载文件 |
+| --- | --- |
+| **Windows**（10 / 11 x64） | 下载 `.exe`（NSIS）安装程序 |
 
-**Arch Linux (AUR)**：
+## 开发组
 
-```bash
-# 源码构建版
-yay -S axolotl-launcher
+<a href="https://github.com/yuxiaoao"><img src="https://github.com/yuxiaoao.png?size=96" width="48" height="48" alt="yuxiaoao" title="yuxiaoao" /></a>
 
-# 预编译二进制版
-yay -S axolotl-launcher-bin
-```
+- [yuxiaoao](https://github.com/yuxiaoao)
 
-**Debian / Ubuntu (APT)**：
+## 项目与社区
 
-```bash
-curl -fsSL https://ppa.axlmc.org/setup.sh | sudo bash
-sudo apt install axolotl-launcher
-```
+| 入口 | 说明 |
+| --- | --- |
+| [源代码](https://github.com/yuxiaoao/starryisle-Launcher) | 仓库与开发进展 |
+| [问题与反馈](https://github.com/yuxiaoao/starryisle-Launcher/issues) | Bug 报告与功能建议 |
+| [更新记录](https://github.com/yuxiaoao/starryisle-Launcher/releases) | 每个版本的具体改动 |
 
-**使用 Nix(启用Flake功能) 的任意发行版**：
+## 许可证与来源声明
 
-> 小提示：
-> 由于 Axolotl Launcher 的主分支代码更新较快，可以在下面用到的网址后面加上`/?`和参数来锁定，以免过于频繁地更新。多个参数用`&`连接。
->
-> - 使用`shallow=1`避免克隆历史代码 \
->   `git+https://github.com/Axolotl-Launcher/Axolotl/?shallow=1`
-> - 使用`ref=`指定分支（例如`experiment/linux-cef-runtime`分支）\
->   `git+https://github.com/Axolotl-Launcher/Axolotl/?ref=experiment/linux-cef-runtime`
-> - 使用`ref=`指定版本标签（例如`v1.9.7-beta.2`）\
->   `git+https://github.com/Axolotl-Launcher/Axolotl/?ref=refs/tags/v1.9.7-beta.2`
-> - 使用`rev=`指定提交（例如`10827ade74f49958cefaa6fda05961c7502741ef`）\
->   `git+https://github.com/Axolotl-Launcher/Axolotl/?rev=10827ade74f49958cefaa6fda05961c7502741ef`
+StarryIsle Launcher 是基于开源启动器 Axolotl（美西螈）二次开发的开源 Minecraft 启动器。
 
-```bash
-nix profile add 'git+https://github.com/Axolotl-Launcher/Axolotl'
-```
+- [上游项目 Axolotl](https://github.com/Axolotl-Launcher/Axolotl)
+- [项目许可证（GPL-3.0）](COPYING.md)
+- [第三方许可证](third-party/licenses)
+- [Modrinth 原始源代码](https://github.com/modrinth/code)
 
-**使用 Home-Manager 的任意发行版**
-
-将此 Flake 加入你的 `flake.nix`
-
-```nix
-# flake.nix
-{
-  nixConfig = {
-    # 使用 Axolotl Launcher 的 Cachix 缓存。对安全性有疑问可以审查：
-    # axlmc.cachix.org 以及 github.com/Axolotl-Launcher/Axolotl-Cachix
-    extra-substituters = [
-      "https://axlmc.cachix.org"
-    ];
-    extra-trusted-public-keys = [
-      "axlmc.cachix.org-1:dmsRJqFQqLMfvRveerHV3DxDCW1wq1N+TX1+dryYWZU="
-    ];
-  };
-
-  inputs = {
-    # nixpkgs home-manager 等其他输入...
-    axolotl-launcher = {
-      url = "git+https://github.com/Axolotl-Launcher/Axolotl";
-    # inputs.nixpkgs.follows = "nixpkgs";
-    # ↑ 通常不建议跟随本地nixpkgs，因为nixpkgs版本不一致会难以命中缓存、从下载缓存回退成本地编译。
-    };
-  };
-  outputs = { axolotl-launcher, <其他输入>, ... }: {
-    homeConfigurations = {
-      <用户名> = home-manager.lib.homeManagerConfiguration {
-        modules = [
-          home.nix
-          axolotl-launcher.homeModules
-          # 其他模块
-        ];
-      };
-    };
-  };
-}
-```
-
-然后在 `home.nix` 中配置
-
-```nix
-# home.nix
-{
-  programs.axolotl-launcher = {
-    enable = true;
-    launchEnv = {
-      KEY = "VAL";
-    };
-    settings = {
-      appearance = {
-        locale = "zh-CN";
-        theme = "dark";
-      };
-      download.max_concurrent_downloads = 16;
-      java = {
-        runtimes = [
-          {
-            path = "${pkgs.jdk21}/bin/java";
-            major_version = 21;
-            full_version = pkgs.jdk21.version;
-            distribution = "Temurin";
-          }
-        ];
-        defaults = [
-          {
-            major_version = 21;
-            path = "${pkgs.jdk21}/bin/java";
-          }
-        ];
-      };
-      # ...
-    };
-  };
-}
-```
-
-可选属性
-
-| 键          | 类型    | 默认值  | 说明                             |
-|:----------- |:-------:|:-------:|:-------------------------------- |
-| `enable`    | `bool`  | `false` | 设置为`true`以启用美西螈启动器   |
-| `launchEnv` | `attrs` | `{ }`   | 运行美西螈启动器时额外的环境变量 |
-| `settings`  | `attrs` | `{ }`   | 提供美西螈启动器设置的默认值     |
-
-</details>
-
-## 贡献者
-
-感谢所有为 Axolotl Launcher 做出贡献的开发者与社区伙伴！
-
-<a href="https://github.com/Axolotl-Launcher/Axolotl/graphs/contributors">
-  <img src="https://contributors.hikarilink.org/image?repo=Axolotl-Launcher/Axolotl" alt="Contributors" />
-</a>
-
----
+Modrinth 是 Rinth, Inc. 的商标。StarryIsle Launcher 与 Rinth, Inc. 无关联，亦未获得其认可。
 
 ## 参与项目开发
 
-Axolotl Launcher 的进步离不开社区的反馈与贡献。
-如果遇到 Bug 或有新的功能点子，欢迎提交 Issue。如需搭建本地开发环境或查阅打包发布规范，请阅读详细的 [贡献指南 (CONTRIBUTING.md)](CONTRIBUTING.md)。
-参与社区和贡献代码前，也请先阅读[行为准则 (CODE_OF_CONDUCT.md)](CODE_OF_CONDUCT.md)。
+如果遇到 Bug 或有新的功能想法，欢迎提交 [Issue](https://github.com/yuxiaoao/starryisle-Launcher/issues)。
 
----
-
-## Star History
-
-<a href="https://www.star-history.com/?repos=Axolotl-Launcher%2FAxolotl">
- <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=Axolotl-Launcher/Axolotl&type=date&theme=dark&legend=top-left" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=Axolotl-Launcher/Axolotl&type=date&legend=top-left" />
-   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=Axolotl-Launcher/Axolotl&type=date&legend=top-left" />
- </picture>
-</a>
+如需搭建本地开发环境或查阅打包发布规范，请阅读 [贡献指南（CONTRIBUTING.md）](CONTRIBUTING.md)。参与社区和贡献代码前，也请先阅读[行为准则（CODE_OF_CONDUCT.md）](CODE_OF_CONDUCT.md)。
