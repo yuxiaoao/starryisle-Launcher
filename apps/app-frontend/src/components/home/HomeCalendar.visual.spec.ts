@@ -144,10 +144,10 @@ it('switches tooltip ownership between dates and cleans up on period change and 
         trigger.focus()
         await waitFor(() => tip()?.parentElement?.dataset.state === 'open')
     }
-    const oldId = tip()!.id
+    const oldText = tip()!.textContent
     const next = dateKeys()[1].element as HTMLButtonElement
     next.focus()
-    await waitFor(() => !!tip() && tip()!.id !== oldId)
+    await waitFor(() => !!tip() && tip()!.textContent !== oldText)
     expect(trigger.hasAttribute('aria-describedby')).toBe(false)
     expect(next.getAttribute('aria-describedby')).toBe(tip()!.id)
     wrapper
