@@ -116,6 +116,9 @@
   "app.action-bar.install.summary.file-download-failed": {
     "message": "無法下載 {file}"
   },
+  "app.action-bar.install.summary.instance-not-found": {
+    "message": "找不到實例"
+  },
   "app.action-bar.install.summary.instance-setup-failed": {
     "message": "無法準備實例"
   },
@@ -2290,6 +2293,9 @@
   },
   "app.home.news.error-title": {
     "message": "新聞載入失敗"
+  },
+  "app.home.news.offline-title": {
+    "message": "連網後會顯示新聞"
   },
   "app.home.news.open-article": {
     "message": "在 minecraft.net 上閱讀"
@@ -6462,7 +6468,7 @@
     "message": "正在準備伺服器..."
   },
   "app.servers.modpack.unsupported-loader-description": {
-    "message": "此整合包使用 {loader}，但 Axolotl 目前僅支援原版、Fabric 與 Quilt 整合包伺服器端。{loader} 支援即將推出。"
+    "message": "此整合包使用 {loader}，但 StarryIsle 目前僅支援原版、Fabric 與 Quilt 整合包伺服器端。{loader} 支援即將推出。"
   },
   "app.servers.modpack.unsupported-loader-title": {
     "message": "{loader} 伺服器端暫不支援"
@@ -6902,45 +6908,6 @@
   "app.servers.wizard.type-title": {
     "message": "伺服器端類型"
   },
-  "app.servers.type.vanilla": {
-    "message": "原版"
-  },
-  "app.servers.type.fabric": {
-    "message": "Fabric"
-  },
-  "app.servers.type.paper": {
-    "message": "Paper"
-  },
-  "app.servers.type.forge": {
-    "message": "Forge"
-  },
-  "app.servers.modpack.downloading": {
-    "message": "正在下載整合包檔案..."
-  },
-  "app.servers.modpack.preparing": {
-    "message": "正在準備伺服器..."
-  },
-  "app.servers.modpack.done": {
-    "message": "安裝完成"
-  },
-  "app.servers.modpack.current-file": {
-    "message": "正在安裝 {file}"
-  },
-  "app.servers.modpack.background-hint": {
-    "message": "您可以關閉此視窗，下載將在背景持續進行。"
-  },
-  "app.servers.modpack.first-run-crashed": {
-    "message": "伺服器在首次啟動時當機。請檢查所選 Java 版本是否相容，然後重試。"
-  },
-  "app.servers.modpack.download-in-background": {
-    "message": "背景下載"
-  },
-  "app.servers.modpack.unsupported-loader-title": {
-    "message": "{loader} 伺服器端暫不支援"
-  },
-  "app.servers.modpack.unsupported-loader-description": {
-    "message": "此整合包使用 {loader}，但 StarryIsle 目前僅支援原版、Fabric 與 Quilt 整合包伺服器端。{loader} 支援即將推出。"
-  },
   "app.settings.about.afdian": {
     "message": "在愛發電贊助"
   },
@@ -7353,7 +7320,7 @@
     "message": "Minecraft 目錄"
   },
   "app.settings.resources.minecraft-directories-description": {
-    "message": "新增一或多個供實例使用的外部 .minecraft 資料夾。這些資料夾會與 StarryIsle 資料分開保存。"
+    "message": "新增一或多個供實例使用的外部 .minecraft 資料夾。這些資料夾會與 Axolotl 資料分開保存。"
   },
   "app.settings.resources.minecraft-directory-mode": {
     "message": "遊戲目錄模式"
@@ -7363,9 +7330,6 @@
   },
   "app.settings.resources.minecraft-directory-mode.shared": {
     "message": "共用 .minecraft 目錄"
-  },
-  "app.settings.resources.add-minecraft-directory": {
-    "message": "新增 .minecraft 目錄"
   },
   "app.settings.resources.select-minecraft-directory": {
     "message": "選擇 .minecraft 目錄"
@@ -7438,21 +7402,6 @@
   },
   "app.settings.resources.maximum-writes-description": {
     "message": "啟動器同時寫入磁碟的最大檔案數。如果經常出現 I/O 錯誤，請降低此值；變更將在重新啟動應用程式後生效。"
-  },
-  "app.settings.resources.minecraft-directories": {
-    "message": "Minecraft 目錄"
-  },
-  "app.settings.resources.minecraft-directories-description": {
-    "message": "新增一或多個供實例使用的外部 .minecraft 資料夾。這些資料夾會與 Axolotl 資料分開保存。"
-  },
-  "app.settings.resources.minecraft-directory-mode": {
-    "message": "遊戲目錄模式"
-  },
-  "app.settings.resources.minecraft-directory-mode.isolated": {
-    "message": "版本隔離"
-  },
-  "app.settings.resources.minecraft-directory-mode.shared": {
-    "message": "共用 .minecraft 目錄"
   },
   "app.settings.resources.minecraft-file-source": {
     "message": "Minecraft 文件、載入器與 Java"
@@ -7547,9 +7496,6 @@
   "app.settings.resources.proxy-username-placeholder": {
     "message": "使用者名稱（可選）"
   },
-  "app.settings.resources.remove-minecraft-directory": {
-    "message": "移除 .minecraft 目錄"
-  },
   "app.settings.resources.reset-import-directory": {
     "message": "使用系統 Downloads 資料夾"
   },
@@ -7570,9 +7516,6 @@
   },
   "app.settings.resources.select-import-directory": {
     "message": "選擇監控目錄"
-  },
-  "app.settings.resources.select-minecraft-directory": {
-    "message": "選擇 .minecraft 目錄"
   },
   "app.settings.resources.source.automatic": {
     "message": "自動（推薦）"
@@ -7793,6 +7736,15 @@
   "app.settings.updates.channel.beta-description": {
     "message": "包含最新功能的新更新，但穩定性較低，更新頻率更快。"
   },
+  "app.settings.updates.channel.copy-database": {
+    "message": "複製資料庫"
+  },
+  "app.settings.updates.channel.copy-database-description": {
+    "message": "為避免出現問題，Beta 版將使用獨立的資料儲存，以免影響正式版的正常運作。這看起來是你第一次使用 Beta 版，是否要將穩定版的資料複製到 Beta 版？此操作無法自動還原。"
+  },
+  "app.settings.updates.channel.copy-database-title": {
+    "message": "將 Release 資料複製到 Beta？"
+  },
   "app.settings.updates.channel.description": {
     "message": "選擇 StarryIsle 接收的啟動器版本。"
   },
@@ -7819,6 +7771,9 @@
   },
   "app.settings.updates.channel.restart-title": {
     "message": "需要重新啟動"
+  },
+  "app.settings.updates.channel.start-empty": {
+    "message": "從空白資料庫開始"
   },
   "app.settings.updates.channel.title": {
     "message": "更新管道"
