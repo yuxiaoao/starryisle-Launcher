@@ -1,90 +1,6 @@
 {
   "entries": [
     {
-      "file": "packages/app-lib/src/state/store/recovery_mode.rs",
-      "form": "std::fs",
-      "count": 2,
-      "reason": "reviewed recovery write guard: canonicalizes the authority path or its nearest existing ancestor to reject symlink aliases and Windows verbatim-path bypasses. Probes are bounded by path depth, read metadata only, execute after releasing the recovery registry mutex, and acquire no scheduler managed resource; normal sessions with no recovery roots skip these probes (D17)",
-      "sites": [
-        "normalized: if let Ok(mut resolved) = std::fs::canonicalize(ancestor) {",
-        "normalized: if let Ok(path) = std::fs::canonicalize(path) {"
-      ]
-    },
-    {
-      "file": "packages/app-lib/src/state/persistence/document.rs",
-      "form": "spawn_blocking",
-      "count": 1,
-      "reason": "reviewed awaited document worker: bounded JSON reads, cross-process file locking and durable same-directory publication; owns its file locks through completion even if its caller is canceled, and acquires no scheduler managed resource (D17)",
-      "sites": [
-        "blocking: tokio::task::spawn_blocking(operation)"
-      ]
-    },
-    {
-      "file": "packages/app-lib/src/state/persistence/document.rs",
-      "form": "std::fs",
-      "count": 9,
-      "reason": "reviewed document worker I/O for locking and atomic publication; absent_pair inspects authority/receipt presence under those same worker-owned locks. snapshot_json performs a bounded 16 MiB regular JSON read for standalone maintenance snapshots under the owner's file lock, or for an immutable completed backup manifest; it acquires no additional managed resource (D17)",
-      "sites": [
-        "absent_pair: match std::fs::symlink_metadata(candidate) {",
-        "acquire: let file = std::fs::OpenOptions::new()",
-        "acquire: let parent = std::fs::canonicalize(parent)?;",
-        "acquire: std::fs::create_dir_all(parent)?;",
-        "read_bytes: let metadata = match std::fs::metadata(path) {",
-        "read_bytes: std::fs::File::open(path)?",
-        "replace_bytes: std::fs::File::open(parent)?.sync_all()?;",
-        "snapshot_json: let metadata = match std::fs::symlink_metadata(path) {",
-        "snapshot_json: std::fs::File::open(path)?"
-      ]
-    },
-    {
-      "file": "packages/app-lib/src/state/persistence/document.rs",
-      "form": "std::thread::sleep",
-      "count": 1,
-      "reason": "reviewed 5ms OS file-lock contention backoff inside the owned blocking document worker; does not block the async executor, release an in-flight publication lock or acquire scheduler resources (D17)",
-      "sites": [
-        "acquire: std::thread::sleep(std::time::Duration::from_millis(5));"
-      ]
-    },
-    {
-      "file": "packages/app-lib/src/api/logs/logshare.rs",
-      "form": "spawn_blocking",
-      "count": 1,
-      "reason": "reviewed LogShare upload preparation: serializes and gzip-compresses one owned log snapshot within the server file/content/request limits; holds no managed resources and keeps CPU work off the async runtime (D17)",
-      "sites": [
-        "upload_prepared: tokio::task::spawn_blocking(move || encode_upload(&prepared, &limits))"
-      ]
-    },
-    {
-      "file": "packages/app-lib/src/util/java_storage.rs",
-      "form": "spawn_blocking",
-      "count": 1,
-      "reason": "reviewed command-scoped Windows volume and storage-property inspection; awaited blocking worker owns only its temporary device handle, acquires no managed resource, and keeps driver I/O off the async runtime (D17)",
-      "sites": [
-        "inspect: tokio::task::spawn_blocking(move || inspect_windows(&path))"
-      ]
-    },
-    {
-      "file": "apps/installer-ui/src/executable_install.rs",
-      "form": "std::fs import",
-      "count": 13,
-      "reason": "reviewed synchronous installer helper: headless metadata inspection, duplicated installation-ownership handle verification, same-volume staged executable verification and atomic publication before any GUI or async runtime; prunes only older installer-named regular executable backups in the owned directory after verified replacement; holds no launcher managed resources and retains NSIS directory ownership even after parent death (D17)",
-      "sites": [
-        "dispatch: fs::write(",
-        "inherit_ownership: let expected = fs::canonicalize(parent)",
-        "inherit_ownership: let ownership = unsafe { File::from_raw_handle(duplicate.0) };",
-        "inspect: let metadata = fs::symlink_metadata(path)",
-        "inspect: let mut file = File::open(path).map_err(|error| error.to_string())?;",
-        "install: OpenOptions::new()",
-        "install: let metadata = fs::symlink_metadata(target)",
-        "install: let parent = fs::canonicalize(parent).map_err(|error| error.to_string())?;",
-        "install: let stage_parent = fs::canonicalize(",
-        "prune_previous_executables: if let Err(error) = fs::remove_file(&path) {",
-        "prune_previous_executables: let entries = match fs::read_dir(parent) {",
-        "prune_previous_executables: let target = match fs::canonicalize(target) {",
-        "record: if let Ok(mut file) = OpenOptions::new()"
-      ]
-    },
-    {
       "file": "apps/app/src/api/auth.rs",
       "form": "tokio::spawn",
       "count": 1,
@@ -231,6 +147,33 @@
       ]
     },
     {
+      "file": "apps/app/src/api/observability_mcp/config.rs",
+      "form": "std::fs",
+      "count": 1,
+      "reason": "reviewed diagnostics MCP preferences: atomic rename of one small JSON document next to the existing mcp.json, the same bounded synchronous write the launcher tools MCP performs; it holds no managed resource",
+      "sites": [
+        "save_preferences: std::fs::create_dir_all(parent).map_err(|error| error.to_string())?;"
+      ]
+    },
+    {
+      "file": "apps/app/src/api/observability_mcp/service.rs",
+      "form": "std::fs",
+      "count": 1,
+      "reason": "reviewed diagnostics MCP startup: reads observability-mcp.json once under the controller lock before any listener starts; a missing file leaves capture off and touches no managed resource",
+      "sites": [
+        "initialize: let result = (|| match std::fs::read(config_path(app)?) {"
+      ]
+    },
+    {
+      "file": "apps/app/src/api/observability.rs",
+      "form": "spawn_blocking",
+      "count": 1,
+      "reason": "reviewed observability flush: the blocking OTLP force-flush is bounded by a 2 s caller budget and runs on a dedicated blocking worker; it holds only provider handles and never blocks the async runtime",
+      "sites": [
+        "observability_flush: tauri::async_runtime::spawn_blocking(|| {"
+      ]
+    },
+    {
       "file": "apps/app/src/api/resources.rs",
       "form": "tauri::async_runtime::spawn",
       "count": 1,
@@ -326,6 +269,38 @@
       "reason": "phase-0 baseline: existing Tauri runtime spawn; moves to scheduler dispatch with the governed items (spec §5.6) or stays operation-scoped",
       "sites": [
         "start_accent_color_watcher: tauri::async_runtime::spawn(async move {"
+      ]
+    },
+    {
+      "file": "apps/app/src/api/theme_pack.rs",
+      "form": "spawn_blocking",
+      "count": 1,
+      "reason": "reviewed appearance snapshot export: drives zip creation and file publication on a blocking worker that the command awaits; owns only the caller-selected destination and acquires no managed resource (D17)",
+      "sites": [
+        "theme_pack_export_snapshot: tokio::task::spawn_blocking(move || {"
+      ]
+    },
+    {
+      "file": "apps/app/src/api/theme_pack.rs",
+      "form": "std::fs",
+      "count": 15,
+      "reason": "reviewed theme pack protocol, snapshot export and pack copy: every path is confined to the themes directory or the caller-selected snapshot destination; metadata is read before serving an asset so oversized responses are rejected without allocation, and no managed resource is acquired (D17)",
+      "sites": [
+        "<module>: archive: &mut zip::ZipWriter<std::fs::File>,",
+        "<module>: archive: &mut zip::ZipWriter<std::fs::File>,",
+        "copy_pack_directory: let metadata = std::fs::symlink_metadata(&path).map_err(|error| {",
+        "copy_pack_directory: let mut source = std::fs::File::open(&path).map_err(|error| {",
+        "copy_pack_directory: let read_dir = std::fs::read_dir(directory).map_err(|error| {",
+        "export_snapshot_archive: if let Err(error) = std::fs::rename(&temporary, destination) {",
+        "export_snapshot_archive: if let Err(error) = std::fs::rename(destination, backup) {",
+        "export_snapshot_archive: let _ = std::fs::remove_file(&temporary);",
+        "export_snapshot_archive: let _ = std::fs::remove_file(&temporary);",
+        "export_snapshot_archive: let _ = std::fs::remove_file(&temporary);",
+        "export_snapshot_archive: let _ = std::fs::remove_file(backup);",
+        "export_snapshot_archive: let _ = std::fs::rename(backup, destination);",
+        "protocol_response_for: let Ok(contents) = std::fs::read(&file_path) else {",
+        "protocol_response_for: let Ok(metadata) = std::fs::metadata(&file_path) else {",
+        "write_snapshot_archive: let file = std::fs::File::create(temporary).map_err(|error| {"
       ]
     },
     {
@@ -525,7 +500,9 @@
       "form": "tauri::async_runtime::spawn",
       "count": 1,
       "reason": "One native tray worker coalesces event notifications and serializes menu updates for the application lifetime.",
-      "sites": ["start: tauri::async_runtime::spawn(async move {"]
+      "sites": [
+        "start: tauri::async_runtime::spawn(async move {"
+      ]
     },
     {
       "file": "apps/app/src/main.rs",
@@ -550,11 +527,10 @@
     {
       "file": "apps/app/src/main.rs",
       "form": "tauri::async_runtime::spawn",
-      "count": 8,
+      "count": 7,
       "reason": "phase-0 baseline: existing Tauri runtime spawn; moves to scheduler dispatch with the governed items (spec §5.6) or stays operation-scoped",
       "sites": [
         "initialize_state: tauri::async_runtime::spawn(async move {",
-        "initialize_state: tauri::async_runtime::spawn(async {",
         "main: tauri::async_runtime::spawn(api::utils::handle_command(",
         "main: tauri::async_runtime::spawn(api::utils::handle_command(",
         "main: tauri::async_runtime::spawn(async move {",
@@ -712,15 +688,6 @@
     },
     {
       "file": "apps/app/src/updater_impl.rs",
-      "form": "tokio::spawn",
-      "count": 1,
-      "reason": "Reviewed startup-only package ownership probe before window creation: a two-second child wait and bounded 250 ms reap fall back to Manual. The operation-scoped worker owns only its rpm child, uses kill_on_drop on cancellation, acquires no managed locks and runs outside L0 (D17).",
-      "sites": [
-        "bounded_package_probe: tokio::spawn(async move {"
-      ]
-    },
-    {
-      "file": "apps/app/src/updater_impl.rs",
       "form": "spawn_blocking",
       "count": 2,
       "reason": "phase-0 baseline: blocking work on the shared blocking pool, which L0 must stop using (T3.6); reviewed awaited signed-portable ZIP staging worker owns only unpublished staging files; package staging and installation retain a private temporary directory through consumer completion, including caller cancellation; neither worker acquires managed resources (D17)",
@@ -740,6 +707,77 @@
       ]
     },
     {
+      "file": "apps/app/src/updater_impl.rs",
+      "form": "tokio::spawn",
+      "count": 1,
+      "reason": "Reviewed startup-only package ownership probe before window creation: a two-second child wait and bounded 250 ms reap fall back to Manual. The operation-scoped worker owns only its rpm child, uses kill_on_drop on cancellation, acquires no managed locks and runs outside L0 (D17).",
+      "sites": [
+        "bounded_package_probe: tokio::spawn(async move {"
+      ]
+    },
+    {
+      "file": "apps/installer-ui/src/executable_install.rs",
+      "form": "std::fs import",
+      "count": 13,
+      "reason": "reviewed synchronous installer helper: headless metadata inspection, duplicated installation-ownership handle verification, same-volume staged executable verification and atomic publication before any GUI or async runtime; prunes only older installer-named regular executable backups in the owned directory after verified replacement; holds no launcher managed resources and retains NSIS directory ownership even after parent death (D17)",
+      "sites": [
+        "dispatch: fs::write(",
+        "inherit_ownership: let expected = fs::canonicalize(parent)",
+        "inherit_ownership: let ownership = unsafe { File::from_raw_handle(duplicate.0) };",
+        "inspect: let metadata = fs::symlink_metadata(path)",
+        "inspect: let mut file = File::open(path).map_err(|error| error.to_string())?;",
+        "install: OpenOptions::new()",
+        "install: let metadata = fs::symlink_metadata(target)",
+        "install: let parent = fs::canonicalize(parent).map_err(|error| error.to_string())?;",
+        "install: let stage_parent = fs::canonicalize(",
+        "prune_previous_executables: if let Err(error) = fs::remove_file(&path) {",
+        "prune_previous_executables: let entries = match fs::read_dir(parent) {",
+        "prune_previous_executables: let target = match fs::canonicalize(target) {",
+        "record: if let Ok(mut file) = OpenOptions::new()"
+      ]
+    },
+    {
+      "file": "apps/installer-ui/src/portable_update.rs",
+      "form": "std::fs import",
+      "count": 24,
+      "reason": "reviewed exact synchronous portable transaction I/O: verified ZIP staging in awaited blocking worker, pre-runtime recovery, share-zero installation ownership and journaled program-only activation after parent exit; no launcher managed-resource acquisition, data-directory contents excluded (D17)",
+      "sites": [
+        "activate: fs::create_dir(stage.join(\"previous\"))",
+        "activate: fs::rename(&target, stage.join(\"previous\").join(&item.path))",
+        "activate: fs::rename(stage.join(\"payload\").join(&item.path), &target)",
+        "activate: let mut source = File::open(stage.join(\"payload\").join(MAIN))",
+        "digest: let mut file = File::open(path).map_err(|error| error.to_string())?;",
+        "dispatch: let _ = fs::write(stage.join(\"error.txt\"), error);",
+        "ownership: OpenOptions::new().read(true).write(true).create(true).truncate(false).share_mode(0)",
+        "prepare: fs::copy(payload.join(HELPER), stage.path().join(\"worker.exe\"))",
+        "prepare: fs::create_dir(&payload).map_err(|error| error.to_string())?;",
+        "prepare: let mut output = OpenOptions::new()",
+        "read_json: let file = File::open(path).map_err(|error| error.to_string())?;",
+        "recover_owned: fs::remove_file(&target)",
+        "recover_owned: fs::remove_file(&target).map_err(|error| error.to_string())?;",
+        "recover_owned: fs::remove_file(marker).map_err(|error| error.to_string())?;",
+        "recover_owned: fs::rename(&backup, &target)",
+        "regular: fs::symlink_metadata(path).map_err(|error| error.to_string())?;",
+        "safe_parents: fs::create_dir(&path).map_err(|error| error.to_string())?;",
+        "safe_parents: fs::symlink_metadata(root).map_err(|error| error.to_string())?;",
+        "safe_parents: match fs::symlink_metadata(&path) {",
+        "start: fs::read_to_string(self.stage.path().join(\"error.txt\"))",
+        "validate_journal: fs::symlink_metadata(&stage).map_err(|error| error.to_string())?;",
+        "worker: != fs::canonicalize(root).map_err(|error| error.to_string())?",
+        "worker: if fs::canonicalize(stage.parent().ok_or(\"Invalid portable stage\")?)",
+        "write_new: let mut file = OpenOptions::new()"
+      ]
+    },
+    {
+      "file": "apps/installer-ui/src/portable_update.rs",
+      "form": "std::thread::sleep",
+      "count": 1,
+      "reason": "reviewed bounded 15-second readiness polling in synchronous Exit dispatcher; no runtime or managed resources held; worker holds installation ownership before acknowledging readiness (D17)",
+      "sites": [
+        "start: std::thread::sleep(Duration::from_millis(20));"
+      ]
+    },
+    {
       "file": "apps/installer-ui/src/windows.rs",
       "form": "std::fs import",
       "count": 11,
@@ -754,7 +792,7 @@
         "start_uninstall: let _ = fs::remove_file(&status_path);",
         "start_uninstall: let _ = fs::remove_file(status_path);",
         "validate_request: if fs::create_dir_all(&resource_dir).is_err() {",
-        "validate_request: if fs::write(&write_test, b\"Axolotl Launcher\").is_err() {",
+        "validate_request: if fs::write(&write_test, b\"StarryIsle Launcher\").is_err() {",
         "validate_request: let _ = fs::remove_file(write_test);"
       ]
     },
@@ -955,6 +993,86 @@
       ]
     },
     {
+      "file": "packages/app-lib/src/api/instance/advancement_catalog.rs",
+      "form": "spawn_blocking",
+      "count": 1,
+      "reason": "Fork feature: blocking zip/IO moved off the async runtime; user-triggered with a bounded input set.",
+      "sites": [
+        "advancement_catalog: let entries = tokio::task::spawn_blocking({"
+      ]
+    },
+    {
+      "file": "packages/app-lib/src/api/instance/advancement_catalog.rs",
+      "form": "std::fs",
+      "count": 24,
+      "reason": "Fork feature: the user picks the file and the call does bounded work on that one path, with no scheduler lock held across it.",
+      "sites": [
+        "<module>: archive: &mut ZipArchive<std::fs::File>,",
+        "<module>: archive: &mut ZipArchive<std::fs::File>,",
+        "<module>: archive: &mut ZipArchive<std::fs::File>,",
+        "advancement_catalog: if let Ok(text) = std::fs::read_to_string(&catalog_file) {",
+        "advancement_catalog: let _ = std::fs::write(&catalog_file, text);",
+        "advancement_catalog: let _ = std::fs::write(&catalog_file, text);",
+        "advancement_catalog: let file = std::fs::File::open(&jar)?;",
+        "advancement_catalog: let meta = std::fs::metadata(&jar)?;",
+        "advancement_catalog: std::fs::create_dir_all(&icon_root)?;",
+        "advancement_catalog: std::fs::write(&target, bytes)?;",
+        "advancement_catalog: std::fs::write(&target, bytes)?;",
+        "advancement_catalog: std::fs::write(&target, bytes)?;",
+        "advancement_catalog: std::fs::write(&target, bytes)?;",
+        "advancement_catalog: std::fs::write(&target, bytes)?;",
+        "advancement_catalog: std::fs::write(&target, bytes)?;",
+        "advancement_catalog: std::fs::write(&target, bytes)?;",
+        "advancement_catalog: std::fs::write(&target, bytes)?;",
+        "asset_index: let Ok(entries) = std::fs::read_dir(assets.join(\"indexes\")) else {",
+        "asset_index: let Ok(text) = std::fs::read_to_string(&path) else {",
+        "download_wiki_icons: let Ok(_) = std::fs::create_dir_all(&dir) else {",
+        "download_wiki_icons: let _ = std::fs::write(&marker, b\"{}\");",
+        "download_wiki_icons: let fresh = std::fs::metadata(&marker)",
+        "download_wiki_icons: std::fs::write(&file, bytes).ok()?;",
+        "read_asset: std::fs::read(path).ok()"
+      ]
+    },
+    {
+      "file": "packages/app-lib/src/api/instance/advancement_catalog.rs",
+      "form": "tokio::spawn",
+      "count": 2,
+      "reason": "Fork feature: a detached task that only advances the fork's own catalog refresh; it owns its data and queues bounded work.",
+      "sites": [
+        "apply_wiki_icons: tokio::spawn(async move {",
+        "download_wiki_icons: tasks.push(tokio::spawn(async move {"
+      ]
+    },
+    {
+      "file": "packages/app-lib/src/api/instance/advancements.rs",
+      "form": "spawn_blocking",
+      "count": 4,
+      "reason": "Fork feature: blocking zip/IO moved off the async runtime; user-triggered with a bounded input set.",
+      "sites": [
+        "list_worlds: tokio::task::spawn_blocking(move || -> crate::Result<Vec<WorldSummary>> {",
+        "version_jar: tokio::task::spawn_blocking(move || -> crate::Result<Option<PathBuf>> {",
+        "world_advancements: tokio::task::spawn_blocking(move || -> crate::Result<WorldAdvancements> {",
+        "world_completed_all_players: tokio::task::spawn_blocking("
+      ]
+    },
+    {
+      "file": "packages/app-lib/src/api/instance/advancements.rs",
+      "form": "std::fs",
+      "count": 9,
+      "reason": "Fork feature: the user picks the file and the call does bounded work on that one path, with no scheduler lock held across it.",
+      "sites": [
+        "last_played_from_level: let file = std::fs::File::open(world_dir.join(\"level.dat\")).ok()?;",
+        "list_worlds: let entries = match std::fs::read_dir(&dir) {",
+        "player_ids: let Ok(entries) = std::fs::read_dir(dir) else {",
+        "player_names: std::fs::read_to_string(instance_root.join(\"usercache.json\"))",
+        "version_jar: let Ok(entries) = std::fs::read_dir(&versions) else {",
+        "version_jar: let Ok(files) = std::fs::read_dir(&dir) else {",
+        "version_jar: std::fs::read_to_string(root.join(\"axolotl_config.json\"))",
+        "world_advancements: if let Ok(text) = std::fs::read_to_string(&file) {",
+        "world_completed_all_players: let Ok(text) = std::fs::read_to_string(&file) else {"
+      ]
+    },
+    {
       "file": "packages/app-lib/src/api/instance/backup.rs",
       "form": "spawn_blocking",
       "count": 1,
@@ -1015,6 +1133,31 @@
         "inspect_assembled: let file = std::fs::File::open(&path)?;",
         "sha256_file: let mut file = std::fs::File::open(&path).map_err(|error| {",
         "validate_archive: let file = std::fs::File::open(&path).map_err(|error| {"
+      ]
+    },
+    {
+      "file": "packages/app-lib/src/api/instance/screenshots/bundle.rs",
+      "form": "spawn_blocking",
+      "count": 2,
+      "reason": "Fork feature: blocking zip/IO moved off the async runtime; user-triggered with a bounded input set.",
+      "sites": [
+        "export_instance_bundle: tokio::task::spawn_blocking(move || -> crate::Result<()> {",
+        "import_instance_bundle: let (mut report, pending_notes) = tokio::task::spawn_blocking({"
+      ]
+    },
+    {
+      "file": "packages/app-lib/src/api/instance/screenshots/bundle.rs",
+      "form": "std::fs",
+      "count": 7,
+      "reason": "Fork feature: the user picks the file and the call does bounded work on that one path, with no scheduler lock held across it.",
+      "sites": [
+        "export_instance_bundle: for entry in std::fs::read_dir(&dir)? {",
+        "export_instance_bundle: let file = std::fs::File::create(&export_path)?;",
+        "export_instance_bundle: let mut source = std::fs::File::open(&path)?;",
+        "import_instance_bundle: let file = std::fs::File::open(&archive_path)?;",
+        "import_instance_bundle: let mut out = std::fs::File::create(&target)?;",
+        "import_instance_bundle: std::fs::create_dir_all(&dir)?;",
+        "import_instance_bundle: std::fs::create_dir_all(parent)?;"
       ]
     },
     {
@@ -1215,6 +1358,15 @@
       "reason": "Inspection and streaming export perform file operations on the blocking pool without resource locks; export pins directory handles, decompresses and censors fixed chunks, and atomically publishes a temporary entry",
       "sites": [
         "read_file: let file = std::fs::File::open(resolved)?;"
+      ]
+    },
+    {
+      "file": "packages/app-lib/src/api/logs/logshare.rs",
+      "form": "spawn_blocking",
+      "count": 1,
+      "reason": "reviewed LogShare upload preparation: serializes and gzip-compresses one owned log snapshot within the server file/content/request limits; holds no managed resources and keeps CPU work off the async runtime (D17)",
+      "sites": [
+        "upload_prepared: tokio::task::spawn_blocking(move || encode_upload(&prepared, &limits))"
       ]
     },
     {
@@ -1565,6 +1717,18 @@
       ]
     },
     {
+      "file": "packages/app-lib/src/api/stats.rs",
+      "form": "std::fs",
+      "count": 4,
+      "reason": "Fork feature: the user picks the file and the call does bounded work on that one path, with no scheduler lock held across it.",
+      "sites": [
+        "modified_stamp: std::fs::metadata(path)",
+        "saves_stamp: let Ok(entries) = std::fs::read_dir(&saves) else {",
+        "screenshots_stamp: let Ok(entries) = std::fs::read_dir(&shots) else {",
+        "walk: let Ok(entries) = std::fs::read_dir(dir) else {"
+      ]
+    },
+    {
       "file": "packages/app-lib/src/api/terracotta.rs",
       "form": "spawn_blocking",
       "count": 1,
@@ -1631,6 +1795,68 @@
       "reason": "phase-0 baseline: existing task spawn; moves to scheduler dispatch with the governed items (spec §5.6) or stays operation-scoped",
       "sites": [
         "sync: task: tokio::spawn(run(port)),"
+      ]
+    },
+    {
+      "file": "packages/app-lib/src/api/theme_pack/archive.rs",
+      "form": "std::fs",
+      "count": 8,
+      "reason": "reviewed theme pack archive extraction: zip-slip checked, size-bounded unpack into a staging directory; the worker owns no managed resource and runs inside the awaited install task (D17)",
+      "sites": [
+        "<module>: use std::fs::File;",
+        "extract: let metadata = std::fs::metadata(archive_path).map_err(|error| {",
+        "extract: std::fs::create_dir_all(&path).map_err(|error| {",
+        "extract: std::fs::create_dir_all(destination).map_err(|error| {",
+        "extract: std::fs::create_dir_all(parent).map_err(|error| {",
+        "extract: std::fs::metadata(join_relative(destination, style).ok()?)",
+        "read_origin: let bytes = std::fs::read(pack_dir.join(ORIGIN_FILE)).ok()?;",
+        "write_origin: std::fs::write(pack_dir.join(ORIGIN_FILE), bytes).map_err(|error| {"
+      ]
+    },
+    {
+      "file": "packages/app-lib/src/api/theme_pack/archive.rs",
+      "form": "std::fs import",
+      "count": 2,
+      "reason": "reviewed theme pack archive extraction: imported file helpers only open the archive and bounded staging output; no managed resource is acquired (D17)",
+      "sites": [
+        "extract: let file = File::open(archive_path).map_err(|error| {",
+        "extract: let mut output = File::create(&path).map_err(|error| {"
+      ]
+    },
+    {
+      "file": "packages/app-lib/src/api/theme_pack/manifest.rs",
+      "form": "std::fs",
+      "count": 5,
+      "reason": "reviewed theme pack validation: reads the manifest and CSS files only after canonical path checks within one pack directory; stylesheet size is checked before reading so oversized CSS is rejected without allocation, and short-lived install/listing work holds no managed resource (D17)",
+      "sites": [
+        "checked_file: let canonical = std::fs::canonicalize(&path).map_err(|_| {",
+        "checked_file: let canonical_pack = std::fs::canonicalize(pack_dir).map_err(|error| {",
+        "load: std::fs::read(pack_dir.join(MANIFEST_FILE)).map_err(|error| {",
+        "validate: let css = std::fs::read_to_string(&path).map_err(|error| {",
+        "validate: let metadata = std::fs::metadata(&path).map_err(|error| {"
+      ]
+    },
+    {
+      "file": "packages/app-lib/src/api/theme_pack/store.rs",
+      "form": "spawn_blocking",
+      "count": 3,
+      "reason": "reviewed install/list/get workers: awaited blocking extraction, directory scan and manifest load; install is serialized by INSTALL_LOCK and each worker owns only its staging directory (D17)",
+      "sites": [
+        "get: let result = tokio::task::spawn_blocking(move || {",
+        "install: let extracted = tokio::task::spawn_blocking(move || {",
+        "list: tokio::task::spawn_blocking(move || {"
+      ]
+    },
+    {
+      "file": "packages/app-lib/src/api/theme_pack/store.rs",
+      "form": "std::fs",
+      "count": 4,
+      "reason": "reviewed install staging cleanup and list directory scan: paths stay inside the themes directory or its hidden staging sibling; no managed resource beyond the awaited install worker (D17)",
+      "sites": [
+        "install: let _ = std::fs::remove_dir_all(&staging_for_task);",
+        "install: let _ = std::fs::remove_dir_all(&staging_for_task);",
+        "install: let _ = std::fs::remove_dir_all(&staging_for_task);",
+        "list: let entries = std::fs::read_dir(&themes_dir).map_err(io)?;"
       ]
     },
     {
@@ -1846,16 +2072,6 @@
       ]
     },
     {
-      "file": "packages/app-lib/src/launcher/pcl_ce_json.rs",
-      "form": "std::fs",
-      "count": 2,
-      "reason": "Reviewed PCL-CE version file discovery and decoding, shared with the existing synchronous local instance import and launch resolver; no file writes or nested managed resource acquisition, outside L0 (D17)",
-      "sites": [
-        "discover: let entries = std::fs::read_dir(version_dir).map_err(|error| {",
-        "read: let bytes = std::fs::read(path).map_err(|error| {"
-      ]
-    },
-    {
       "file": "packages/app-lib/src/launcher/mod.rs",
       "form": "spawn_blocking",
       "count": 1,
@@ -1958,6 +2174,16 @@
       ]
     },
     {
+      "file": "packages/app-lib/src/launcher/pcl_ce_json.rs",
+      "form": "std::fs",
+      "count": 2,
+      "reason": "Reviewed PCL-CE version file discovery and decoding, shared with the existing synchronous local instance import and launch resolver; no file writes or nested managed resource acquisition, outside L0 (D17)",
+      "sites": [
+        "discover: let entries = std::fs::read_dir(version_dir).map_err(|error| {",
+        "read: let bytes = std::fs::read(path).map_err(|error| {"
+      ]
+    },
+    {
       "file": "packages/app-lib/src/logger.rs",
       "form": "std::fs",
       "count": 19,
@@ -2028,6 +2254,26 @@
       "reason": "phase-0 baseline: synchronous file I/O; must not appear in L0 or inside a critical section (D17)",
       "sites": [
         "read_jar_manifest: let file = std::fs::File::open(path).ok()?;"
+      ]
+    },
+    {
+      "file": "packages/app-lib/src/observability/runtime.rs",
+      "form": "thread::Builder",
+      "count": 2,
+      "reason": "reviewed OTLP flush/shutdown: dedicated short-lived threads isolate exporter I/O from the async runtime and are bounded by the caller exit budget; they hold only cloned provider handles",
+      "sites": [
+        "flush: std::thread::Builder::new()",
+        "shutdown: std::thread::Builder::new()"
+      ]
+    },
+    {
+      "file": "packages/app-lib/src/observability/runtime.rs",
+      "form": "thread::Builder spawn",
+      "count": 2,
+      "reason": "reviewed OTLP flush/shutdown: both helper threads are detached and only perform SDK force_flush/shutdown with cloned providers, so a slow collector cannot block the process past the caller budget",
+      "sites": [
+        "flush: .spawn(move || {",
+        "shutdown: .spawn(move || {"
       ]
     },
     {
@@ -2409,6 +2655,29 @@
       ]
     },
     {
+      "file": "packages/app-lib/src/state/instances/content_facts.rs",
+      "form": "spawn_blocking",
+      "count": 1,
+      "reason": "reviewed awaited native metadata-only content scan for local display; no hashing, decoding or database access inside worker and no scheduler managed resource acquisition (D17)",
+      "sites": [
+        "overlay: let scanned = tokio::task::spawn_blocking(move || {"
+      ]
+    },
+    {
+      "file": "packages/app-lib/src/state/instances/manifest.rs",
+      "form": "std::fs",
+      "count": 6,
+      "reason": "reviewed bounded recovery backup I/O inside the awaited Document::inspect blocking worker; validates authority containment and checksums, syncs temporary files, and publishes the head last without acquiring scheduler resources (D17)",
+      "sites": [
+        "backup: if !std::fs::canonicalize(&path)?.starts_with(&canonical) {",
+        "backup: let canonical = std::fs::canonicalize(&base)?;",
+        "backup: let file = std::fs::File::open(base.join(\"recovery.json\"))?;",
+        "backup: let file = std::fs::File::open(path)?;",
+        "durable_copy: std::fs::File::open(parent)?.sync_all()?;",
+        "durable_copy: std::fs::create_dir_all(parent)?;"
+      ]
+    },
+    {
       "file": "packages/app-lib/src/state/instances/watcher.rs",
       "form": "tokio::spawn",
       "count": 7,
@@ -2441,6 +2710,41 @@
         "resize_download_concurrency: tokio::spawn(async move {",
         "resize_download_concurrency: tokio::spawn(async move {",
         "resize_download_concurrency: tokio::spawn(async move {"
+      ]
+    },
+    {
+      "file": "packages/app-lib/src/state/persistence/document.rs",
+      "form": "spawn_blocking",
+      "count": 1,
+      "reason": "reviewed awaited document worker: bounded JSON reads, cross-process file locking and durable same-directory publication; owns its file locks through completion even if its caller is canceled, and acquires no scheduler managed resource (D17)",
+      "sites": [
+        "blocking: tokio::task::spawn_blocking(operation)"
+      ]
+    },
+    {
+      "file": "packages/app-lib/src/state/persistence/document.rs",
+      "form": "std::fs",
+      "count": 9,
+      "reason": "reviewed document worker I/O for locking and atomic publication; absent_pair inspects authority/receipt presence under those same worker-owned locks. snapshot_json performs a bounded 16 MiB regular JSON read for standalone maintenance snapshots under the owner's file lock, or for an immutable completed backup manifest; it acquires no additional managed resource (D17)",
+      "sites": [
+        "absent_pair: match std::fs::symlink_metadata(candidate) {",
+        "acquire: let file = std::fs::OpenOptions::new()",
+        "acquire: let parent = std::fs::canonicalize(parent)?;",
+        "acquire: std::fs::create_dir_all(parent)?;",
+        "read_bytes: let metadata = match std::fs::metadata(path) {",
+        "read_bytes: std::fs::File::open(path)?",
+        "replace_bytes: std::fs::File::open(parent)?.sync_all()?;",
+        "snapshot_json: let metadata = match std::fs::symlink_metadata(path) {",
+        "snapshot_json: std::fs::File::open(path)?"
+      ]
+    },
+    {
+      "file": "packages/app-lib/src/state/persistence/document.rs",
+      "form": "std::thread::sleep",
+      "count": 1,
+      "reason": "reviewed 5ms OS file-lock contention backoff inside the owned blocking document worker; does not block the async executor, release an in-flight publication lock or acquire scheduler resources (D17)",
+      "sites": [
+        "acquire: std::thread::sleep(std::time::Duration::from_millis(5));"
       ]
     },
     {
@@ -2482,6 +2786,16 @@
       "reason": "phase-0 baseline: synchronous file I/O; must not appear in L0 or inside a critical section (D17)",
       "sites": [
         "auto_prefers_mirror: std::fs::read_link(\"/etc/localtime\")"
+      ]
+    },
+    {
+      "file": "packages/app-lib/src/state/store/recovery_mode.rs",
+      "form": "std::fs",
+      "count": 2,
+      "reason": "reviewed recovery write guard: canonicalizes the authority path or its nearest existing ancestor to reject symlink aliases and Windows verbatim-path bypasses. Probes are bounded by path depth, read metadata only, execute after releasing the recovery registry mutex, and acquire no scheduler managed resource; normal sessions with no recovery roots skip these probes (D17)",
+      "sites": [
+        "normalized: if let Ok(mut resolved) = std::fs::canonicalize(ancestor) {",
+        "normalized: if let Ok(path) = std::fs::canonicalize(path) {"
       ]
     },
     {
@@ -2717,6 +3031,15 @@
       ]
     },
     {
+      "file": "packages/app-lib/src/util/java_storage.rs",
+      "form": "spawn_blocking",
+      "count": 1,
+      "reason": "reviewed command-scoped Windows volume and storage-property inspection; awaited blocking worker owns only its temporary device handle, acquires no managed resource, and keeps driver I/O off the async runtime (D17)",
+      "sites": [
+        "inspect: tokio::task::spawn_blocking(move || inspect_windows(&path))"
+      ]
+    },
+    {
       "file": "packages/app-lib/src/util/jre.rs",
       "form": "spawn_blocking",
       "count": 4,
@@ -2831,6 +3154,24 @@
       ]
     },
     {
+      "file": "packages/launcher-observability-mcp/src/protocol.rs",
+      "form": "spawn_blocking",
+      "count": 1,
+      "reason": "reviewed diagnostics MCP flush: one blocking worker waits on the synchronous provider flush, so an unreachable collector cannot pin a runtime thread that unrelated Tauri commands share",
+      "sites": [
+        "handle: let flushed = tokio::task::spawn_blocking(move || source.flush())"
+      ]
+    },
+    {
+      "file": "packages/launcher-observability-mcp/src/server.rs",
+      "form": "tokio::spawn",
+      "count": 1,
+      "reason": "reviewed diagnostics MCP listener: one axum server task owned by the Server guard, cancelled through its token and awaited on stop so it cannot outlive the plugin; it holds no launcher resource and only reads the in-process capture",
+      "sites": [
+        "start: let task = tokio::spawn(async move {"
+      ]
+    },
+    {
       "file": "packages/launcher-tools/src/operations.rs",
       "form": "tokio::spawn",
       "count": 2,
@@ -2875,229 +3216,6 @@
       "reason": "Vendored HTTP plugin cookie persistence: operation-scoped asynchronous write of an already serialized snapshot; the cookie-store mutex is released before spawning, and the previous save task is cancelled when replaced.",
       "sites": [
         "request_save: let task = tauri::async_runtime::spawn(async move {"
-      ]
-    },
-    {
-      "file": "apps/installer-ui/src/portable_update.rs",
-      "form": "std::thread::sleep",
-      "count": 1,
-      "reason": "reviewed bounded 15-second readiness polling in synchronous Exit dispatcher; no runtime or managed resources held; worker holds installation ownership before acknowledging readiness (D17)",
-      "sites": [
-        "start: std::thread::sleep(Duration::from_millis(20));"
-      ]
-    },
-    {
-      "file": "apps/installer-ui/src/portable_update.rs",
-      "form": "std::fs import",
-      "count": 24,
-      "reason": "reviewed exact synchronous portable transaction I/O: verified ZIP staging in awaited blocking worker, pre-runtime recovery, share-zero installation ownership and journaled program-only activation after parent exit; no launcher managed-resource acquisition, data-directory contents excluded (D17)",
-      "sites": [
-        "activate: fs::create_dir(stage.join(\"previous\"))",
-        "activate: fs::rename(&target, stage.join(\"previous\").join(&item.path))",
-        "activate: fs::rename(stage.join(\"payload\").join(&item.path), &target)",
-        "activate: let mut source = File::open(stage.join(\"payload\").join(MAIN))",
-        "digest: let mut file = File::open(path).map_err(|error| error.to_string())?;",
-        "dispatch: let _ = fs::write(stage.join(\"error.txt\"), error);",
-        "ownership: OpenOptions::new().read(true).write(true).create(true).truncate(false).share_mode(0)",
-        "prepare: fs::copy(payload.join(HELPER), stage.path().join(\"worker.exe\"))",
-        "prepare: fs::create_dir(&payload).map_err(|error| error.to_string())?;",
-        "prepare: let mut output = OpenOptions::new()",
-        "read_json: let file = File::open(path).map_err(|error| error.to_string())?;",
-        "recover_owned: fs::remove_file(&target)",
-        "recover_owned: fs::remove_file(&target).map_err(|error| error.to_string())?;",
-        "recover_owned: fs::remove_file(marker).map_err(|error| error.to_string())?;",
-        "recover_owned: fs::rename(&backup, &target)",
-        "regular: fs::symlink_metadata(path).map_err(|error| error.to_string())?;",
-        "safe_parents: fs::create_dir(&path).map_err(|error| error.to_string())?;",
-        "safe_parents: fs::symlink_metadata(root).map_err(|error| error.to_string())?;",
-        "safe_parents: match fs::symlink_metadata(&path) {",
-        "start: fs::read_to_string(self.stage.path().join(\"error.txt\"))",
-        "validate_journal: fs::symlink_metadata(&stage).map_err(|error| error.to_string())?;",
-        "worker: != fs::canonicalize(root).map_err(|error| error.to_string())?",
-        "worker: if fs::canonicalize(stage.parent().ok_or(\"Invalid portable stage\")?)",
-        "write_new: let mut file = OpenOptions::new()"
-      ]
-    },
-    {
-      "file": "apps/app/src/api/theme_pack.rs",
-      "form": "spawn_blocking",
-      "count": 1,
-      "reason": "reviewed appearance snapshot export: drives zip creation and file publication on a blocking worker that the command awaits; owns only the caller-selected destination and acquires no managed resource (D17)",
-      "sites": [
-        "theme_pack_export_snapshot: tokio::task::spawn_blocking(move || {"
-      ]
-    },
-    {
-      "file": "apps/app/src/api/theme_pack.rs",
-      "form": "std::fs",
-      "count": 15,
-      "reason": "reviewed theme pack protocol, snapshot export and pack copy: every path is confined to the themes directory or the caller-selected snapshot destination; metadata is read before serving an asset so oversized responses are rejected without allocation, and no managed resource is acquired (D17)",
-      "sites": [
-        "<module>: archive: &mut zip::ZipWriter<std::fs::File>,",
-        "<module>: archive: &mut zip::ZipWriter<std::fs::File>,",
-        "copy_pack_directory: let metadata = std::fs::symlink_metadata(&path).map_err(|error| {",
-        "copy_pack_directory: let mut source = std::fs::File::open(&path).map_err(|error| {",
-        "copy_pack_directory: let read_dir = std::fs::read_dir(directory).map_err(|error| {",
-        "export_snapshot_archive: if let Err(error) = std::fs::rename(&temporary, destination) {",
-        "export_snapshot_archive: if let Err(error) = std::fs::rename(destination, backup) {",
-        "export_snapshot_archive: let _ = std::fs::remove_file(&temporary);",
-        "export_snapshot_archive: let _ = std::fs::remove_file(&temporary);",
-        "export_snapshot_archive: let _ = std::fs::remove_file(&temporary);",
-        "export_snapshot_archive: let _ = std::fs::remove_file(backup);",
-        "export_snapshot_archive: let _ = std::fs::rename(backup, destination);",
-        "protocol_response_for: let Ok(contents) = std::fs::read(&file_path) else {",
-        "protocol_response_for: let Ok(metadata) = std::fs::metadata(&file_path) else {",
-        "write_snapshot_archive: let file = std::fs::File::create(temporary).map_err(|error| {"
-      ]
-    },
-    {
-      "file": "packages/app-lib/src/api/theme_pack/archive.rs",
-      "form": "std::fs",
-      "count": 8,
-      "reason": "reviewed theme pack archive extraction: zip-slip checked, size-bounded unpack into a staging directory; the worker owns no managed resource and runs inside the awaited install task (D17)",
-      "sites": [
-        "<module>: use std::fs::File;",
-        "extract: let metadata = std::fs::metadata(archive_path).map_err(|error| {",
-        "extract: std::fs::create_dir_all(&path).map_err(|error| {",
-        "extract: std::fs::create_dir_all(destination).map_err(|error| {",
-        "extract: std::fs::create_dir_all(parent).map_err(|error| {",
-        "extract: std::fs::metadata(join_relative(destination, style).ok()?)",
-        "read_origin: let bytes = std::fs::read(pack_dir.join(ORIGIN_FILE)).ok()?;",
-        "write_origin: std::fs::write(pack_dir.join(ORIGIN_FILE), bytes).map_err(|error| {"
-      ]
-    },
-    {
-      "file": "packages/app-lib/src/api/theme_pack/archive.rs",
-      "form": "std::fs import",
-      "count": 2,
-      "reason": "reviewed theme pack archive extraction: imported file helpers only open the archive and bounded staging output; no managed resource is acquired (D17)",
-      "sites": [
-        "extract: let file = File::open(archive_path).map_err(|error| {",
-        "extract: let mut output = File::create(&path).map_err(|error| {"
-      ]
-    },
-    {
-      "file": "packages/app-lib/src/api/theme_pack/manifest.rs",
-      "form": "std::fs",
-      "count": 5,
-      "reason": "reviewed theme pack validation: reads the manifest and CSS files only after canonical path checks within one pack directory; stylesheet size is checked before reading so oversized CSS is rejected without allocation, and short-lived install/listing work holds no managed resource (D17)",
-      "sites": [
-        "checked_file: let canonical = std::fs::canonicalize(&path).map_err(|_| {",
-        "checked_file: let canonical_pack = std::fs::canonicalize(pack_dir).map_err(|error| {",
-        "load: std::fs::read(pack_dir.join(MANIFEST_FILE)).map_err(|error| {",
-        "validate: let css = std::fs::read_to_string(&path).map_err(|error| {",
-        "validate: let metadata = std::fs::metadata(&path).map_err(|error| {"
-      ]
-    },
-    {
-      "file": "packages/app-lib/src/api/theme_pack/store.rs",
-      "form": "spawn_blocking",
-      "count": 3,
-      "reason": "reviewed install/list/get workers: awaited blocking extraction, directory scan and manifest load; install is serialized by INSTALL_LOCK and each worker owns only its staging directory (D17)",
-      "sites": [
-        "get: let result = tokio::task::spawn_blocking(move || {",
-        "install: let extracted = tokio::task::spawn_blocking(move || {",
-        "list: tokio::task::spawn_blocking(move || {"
-      ]
-    },
-    {
-      "file": "packages/app-lib/src/api/theme_pack/store.rs",
-      "form": "std::fs",
-      "count": 4,
-      "reason": "reviewed install staging cleanup and list directory scan: paths stay inside the themes directory or its hidden staging sibling; no managed resource beyond the awaited install worker (D17)",
-      "sites": [
-        "install: let _ = std::fs::remove_dir_all(&staging_for_task);",
-        "install: let _ = std::fs::remove_dir_all(&staging_for_task);",
-        "install: let _ = std::fs::remove_dir_all(&staging_for_task);",
-        "list: let entries = std::fs::read_dir(&themes_dir).map_err(io)?;"
-      ]
-    },
-    {
-      "file": "packages/app-lib/src/state/instances/content_facts.rs",
-      "form": "spawn_blocking",
-      "count": 1,
-      "reason": "reviewed awaited native metadata-only content scan for local display; no hashing, decoding or database access inside worker and no scheduler managed resource acquisition (D17)",
-      "sites": [
-        "overlay: let scanned = tokio::task::spawn_blocking(move || {"
-      ]
-    },
-    {
-      "file": "packages/app-lib/src/state/instances/manifest.rs",
-      "form": "std::fs",
-      "count": 6,
-      "reason": "reviewed bounded recovery backup I/O inside the awaited Document::inspect blocking worker; validates authority containment and checksums, syncs temporary files, and publishes the head last without acquiring scheduler resources (D17)",
-      "sites": [
-        "backup: if !std::fs::canonicalize(&path)?.starts_with(&canonical) {",
-        "backup: let canonical = std::fs::canonicalize(&base)?;",
-        "backup: let file = std::fs::File::open(base.join(\"recovery.json\"))?;",
-        "backup: let file = std::fs::File::open(path)?;",
-        "durable_copy: std::fs::File::open(parent)?.sync_all()?;",
-        "durable_copy: std::fs::create_dir_all(parent)?;"
-      ]
-    },
-    {
-      "file": "apps/app/src/api/observability.rs",
-      "form": "spawn_blocking",
-      "count": 1,
-      "reason": "reviewed observability flush: the blocking OTLP force-flush is bounded by a 2 s caller budget and runs on a dedicated blocking worker; it holds only provider handles and never blocks the async runtime",
-      "sites": [
-        "observability_flush: tauri::async_runtime::spawn_blocking(|| {"
-      ]
-    },
-    {
-      "file": "packages/app-lib/src/observability/runtime.rs",
-      "form": "thread::Builder",
-      "count": 2,
-      "reason": "reviewed OTLP flush/shutdown: dedicated short-lived threads isolate exporter I/O from the async runtime and are bounded by the caller exit budget; they hold only cloned provider handles",
-      "sites": [
-        "flush: std::thread::Builder::new()",
-        "shutdown: std::thread::Builder::new()"
-      ]
-    },
-    {
-      "file": "packages/app-lib/src/observability/runtime.rs",
-      "form": "thread::Builder spawn",
-      "count": 2,
-      "reason": "reviewed OTLP flush/shutdown: both helper threads are detached and only perform SDK force_flush/shutdown with cloned providers, so a slow collector cannot block the process past the caller budget",
-      "sites": [
-        "flush: .spawn(move || {",
-        "shutdown: .spawn(move || {"
-      ]
-    },
-    {
-      "file": "apps/app/src/api/observability_mcp/config.rs",
-      "form": "std::fs",
-      "count": 1,
-      "reason": "reviewed diagnostics MCP preferences: atomic rename of one small JSON document next to the existing mcp.json, the same bounded synchronous write the launcher tools MCP performs; it holds no managed resource",
-      "sites": [
-        "save_preferences: std::fs::create_dir_all(parent).map_err(|error| error.to_string())?;"
-      ]
-    },
-    {
-      "file": "apps/app/src/api/observability_mcp/service.rs",
-      "form": "std::fs",
-      "count": 1,
-      "reason": "reviewed diagnostics MCP startup: reads observability-mcp.json once under the controller lock before any listener starts; a missing file leaves capture off and touches no managed resource",
-      "sites": [
-        "initialize: let result = (|| match std::fs::read(config_path(app)?) {"
-      ]
-    },
-    {
-      "file": "packages/launcher-observability-mcp/src/protocol.rs",
-      "form": "spawn_blocking",
-      "count": 1,
-      "reason": "reviewed diagnostics MCP flush: one blocking worker waits on the synchronous provider flush, so an unreachable collector cannot pin a runtime thread that unrelated Tauri commands share",
-      "sites": [
-        "handle: let flushed = tokio::task::spawn_blocking(move || source.flush())"
-      ]
-    },
-    {
-      "file": "packages/launcher-observability-mcp/src/server.rs",
-      "form": "tokio::spawn",
-      "count": 1,
-      "reason": "reviewed diagnostics MCP listener: one axum server task owned by the Server guard, cancelled through its token and awaited on stop so it cannot outlive the plugin; it holds no launcher resource and only reads the in-process capture",
-      "sites": [
-        "start: let task = tokio::spawn(async move {"
       ]
     }
   ]
