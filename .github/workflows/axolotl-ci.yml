@@ -113,6 +113,8 @@ jobs:
         # Every gate runs even after one fails; the step fails at the end and
         # names each failed gate.
         run: |
+          SCHED_ARTIFACT_DIR="$(mktemp -d "$RUNNER_TEMP/axolotl-scheduler-XXXXXX")"
+          export SCHED_ARTIFACT_DIR
           failed=()
           # Usage: gate <highest accepted exit code> <command...>
           gate() {
