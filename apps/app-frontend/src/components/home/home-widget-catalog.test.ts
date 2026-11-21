@@ -11,10 +11,18 @@ import {
     resolveHomeWidgetSize,
 } from './home-widget-catalog'
 
-it('offers every dashboard kind exactly once', () => {
+it('offers every addable dashboard kind exactly once', () => {
     const kinds = HOME_WIDGET_CATALOG.map((entry) => entry.kind)
     expect(new Set(kinds).size).toBe(kinds.length)
-    expect([...kinds].sort()).toEqual(Object.keys(HOME_WIDGET_DEFAULT_SIZE).sort())
+    // The weather card is placed by the default layout but the picker cannot offer it yet: it
+    // has no label, description or preview there. Keep it out of the catalog until it does,
+    // rather than listing a card the picker would draw as a placeholder.
+    const dashboardOnly: HomeWidgetKind[] = ['weather']
+    expect([...kinds].sort()).toEqual(
+        Object.keys(HOME_WIDGET_DEFAULT_SIZE)
+            .filter((kind) => !dashboardOnly.includes(kind as HomeWidgetKind))
+            .sort(),
+    )
 })
 
 it('asks for a target only for the single-item shortcuts', () => {
