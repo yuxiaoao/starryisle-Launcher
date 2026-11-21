@@ -2,127 +2,115 @@ use crate::state::instances::{
     DailyPlaytime, DailyPlaytimeEntry, playtime_to_storage,
 };
 use chrono::NaiveDate;
-use futures::StreamExt;
 use sqlx::SqlitePool;
 
 /// Reads the playtime totals of each day in the range.
-async fn get_daily_playtime_in(
+pub(crate) async fn get_daily_playtime(
     start_date: NaiveDate,
     end_date: NaiveDate,
     pool: &SqlitePool,
 ) -> crate::Result<Vec<DailyPlaytime>> {
     let start_date = start_date.format("%Y-%m-%d").to_string();
     let end_date = end_date.format("%Y-%m-%d").to_string();
-    let mut rows = sqlx::query_as::<_, (String, String, i64, i64)>(
+    let rows = sqlx::query!(
         r#"
-        SELECT played_on, instance_name, played_seconds, session_count
-        FROM instance_daily_playtime
-        WHERE played_on BETWEEN ? AND ?
-            AND typeof(played_on) = 'text'
-            AND typeof(instance_id) = 'text'
-            AND typeof(instance_name) = 'text'
-            AND typeof(played_seconds) = 'integer' AND played_seconds >= 0
-            AND typeof(session_count) = 'integer' AND session_count >= 0
-        ORDER BY played_on
+        SELECT
+            daily.played_on AS "date!: String",
+            SUM(daily.played_seconds) AS "played_seconds!: i64",
+            SUM(daily.session_count) AS "session_count!: i64",
+            (
+                SELECT candidate.instance_name
+                FROM instance_daily_playtime candidate
+                WHERE candidate.played_on = daily.played_on
+                    AND candidate.played_seconds > 0
+                ORDER BY candidate.played_seconds DESC, candidate.instance_name ASC
+                LIMIT 1
+            ) AS "top_instance_name?: String"
+        FROM instance_daily_playtime daily
+        WHERE daily.played_on BETWEEN ? AND ?
+        GROUP BY daily.played_on
+        ORDER BY daily.played_on
         "#,
+        start_date,
+        end_date,
     )
-    .bind(start_date)
-    .bind(end_date)
-    .fetch(pool);
+    .fetch_all(pool)
+    .await?;
 
-    // Aggregate in one pass. SQLite's signed SUM can fail the entire range
-    // even when a day's total still fits the public unsigned result type.
-    let mut totals: Vec<DailyPlaytime> = Vec::new();
-    let mut top_seconds = 0;
-    let mut undecodable = 0;
-    while let Some(row) = rows.next().await {
-        let (date, name, seconds, count) = match row {
-            Ok(row) => row,
-            Err(sqlx::Error::ColumnDecode { .. }) => {
-                undecodable += 1;
-                continue;
-            }
-            Err(error) => return Err(error.into()),
-        };
-        if totals.last().is_none_or(|daily| daily.date != date) {
-            totals.push(DailyPlaytime {
-                date,
-                played_seconds: 0,
-                session_count: 0,
-                top_instance_name: None,
-            });
-            top_seconds = 0;
-        }
-        let daily = totals.last_mut().expect("the current day is present");
-        let seconds = seconds as u64;
-        daily.played_seconds = daily.played_seconds.saturating_add(seconds);
-        daily.session_count = daily.session_count.saturating_add(count as u64);
-        if seconds > 0
-            && (seconds > top_seconds
-                || (seconds == top_seconds
-                    && daily
-                        .top_instance_name
-                        .as_ref()
-                        .is_some_and(|top| name < *top)))
-        {
-            daily.top_instance_name = Some(name);
-            top_seconds = seconds;
-        }
-    }
-    if undecodable > 0 {
-        tracing::warn!(undecodable, "Skipped unreadable daily playtime rows");
-    }
-    Ok(totals)
+    rows.into_iter()
+        .map(|row| {
+            Ok(DailyPlaytime {
+                date: row.date,
+                played_seconds: u64::try_from(row.played_seconds).map_err(
+                    |_| {
+                        crate::ErrorKind::InputError(
+                            "Invalid daily playtime value".to_string(),
+                        )
+                    },
+                )?,
+                session_count: u64::try_from(row.session_count).map_err(
+                    |_| {
+                        crate::ErrorKind::InputError(
+                            "Invalid daily session count".to_string(),
+                        )
+                    },
+                )?,
+                top_instance_name: row.top_instance_name,
+            })
+        })
+        .collect()
 }
 
 /// Reads each instance's share of one day's playtime.
-async fn get_daily_playtime_details_in(
+pub(crate) async fn get_daily_playtime_details(
     played_on: NaiveDate,
     pool: &SqlitePool,
 ) -> crate::Result<Vec<DailyPlaytimeEntry>> {
     let date = played_on.format("%Y-%m-%d").to_string();
-    let mut rows = sqlx::query_as::<_, (String, String, i64, i64)>(
+    let rows = sqlx::query!(
         r#"
-        SELECT instance_id, instance_name, played_seconds, session_count
-        FROM instance_daily_playtime
-        WHERE played_on = ?
-            AND typeof(instance_id) = 'text'
-            AND typeof(instance_name) = 'text'
-            AND typeof(played_seconds) = 'integer' AND played_seconds > 0
-            AND typeof(session_count) = 'integer' AND session_count >= 0
-        ORDER BY played_seconds DESC, instance_name ASC, instance_id ASC
+        SELECT
+            daily.instance_id AS "instance_id!: String",
+            daily.instance_name AS "instance_name!: String",
+            daily.played_seconds AS "played_seconds!: i64",
+            daily.session_count AS "session_count!: i64"
+        FROM instance_daily_playtime daily
+        WHERE daily.played_on = ?
+            AND daily.played_seconds > 0
+        ORDER BY daily.played_seconds DESC, daily.instance_name ASC
         "#,
+        date,
     )
-    .bind(date)
-    .fetch(pool);
+    .fetch_all(pool)
+    .await?;
 
-    let mut entries = Vec::new();
-    let mut undecodable = 0;
-    while let Some(row) = rows.next().await {
-        let (instance_id, instance_name, seconds, count) = match row {
-            Ok(row) => row,
-            Err(sqlx::Error::ColumnDecode { .. }) => {
-                undecodable += 1;
-                continue;
-            }
-            Err(error) => return Err(error.into()),
-        };
-        entries.push(DailyPlaytimeEntry {
-            instance_id,
-            instance_name,
-            played_seconds: seconds as u64,
-            session_count: count as u64,
-        });
-    }
-    if undecodable > 0 {
-        tracing::warn!(undecodable, "Skipped unreadable daily playtime rows");
-    }
-    Ok(entries)
+    rows.into_iter()
+        .map(|row| {
+            Ok(DailyPlaytimeEntry {
+                instance_id: row.instance_id,
+                instance_name: row.instance_name,
+                played_seconds: u64::try_from(row.played_seconds).map_err(
+                    |_| {
+                        crate::ErrorKind::InputError(
+                            "Invalid daily playtime value".to_string(),
+                        )
+                    },
+                )?,
+                session_count: u64::try_from(row.session_count).map_err(
+                    |_| {
+                        crate::ErrorKind::InputError(
+                            "Invalid daily session count".to_string(),
+                        )
+                    },
+                )?,
+            })
+        })
+        .collect()
 }
 
 /// Adds playtime to the instance's row for one day, creating the row when the
 /// day has none yet. A stored total that would overflow saturates instead.
-async fn upsert_daily_playtime_in(
+pub(crate) async fn upsert_daily_playtime(
     instance_id: &str,
     instance_name: &str,
     played_on: NaiveDate,
@@ -130,7 +118,6 @@ async fn upsert_daily_playtime_in(
     session_count: u64,
     pool: &SqlitePool,
 ) -> crate::Result<()> {
-    let mut transaction = pool.begin_with("BEGIN IMMEDIATE").await?;
     let played_seconds = playtime_to_storage(played_seconds, "played_seconds")?;
     let session_count = playtime_to_storage(session_count, "session_count")?;
     let played_on = played_on.format("%Y-%m-%d").to_string();
@@ -168,9 +155,8 @@ async fn upsert_daily_playtime_in(
         max_session_count_before_increment,
         i64::MAX,
     )
-    .execute(&mut *transaction)
+    .execute(pool)
     .await?;
-    transaction.commit().await?;
 
     Ok(())
 }
@@ -181,7 +167,6 @@ pub(crate) async fn add_recent_playtime(
     seconds: u64,
     pool: &SqlitePool,
 ) -> crate::Result<()> {
-    let mut transaction = pool.begin_with("BEGIN IMMEDIATE").await?;
     if seconds == 0 {
         return Ok(());
     }
@@ -210,9 +195,8 @@ pub(crate) async fn add_recent_playtime(
         modified,
         instance_id,
     )
-    .execute(&mut *transaction)
+    .execute(pool)
     .await?;
-    crate::state::store::configuration::commit(transaction, pool).await?;
 
     Ok(())
 }
