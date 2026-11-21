@@ -173,7 +173,7 @@ const kindText: Record<string, readonly [KindMessage, KindMessage]> = {
     server: [messages.server, messages.serverDescription],
 }
 
-const catalogSections = computed(() => [
+const _catalogSections = computed(() => [
     {
         id: 'overview',
         label: formatMessage(messages.overviewGroup),
