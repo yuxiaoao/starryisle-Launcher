@@ -22,7 +22,6 @@ pub(crate) mod resource_rows;
 pub(crate) mod rollback_journals;
 #[cfg(test)]
 pub(crate) mod screenshot_groups;
-#[cfg(test)]
 pub(crate) mod screenshot_rows;
 pub(crate) mod screenshot_sources;
 #[cfg(test)]
@@ -33,3 +32,4 @@ pub(crate) mod write_guards;
 
 #[cfg(test)]
 mod test_support;
+
