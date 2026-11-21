@@ -21,6 +21,8 @@ on:
 
 permissions:
   contents: write
+  # The build kicked off at the end dispatches a workflow, which needs this.
+  actions: write
 
 concurrency:
   group: sync-upstream
@@ -96,6 +98,13 @@ jobs:
 
           git push --force origin HEAD:main
 
+      # A GITHUB_TOKEN push runs no workflows, so the merged tree used to land
+      # unbuilt. Dispatch the installer build so a merge that stops compiling is
+      # caught in minutes instead of at the next release.
+      - name: Verify the merged tree builds
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run starryisle-build.yml --ref main
       - name: Summary
         if: always()
         run: |
