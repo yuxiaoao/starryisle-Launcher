@@ -74,7 +74,7 @@ async fn screenshots_source(
     instance_id: &str,
     state: &State,
 ) -> crate::Result<(PathBuf, String)> {
-    let source = crate::state::instances::adapters::sqlite::screenshot_rows::
+    let source = crate::state::instances::adapters::sqlite::screenshot_sources::
         get_instance_screenshot_source(instance_id, &state.pool)
         .await?
         .ok_or_else(|| crate::ErrorKind::InputError("Unknown instance".to_string()))?;
