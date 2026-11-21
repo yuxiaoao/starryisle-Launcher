@@ -641,7 +641,7 @@ if (!loadedInstances || loadedInstances.length > 0) void fetchPlayerName()
 
 .home-rail-calendar :deep(.home-heat-cell) {
     /* 只比列宽窄 2px：格子之间更紧凑，描边仍有余量。 */
-    width:  100%;
+    width: 100%;
     min-width: 0;
     margin-inline: auto;
 }
