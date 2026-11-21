@@ -2660,6 +2660,66 @@
   "app.gc-notice.fallback": {
     "message": "Java 不接受 {preferred}，已改用 {chosen}。"
   },
+  "app.headless-demo.brand-button": {
+    "message": "品牌按钮"
+  },
+  "app.headless-demo.checkbox-label": {
+    "message": "接受演示复选框（勾选时使用品牌色填充）"
+  },
+  "app.headless-demo.controls": {
+    "message": "控件"
+  },
+  "app.headless-demo.description": {
+    "message": "仅使用现有应用令牌样式的独立 reka-ui 基础组件。在「设置 → 外观」中切换主题，即可验证浅色、深色与 OLED 效果。"
+  },
+  "app.headless-demo.dialog-close": {
+    "message": "关闭"
+  },
+  "app.headless-demo.dialog-description": {
+    "message": "此对话框内容使用 bg-surface-3、text-[var(--color-text-primary)] 和 border-surface-5。遮罩与焦点环在任何主题下都清晰可读。"
+  },
+  "app.headless-demo.dialog-title": {
+    "message": "令牌映射的对话框"
+  },
+  "app.headless-demo.loader-fabric": {
+    "message": "Fabric"
+  },
+  "app.headless-demo.loader-forge": {
+    "message": "Forge"
+  },
+  "app.headless-demo.loader-neoforge": {
+    "message": "NeoForge"
+  },
+  "app.headless-demo.loader-vanilla": {
+    "message": "原版"
+  },
+  "app.headless-demo.open-dialog": {
+    "message": "打开对话框"
+  },
+  "app.headless-demo.select-label": {
+    "message": "加载器"
+  },
+  "app.headless-demo.select-placeholder": {
+    "message": "选择一个加载器"
+  },
+  "app.headless-demo.standard-button": {
+    "message": "标准按钮"
+  },
+  "app.headless-demo.surfaces": {
+    "message": "表面"
+  },
+  "app.headless-demo.theme-hint": {
+    "message": "这里并未引入第二套主题系统——表面与品牌色都跟随当前主题。"
+  },
+  "app.headless-demo.title": {
+    "message": "无头令牌演示"
+  },
+  "app.headless-demo.tooltip-content": {
+    "message": "映射到 surface-4 / text-[var(--color-text-primary)] 的提示正文。"
+  },
+  "app.headless-demo.tooltip-trigger": {
+    "message": "悬停提示"
+  },
   "app.home.breadcrumb": {
     "message": "主页"
   },
@@ -12449,6 +12509,24 @@
   "app.lab.seed-map.zoom-to-show": {
     "message": "放大以显示{layer}"
   },
+  "app.lab.skin-editor.auto-save.error": {
+    "message": "自动保存失败"
+  },
+  "app.lab.skin-editor.auto-save.off": {
+    "message": "自动保存已关闭"
+  },
+  "app.lab.skin-editor.auto-save.saved": {
+    "message": "草稿已于 {time} 保存"
+  },
+  "app.lab.skin-editor.auto-save.saving": {
+    "message": "正在保存草稿…"
+  },
+  "app.lab.skin-editor.auto-save.unsaved": {
+    "message": "有未保存的更改"
+  },
+  "app.lab.skin-editor.auto-save.up-to-date": {
+    "message": "已是最新"
+  },
   "app.lab.skin-editor.description": {
     "message": "在本地创建和编辑 Minecraft 玩家皮肤。"
   },
@@ -12482,17 +12560,26 @@
   "app.lab.skin-editor.retry": {
     "message": "重试"
   },
+  "app.lab.skin-editor.save": {
+    "message": "保存 PNG"
+  },
   "app.lab.skin-editor.settings.auto-save": {
     "message": "自动保存恢复草稿"
   },
   "app.lab.skin-editor.settings.auto-save-description": {
     "message": "恢复草稿仅保存在本设备，与导出的 PNG 文件相互独立。"
   },
+  "app.lab.skin-editor.settings.cancel": {
+    "message": "取消"
+  },
   "app.lab.skin-editor.settings.interval": {
     "message": "保存间隔（秒）"
   },
   "app.lab.skin-editor.settings.interval-description": {
     "message": "请输入 5 到 600 秒之间的数值。"
+  },
+  "app.lab.skin-editor.settings.save": {
+    "message": "保存设置"
   },
   "app.lab.skin-editor.settings.title": {
     "message": "编辑器设置"
@@ -13138,6 +13225,15 @@
   },
   "app.modpack-install.version": {
     "message": "版本"
+  },
+  "app.modpack.change-version": {
+    "message": "更改整合包版本"
+  },
+  "app.modpack.version-name": {
+    "message": "名称"
+  },
+  "app.modpack.version-supports": {
+    "message": "支持"
   },
   "app.multiplayer.back": {
     "message": "返回"
@@ -15343,6 +15439,9 @@
   },
   "app.servers.wizard.background-hint": {
     "message": "您可以关闭此窗口，下载将在后台继续进行。"
+  },
+  "app.servers.wizard.configure-heading": {
+    "message": "调整服务器设置，或先完成，之后再回来编辑。"
   },
   "app.servers.wizard.configure-title": {
     "message": "配置"
@@ -19850,6 +19949,90 @@
   "drop.help.worlds-title": {
     "message": "存档"
   },
+  "friends.action.add-friend": {
+    "message": "添加好友"
+  },
+  "friends.action.view-friend-requests": {
+    "message": "{count, plural, other {# 个好友请求}}"
+  },
+  "friends.add-friend.submit": {
+    "message": "发送好友请求"
+  },
+  "friends.add-friend.title": {
+    "message": "添加好友"
+  },
+  "friends.add-friend.username.description": {
+    "message": "它可能与该用户的 Minecraft 用户名不同！"
+  },
+  "friends.add-friend.username.placeholder": {
+    "message": "输入 Modrinth 用户名…"
+  },
+  "friends.add-friend.username.title": {
+    "message": "你朋友的 Modrinth 用户名是？"
+  },
+  "friends.add-friends-to-share": {
+    "message": "<link>添加好友</link>，看看他们正在玩什么！"
+  },
+  "friends.friend.cancel-request": {
+    "message": "取消请求"
+  },
+  "friends.friend.remove-friend": {
+    "message": "移除好友"
+  },
+  "friends.friend.request-sent": {
+    "message": "好友请求已发送"
+  },
+  "friends.friend.view-profile": {
+    "message": "查看主页"
+  },
+  "friends.heading": {
+    "message": "好友"
+  },
+  "friends.heading.active": {
+    "message": "活跃"
+  },
+  "friends.heading.offline": {
+    "message": "离线"
+  },
+  "friends.heading.online": {
+    "message": "在线"
+  },
+  "friends.heading.pending": {
+    "message": "待处理"
+  },
+  "friends.no-friends-match": {
+    "message": "没有匹配 ''{query}'' 的好友"
+  },
+  "friends.requests.accept": {
+    "message": "接受"
+  },
+  "friends.requests.cancel": {
+    "message": "取消"
+  },
+  "friends.requests.ignore": {
+    "message": "忽略"
+  },
+  "friends.requests.incoming": {
+    "message": "{username} 向你发送了好友请求"
+  },
+  "friends.requests.none": {
+    "message": "你没有待处理的好友请求 :C"
+  },
+  "friends.requests.outgoing": {
+    "message": "你向 {username} 发送了好友请求"
+  },
+  "friends.requests.title": {
+    "message": "查看好友请求"
+  },
+  "friends.search-friends-placeholder": {
+    "message": "搜索好友…"
+  },
+  "friends.section.heading": {
+    "message": "{title} - {count}"
+  },
+  "friends.sign-in-to-add-friends": {
+    "message": "<link>登录 Modrinth 账户</link>，即可添加好友并查看他们正在玩什么！"
+  },
   "instance.add-server.add-and-play": {
     "message": "添加并游玩"
   },
@@ -20053,6 +20236,9 @@
   },
   "instance.files.studio.edit-deleted": {
     "message": "该文件在编辑保存前已被删除。"
+  },
+  "instance.files.studio.editor-loading": {
+    "message": "正在加载编辑器…"
   },
   "instance.files.studio.empty-description": {
     "message": "从资源管理器打开文件。"
