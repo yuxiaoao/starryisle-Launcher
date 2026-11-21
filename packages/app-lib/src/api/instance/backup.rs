@@ -2314,7 +2314,7 @@ pub async fn recover_repository() -> crate::Result<()> {
     Ok(())
 }
 
-/// Storage housekeeping is serialized with backup operations but does not gate startup.
+/// Storage housekeeping serialized with operations against the same repository.
 pub async fn maintain_repository() -> crate::Result<()> {
     let state = State::get().await?;
     let _repository_guard = REPOSITORY_LOCK.lock().await;
@@ -2886,6 +2886,9 @@ pub async fn restore_snapshot(
     snapshot_id: &str,
     plan_token: &str,
 ) -> crate::Result<Uuid> {
+    crate::state::store::recovery_mode::ensure_writable(
+        &State::get().await?.pool,
+    )?;
     let (instance_id, total_bytes) =
         snapshot_operation_metadata(snapshot_id).await?;
     let operation_id = Uuid::new_v4();

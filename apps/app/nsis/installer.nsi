@@ -63,7 +63,7 @@ ${StrLoc}
 !define WEBVIEW2INSTALLERARGS "{{webview2_installer_args}}"
 !define WEBVIEW2BOOTSTRAPPERPATH "{{webview2_bootstrapper_path}}"
 !define WEBVIEW2INSTALLERPATH "{{webview2_installer_path}}"
-!define MINIMUMWEBVIEW2VERSION "{{minimum_webview2_version}}"
+!define MINIMUMWEBVIEW2VERSION "108.0.0.0"
 !define UNINSTKEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PRODUCTNAME}"
 !define MANUKEY "Software\${MANUFACTURER}"
 !define MANUPRODUCTKEY "${MANUKEY}\${PRODUCTNAME}"
@@ -114,6 +114,21 @@ Var DesktopShortcutCheckbox
 Var DesktopShortcutState
 Var FileAssociationCheckbox
 Var FileAssociationState
+Var SchematicAssociationCheckbox
+Var SchematicAssociationState
+; Holds the state of whichever association group the current loop iteration
+; belongs to, so one loop body can serve both groups.
+Var AssociationState
+Var AssociationIcon
+; 1 when this run may claim an extension outright, 0 when it may only fill in
+; extensions that have no handler.
+Var AssociationMode
+; 1 when the schematic group may only be offered in "Open with", used when an
+; installation has no recorded schematic preference at all.
+Var SchematicOfferOnly
+; The same flag for whichever association group the current loop iteration
+; belongs to.
+Var AssociationOfferOnly
 Var InstallerBodyFont
 Var InstallerTitleFont
 Var InstallerSmallFont
@@ -121,6 +136,7 @@ Var StatusFile
 Var NoRunAfterInstall
 Var UninstallUiChild
 Var UninstallFailure
+Var WebView2Status
 
 !macro AxlUninstallFile PATH
   Delete "${PATH}"
@@ -154,10 +170,38 @@ Var UninstallFailure
   Pop $R0
 !macroend
 
+; Offer this launcher as an alternative without taking the extension over. Used
+; when the user opted into associations but another application already owns the
+; extension: the ProgID becomes selectable from "Open with", while the
+; extension's default value stays untouched. The handler the extension points at
+; now is still recorded, because the user can pick this ProgID as the default
+; later and uninstall has to be able to put that handler back.
+!macro AxlRegisterFileTypeAlternative EXT FILECLASS DESCRIPTION ICON COMMANDTEXT COMMAND
+  Push $R0
+  ClearErrors
+  ReadRegStr $R0 SHELL_CONTEXT "Software\Classes\.${EXT}" ""
+  ${If} $R0 != ""
+  ${AndIf} $R0 != "${FILECLASS}"
+    WriteRegStr SHELL_CONTEXT "Software\Classes\.${EXT}" "${FILECLASS}_backup" "$R0"
+  ${EndIf}
+  Pop $R0
+  WriteRegStr SHELL_CONTEXT "Software\Classes\${FILECLASS}" "" `${DESCRIPTION}`
+  WriteRegStr SHELL_CONTEXT "Software\Classes\${FILECLASS}\DefaultIcon" "" `${ICON}`
+  WriteRegStr SHELL_CONTEXT "Software\Classes\${FILECLASS}\shell" "" "open"
+  WriteRegStr SHELL_CONTEXT "Software\Classes\${FILECLASS}\shell\open" "" `${COMMANDTEXT}`
+  WriteRegStr SHELL_CONTEXT "Software\Classes\${FILECLASS}\shell\open\command" "" `${COMMAND}`
+  WriteRegStr SHELL_CONTEXT "Software\Classes\.${EXT}\OpenWithProgids" "${FILECLASS}" ""
+  !insertmacro UPDATEFILEASSOC
+!macroend
+
 ; Remove the association only when the extension still resolves to our ProgID
 ; and that ProgID still points at this installation. If the user rebound it to
 ; another application, its handler stays untouched; only our leftover entries
 ; are dropped.
+; The ProgID key itself is left in place: several extensions of one group share
+; it, and deleting it while the first of them is processed would make the rest
+; look unowned and leave them pointing at a key that no longer exists. Call
+; AxlDeleteProgIDIfOwned once after the whole group has been unassociated.
 !macro AxlUnassociateFileTypeIfOwned EXT FILECLASS
   Push $R0
   Push $R1
@@ -182,21 +226,33 @@ Var UninstallFailure
       ${EndIf}
       ClearErrors
       DeleteRegValue SHELL_CONTEXT "Software\Classes\.${EXT}" "${FILECLASS}_backup"
-      ClearErrors
-      DeleteRegValue SHELL_CONTEXT "Software\Classes\.${EXT}\OpenWithProgids" "${FILECLASS}"
     ${EndIf}
   ${Else}
     ClearErrors
     DeleteRegValue SHELL_CONTEXT "Software\Classes\.${EXT}" "${FILECLASS}_backup"
   ${EndIf}
-  ; The ProgID name is generic, so only delete it while it belongs to us.
-  ${If} $R2 == "$INSTDIR\${MAINBINARYNAME}.exe $\"%1$\""
-    ClearErrors
-    DeleteRegKey SHELL_CONTEXT "Software\Classes\${FILECLASS}"
-  ${EndIf}
+  ; Drop our "Open with" entry whether or not we owned the default handler: an
+  ; update may have registered the ProgID as an alternative only.
+  ClearErrors
+  DeleteRegValue SHELL_CONTEXT "Software\Classes\.${EXT}\OpenWithProgids" "${FILECLASS}"
   !insertmacro UPDATEFILEASSOC
   Pop $R2
   Pop $R1
+  Pop $R0
+!macroend
+
+; Delete the ProgID shared by a group of extensions, once every extension of
+; that group has been unassociated. Only an installation whose command is still
+; the one recorded under the ProgID removes it; a ProgID another application
+; now uses stays untouched.
+!macro AxlDeleteProgIDIfOwned FILECLASS
+  Push $R0
+  ClearErrors
+  ReadRegStr $R0 SHELL_CONTEXT "Software\Classes\${FILECLASS}\shell\open\command" ""
+  ${If} $R0 == "$INSTDIR\${MAINBINARYNAME}.exe $\"%1$\""
+    ClearErrors
+    DeleteRegKey SHELL_CONTEXT "Software\Classes\${FILECLASS}"
+  ${EndIf}
   Pop $R0
 !macroend
 
@@ -710,7 +766,13 @@ Function PageOptions
   SendMessage $FileAssociationCheckbox ${WM_SETFONT} $InstallerBodyFont 1
   ${NSD_SetState} $FileAssociationCheckbox $FileAssociationState
 
-  ${NSD_CreateLabel} 0 113u 100% 14u ""
+  ${NSD_CreateCheckbox} 0 113u 100% 10u "$(axlAssociateSchematicTypes)"
+  Pop $SchematicAssociationCheckbox
+  !insertmacro AxlStyleControl $SchematicAssociationCheckbox ${AXL_TEXT} ${AXL_BACKGROUND}
+  SendMessage $SchematicAssociationCheckbox ${WM_SETFONT} $InstallerBodyFont 1
+  ${NSD_SetState} $SchematicAssociationCheckbox $SchematicAssociationState
+
+  ${NSD_CreateLabel} 0 124u 100% 14u ""
   Pop $OptionsError
   SetCtlColors $OptionsError ${AXL_ERROR} ${AXL_BACKGROUND}
   SendMessage $OptionsError ${WM_SETFONT} $InstallerSmallFont 1
@@ -736,6 +798,7 @@ Function PageLeaveOptions
 
   ${NSD_GetState} $DesktopShortcutCheckbox $DesktopShortcutState
   ${NSD_GetState} $FileAssociationCheckbox $FileAssociationState
+  ${NSD_GetState} $SchematicAssociationCheckbox $SchematicAssociationState
 
   ${If} $FreshInstall <> 1
     Return
@@ -975,7 +1038,7 @@ LangString axlFinishTitle ${LANG_SIMPCHINESE} "StarryIsle Launcher 已安装"
 LangString axlFinishText ${LANG_SIMPCHINESE} "一切准备就绪。当前应用目录：$\r$\n$ResourceDir"
 LangString axlFinishButton ${LANG_SIMPCHINESE} "完成"
 
-Function RequireInstallerWebView2
+Function CheckInstallerWebView2
   Push $0
   Push $1
   ; Evergreen registers in the 32-bit view for both machine and user installs.
@@ -990,22 +1053,29 @@ Function RequireInstallerWebView2
   SetRegView lastused
   ${If} $0 != ""
   ${AndIf} $1 = 1
-    Pop $1
-    Pop $0
-    Return
+    ${VersionCompare} "${MINIMUMWEBVIEW2VERSION}" "$0" $1
+    ${If} $1 = 1
+      StrCpy $WebView2Status "outdated"
+    ${Else}
+      StrCpy $WebView2Status "ready"
+    ${EndIf}
+  ${Else}
+    StrCpy $WebView2Status "missing"
   ${EndIf}
   Pop $1
   Pop $0
-  Call ShowMissingInstallerWebView2
 FunctionEnd
 
-Function ShowMissingInstallerWebView2
-  InitPluginsDir
-  File "/oname=$PLUGINSDIR\AxolotlInstallerUI.exe" "${AXL_INSTALLER_UI_PATH}"
-  StrCpy $0 2
-  ExecWait '"$PLUGINSDIR\AxolotlInstallerUI.exe" --webview2-required --language "$LANGUAGE"' $0
-  ${If} $0 = 10
-    ExecShell "open" "https://go.microsoft.com/fwlink/p/?LinkId=2124703"
+Function StopForInstallerWebView2
+  ${IfNot} ${Silent}
+  ${AndIf} $PassiveMode <> 1
+    InitPluginsDir
+    File "/oname=$PLUGINSDIR\AxolotlInstallerUI.exe" "${AXL_INSTALLER_UI_PATH}"
+    StrCpy $0 2
+    ExecWait '"$PLUGINSDIR\AxolotlInstallerUI.exe" --webview2-required --$WebView2Status --language "$LANGUAGE"' $0
+    ${If} $0 = 10
+      ExecShell "open" "https://go.microsoft.com/fwlink/p/?LinkId=2124703"
+    ${EndIf}
   ${EndIf}
   SetErrorLevel 2
   Quit
@@ -1087,6 +1157,32 @@ Function .onInit
     StrCpy $FileAssociationState ${BST_UNCHECKED}
   ${EndIf}
 
+  ; Schematic files are a separate, independently remembered choice: a user may
+  ; want the launcher to own modpacks without taking over their schematics.
+  ; An installation that predates the option has no record, which is not the
+  ; same as a refusal: the launcher is offered in "Open with" without claiming
+  ; anything. Only a recorded "0" counts as the user having declined.
+  StrCpy $SchematicAssociationState ${BST_CHECKED}
+  StrCpy $SchematicOfferOnly 0
+  ${If} $FreshInstall = 0
+    ClearErrors
+    ReadRegStr $0 SHCTX "${UNINSTKEY}" "SchematicFileAssociation"
+    ${If} ${Errors}
+      StrCpy $SchematicOfferOnly 1
+    ${ElseIf} $0 == "0"
+      StrCpy $SchematicAssociationState ${BST_UNCHECKED}
+    ${EndIf}
+  ${EndIf}
+  ${GetOptions} $CMDLINE "/SCHEMATIC_FILE_ASSOCIATION" $0
+  ${IfNot} ${Errors}
+    StrCpy $SchematicAssociationState ${BST_CHECKED}
+    StrCpy $SchematicOfferOnly 0
+  ${EndIf}
+  ${GetOptions} $CMDLINE "/NO_SCHEMATIC_FILE_ASSOCIATION" $0
+  ${IfNot} ${Errors}
+    StrCpy $SchematicAssociationState ${BST_UNCHECKED}
+  ${EndIf}
+
   ${If} $INSTDIR == "${PLACEHOLDER_INSTALL_DIR}"
     ; Set default install location
     !if "${INSTALLMODE}" == "perMachine"
@@ -1120,17 +1216,23 @@ Function .onInit
 
   Push 4
   Call ReportInstallerProgress
+  Call CheckInstallerWebView2
+  ${If} $WebView2Status == "outdated"
+    Call StopForInstallerWebView2
+  ${EndIf}
 
   !ifndef AXL_NATIVE_INSTALLER
   ${IfNot} ${Silent}
   ${AndIf} $PassiveMode <> 1
-    Call RequireInstallerWebView2
+    ${If} $WebView2Status == "missing"
+      Call StopForInstallerWebView2
+    ${EndIf}
     InitPluginsDir
     SetOutPath "$PLUGINSDIR"
     File "/oname=$PLUGINSDIR\AxolotlInstallerUI.exe" "${AXL_INSTALLER_UI_PATH}"
     StrCpy $0 2
     ClearErrors
-    ExecWait '"$PLUGINSDIR\AxolotlInstallerUI.exe" --installer "$EXEPATH" --version "${VERSION}" --install-dir "$INSTDIR" --resource-dir "$ResourceDir" --fresh-install "$FreshInstall" --language "$LANGUAGE"' $0
+    ExecWait '"$PLUGINSDIR\AxolotlInstallerUI.exe" --installer "$EXEPATH" --version "${VERSION}" --install-dir "$INSTDIR" --resource-dir "$ResourceDir" --fresh-install "$FreshInstall" --language "$LANGUAGE" --file-association "$FileAssociationState" --schematic-file-association "$SchematicAssociationState"' $0
     ${If} $0 <> 2
       Quit
     ${EndIf}
@@ -1163,94 +1265,58 @@ SectionEnd
 Section WebView2
   Push 12
   Call ReportInstallerProgress
-  ; Check if Webview2 is already installed and skip this section
-  ${If} ${RunningX64}
-    ReadRegStr $4 HKLM "SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate\Clients\${WEBVIEW2APPGUID}" "pv"
-  ${Else}
-    ReadRegStr $4 HKLM "SOFTWARE\Microsoft\EdgeUpdate\Clients\${WEBVIEW2APPGUID}" "pv"
-  ${EndIf}
-  ${If} $4 == ""
-    ReadRegStr $4 HKCU "SOFTWARE\Microsoft\EdgeUpdate\Clients\${WEBVIEW2APPGUID}" "pv"
-  ${EndIf}
+  Call CheckInstallerWebView2
 
-  ${If} $4 == ""
-    ; Webview2 installation
-    ;
-    ; Skip if updating
-    ${If} $UpdateMode <> 1
-      !if "${INSTALLWEBVIEW2MODE}" == "downloadBootstrapper"
-        Delete "$TEMP\MicrosoftEdgeWebview2Setup.exe"
-        DetailPrint "$(webview2Downloading)"
-        NSISdl::download "https://go.microsoft.com/fwlink/p/?LinkId=2124703" "$TEMP\MicrosoftEdgeWebview2Setup.exe"
-        Pop $0
-        ${If} $0 == "success"
-          DetailPrint "$(webview2DownloadSuccess)"
-        ${Else}
-          DetailPrint "$(webview2DownloadError)"
-          Abort "$(webview2AbortError)"
-        ${EndIf}
-        StrCpy $6 "$TEMP\MicrosoftEdgeWebview2Setup.exe"
-        Goto install_webview2
-      !endif
-
-      !if "${INSTALLWEBVIEW2MODE}" == "embedBootstrapper"
-        Delete "$TEMP\MicrosoftEdgeWebview2Setup.exe"
-        File "/oname=$TEMP\MicrosoftEdgeWebview2Setup.exe" "${WEBVIEW2BOOTSTRAPPERPATH}"
-        DetailPrint "$(installingWebview2)"
-        StrCpy $6 "$TEMP\MicrosoftEdgeWebview2Setup.exe"
-        Goto install_webview2
-      !endif
-
-      !if "${INSTALLWEBVIEW2MODE}" == "offlineInstaller"
-        Delete "$TEMP\MicrosoftEdgeWebView2RuntimeInstaller.exe"
-        File "/oname=$TEMP\MicrosoftEdgeWebView2RuntimeInstaller.exe" "${WEBVIEW2INSTALLERPATH}"
-        DetailPrint "$(installingWebview2)"
-        StrCpy $6 "$TEMP\MicrosoftEdgeWebView2RuntimeInstaller.exe"
-        Goto install_webview2
-      !endif
-
-      Goto webview2_done
-
-      install_webview2:
-        DetailPrint "$(installingWebview2)"
-        ; $6 holds the path to the webview2 installer
-        ExecWait "$6 ${WEBVIEW2INSTALLERARGS} /install" $1
-        ${If} $1 = 0
-          DetailPrint "$(webview2InstallSuccess)"
-        ${Else}
-          DetailPrint "$(webview2InstallError)"
-          Abort "$(webview2AbortError)"
-        ${EndIf}
-      webview2_done:
-    ${EndIf}
-  ${Else}
-    !if "${MINIMUMWEBVIEW2VERSION}" != ""
-      ${VersionCompare} "${MINIMUMWEBVIEW2VERSION}" "$4" $R0
-      ${If} $R0 = 1
-        update_webview:
-          DetailPrint "$(installingWebview2)"
-          ${If} ${RunningX64}
-            ReadRegStr $R1 HKLM "SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate" "path"
-          ${Else}
-            ReadRegStr $R1 HKLM "SOFTWARE\Microsoft\EdgeUpdate" "path"
-          ${EndIf}
-          ${If} $R1 == ""
-            ReadRegStr $R1 HKCU "SOFTWARE\Microsoft\EdgeUpdate" "path"
-          ${EndIf}
-          ${If} $R1 != ""
-            ; Chromium updater docs: https://source.chromium.org/chromium/chromium/src/+/main:docs/updater/user_manual.md
-            ; Modified from "HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\Microsoft EdgeWebView\ModifyPath"
-            ExecWait `"$R1" /install appguid=${WEBVIEW2APPGUID}&needsadmin=true` $1
-            ${If} $1 = 0
-              DetailPrint "$(webview2InstallSuccess)"
-            ${Else}
-              MessageBox MB_ICONEXCLAMATION|MB_ABORTRETRYIGNORE "$(webview2InstallError)" IDIGNORE ignore IDRETRY update_webview
-              Quit
-              ignore:
-            ${EndIf}
-          ${EndIf}
+  ${If} $WebView2Status == "missing"
+  ${AndIf} $UpdateMode <> 1
+    !if "${INSTALLWEBVIEW2MODE}" == "downloadBootstrapper"
+      Delete "$TEMP\MicrosoftEdgeWebview2Setup.exe"
+      DetailPrint "$(webview2Downloading)"
+      NSISdl::download "https://go.microsoft.com/fwlink/p/?LinkId=2124703" "$TEMP\MicrosoftEdgeWebview2Setup.exe"
+      Pop $0
+      ${If} $0 == "success"
+        DetailPrint "$(webview2DownloadSuccess)"
+      ${Else}
+        DetailPrint "$(webview2DownloadError)"
+        Abort "$(webview2AbortError)"
       ${EndIf}
+      StrCpy $6 "$TEMP\MicrosoftEdgeWebview2Setup.exe"
+      Goto install_webview2
     !endif
+
+    !if "${INSTALLWEBVIEW2MODE}" == "embedBootstrapper"
+      Delete "$TEMP\MicrosoftEdgeWebview2Setup.exe"
+      File "/oname=$TEMP\MicrosoftEdgeWebview2Setup.exe" "${WEBVIEW2BOOTSTRAPPERPATH}"
+      DetailPrint "$(installingWebview2)"
+      StrCpy $6 "$TEMP\MicrosoftEdgeWebview2Setup.exe"
+      Goto install_webview2
+    !endif
+
+    !if "${INSTALLWEBVIEW2MODE}" == "offlineInstaller"
+      Delete "$TEMP\MicrosoftEdgeWebview2RuntimeInstaller.exe"
+      File "/oname=$TEMP\MicrosoftEdgeWebView2RuntimeInstaller.exe" "${WEBVIEW2INSTALLERPATH}"
+      DetailPrint "$(installingWebview2)"
+      StrCpy $6 "$TEMP\MicrosoftEdgeWebView2RuntimeInstaller.exe"
+      Goto install_webview2
+    !endif
+
+    Goto webview2_done
+
+    install_webview2:
+      DetailPrint "$(installingWebview2)"
+      ExecWait "$6 ${WEBVIEW2INSTALLERARGS} /install" $1
+      ${If} $1 = 0
+        DetailPrint "$(webview2InstallSuccess)"
+      ${Else}
+        DetailPrint "$(webview2InstallError)"
+        Abort "$(webview2AbortError)"
+      ${EndIf}
+      Call CheckInstallerWebView2
+  ${EndIf}
+
+  webview2_done:
+  ${If} $WebView2Status == "outdated"
+    Call StopForInstallerWebView2
   ${EndIf}
   Push 22
   Call ReportInstallerProgress
@@ -1287,24 +1353,81 @@ Section Install
   Push 64
   Call ReportInstallerProgress
 
-  ; Create file associations only when requested. In-place updates never touch
-  ; them: the registered command still points to this executable, and claiming
-  ; the extension again could override a handler the user picked afterwards.
-  ${If} $UpdateMode <> 1
-    ${If} $FileAssociationState = ${BST_CHECKED}
-      {{#each file_associations as |association| ~}}
-        {{#each association.ext as |ext| ~}}
-           !insertmacro AxlAssociateFileType "{{ext}}" "{{or association.name ext}}" "{{association-description association.description ext}}" "$INSTDIR\${MAINBINARYNAME}.exe,0" "Open with ${PRODUCTNAME}" "$INSTDIR\${MAINBINARYNAME}.exe $\"%1$\""
-        {{/each}}
+  ; Create file associations only when requested, and keep the two groups
+  ; independent: a user may want the launcher to own modpacks without taking
+  ; over their schematics. Entries that declare a ProgID name form the schematic
+  ; group; the modpack entry keeps the extension-derived ProgID it has always
+  ; used, so an existing installation can still be uninstalled cleanly.
+  ; Only a first install claims an extension outright. Every later run is either
+  ; the silent updater or a reinstall over an existing copy, and the install
+  ; before it already claimed the extensions the user asked for, so claiming
+  ; them again would override a handler the user picked afterwards. Those runs
+  ; fill in extensions that have no handler and offer the launcher as an
+  ; alternative everywhere else.
+  ${If} $UpdateMode = 1
+    StrCpy $AssociationMode 0
+  ${Else}
+    ClearErrors
+    ReadRegStr $R0 SHCTX "${UNINSTKEY}" "FileAssociation"
+    ${If} ${Errors}
+      StrCpy $AssociationMode 1
+    ${Else}
+      StrCpy $AssociationMode 0
+    ${EndIf}
+  ${EndIf}
+
+  {{#each file_associations as |association| ~}}
+    {{#if association.name}}
+    StrCpy $AssociationState $SchematicAssociationState
+    StrCpy $AssociationOfferOnly $SchematicOfferOnly
+    StrCpy $AssociationIcon "$INSTDIR\resources\file-icons\schem.ico,0"
+    {{else}}
+    StrCpy $AssociationState $FileAssociationState
+    StrCpy $AssociationOfferOnly 0
+    StrCpy $AssociationIcon "$INSTDIR\resources\file-icons\mrpack.ico,0"
+    {{/if}}
+    ${If} $AssociationState = ${BST_CHECKED}
+      {{#each association.ext as |ext| ~}}
+        ${If} $AssociationOfferOnly = 1
+          !insertmacro AxlRegisterFileTypeAlternative "{{ext}}" "{{or association.name ext}}" "{{association-description association.description ext}}" "$AssociationIcon" "Open with ${PRODUCTNAME}" "$INSTDIR\${MAINBINARYNAME}.exe $\"%1$\""
+        ${ElseIf} $AssociationMode = 1
+          !insertmacro AxlAssociateFileType "{{ext}}" "{{or association.name ext}}" "{{association-description association.description ext}}" "$AssociationIcon" "Open with ${PRODUCTNAME}" "$INSTDIR\${MAINBINARYNAME}.exe $\"%1$\""
+        ${Else}
+          ClearErrors
+          ReadRegStr $R0 SHELL_CONTEXT "Software\Classes\.{{ext}}" ""
+          ${If} $R0 == ""
+            ; A per-user install writes to HKCU, which outranks a machine-wide
+            ; handler. A default recorded machine-wide still counts as taken, so
+            ; the launcher is only offered instead of replacing it.
+            ClearErrors
+            ReadRegStr $R1 HKLM "Software\Classes\.{{ext}}" ""
+            ${If} $R1 == ""
+              !insertmacro AxlAssociateFileType "{{ext}}" "{{or association.name ext}}" "{{association-description association.description ext}}" "$AssociationIcon" "Open with ${PRODUCTNAME}" "$INSTDIR\${MAINBINARYNAME}.exe $\"%1$\""
+            ${Else}
+              !insertmacro AxlRegisterFileTypeAlternative "{{ext}}" "{{or association.name ext}}" "{{association-description association.description ext}}" "$AssociationIcon" "Open with ${PRODUCTNAME}" "$INSTDIR\${MAINBINARYNAME}.exe $\"%1$\""
+            ${EndIf}
+          ${Else}
+            !insertmacro AxlRegisterFileTypeAlternative "{{ext}}" "{{or association.name ext}}" "{{association-description association.description ext}}" "$AssociationIcon" "Open with ${PRODUCTNAME}" "$INSTDIR\${MAINBINARYNAME}.exe $\"%1$\""
+          ${EndIf}
+        ${EndIf}
       {{/each}}
     ${Else}
-      {{#each file_associations as |association| ~}}
+      ; The updater cannot ask whether to drop the associations, so it leaves
+      ; whatever the user has in place alone.
+      ${If} $UpdateMode <> 1
         {{#each association.ext as |ext| ~}}
           !insertmacro AxlUnassociateFileTypeIfOwned "{{ext}}" "{{or association.name ext}}"
         {{/each}}
-      {{/each}}
+        {{#if association.name}}
+        !insertmacro AxlDeleteProgIDIfOwned "{{association.name}}"
+        {{else}}
+        {{#each association.ext as |ext| ~}}
+        !insertmacro AxlDeleteProgIDIfOwned "{{ext}}"
+        {{/each}}
+        {{/if}}
+      ${EndIf}
     ${EndIf}
-  ${EndIf}
+  {{/each}}
 
   ; Register deep links
   {{#each deep_link_protocols as |protocol| ~}}
@@ -1317,13 +1440,18 @@ Section Install
   ; Create uninstaller
   WriteUninstaller "$INSTDIR\uninstall.exe"
 
-  ; Remember whether this installation owns the file association so the
+  ; Remember whether this installation owns the file associations so the
   ; uninstaller can leave a handler the user chose later untouched.
   ${If} $UpdateMode <> 1
     ${If} $FileAssociationState = ${BST_CHECKED}
       WriteRegStr SHCTX "${UNINSTKEY}" "FileAssociation" "1"
     ${Else}
       WriteRegStr SHCTX "${UNINSTKEY}" "FileAssociation" "0"
+    ${EndIf}
+    ${If} $SchematicAssociationState = ${BST_CHECKED}
+      WriteRegStr SHCTX "${UNINSTKEY}" "SchematicFileAssociation" "1"
+    ${Else}
+      WriteRegStr SHCTX "${UNINSTKEY}" "SchematicFileAssociation" "0"
     ${EndIf}
   ${EndIf}
 
@@ -1584,13 +1712,26 @@ Section Uninstall
   ; this installation, and the update never re-creates what a cleanup removes.
   ${If} $UpdateMode <> 1
     ReadRegStr $R8 SHCTX "${UNINSTKEY}" "FileAssociation"
-    ${If} $R8 != "0"
-      {{#each file_associations as |association| ~}}
+    ReadRegStr $R9 SHCTX "${UNINSTKEY}" "SchematicFileAssociation"
+    {{#each file_associations as |association| ~}}
+      {{#if association.name}}
+      StrCpy $AssociationState $R9
+      {{else}}
+      StrCpy $AssociationState $R8
+      {{/if}}
+      ${If} $AssociationState != "0"
         {{#each association.ext as |ext| ~}}
           !insertmacro AxlUnassociateFileTypeIfOwned "{{ext}}" "{{or association.name ext}}"
         {{/each}}
-      {{/each}}
-    ${EndIf}
+        {{#if association.name}}
+        !insertmacro AxlDeleteProgIDIfOwned "{{association.name}}"
+        {{else}}
+        {{#each association.ext as |ext| ~}}
+        !insertmacro AxlDeleteProgIDIfOwned "{{ext}}"
+        {{/each}}
+        {{/if}}
+      ${EndIf}
+    {{/each}}
   ${EndIf}
 
   ; Delete deep links

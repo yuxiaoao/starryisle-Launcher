@@ -173,8 +173,8 @@
   "app.action-bar.install.summary.file-download-failed": {
     "message": "无法下载 {file}"
   },
-  "app.action-bar.install.summary.instance-not-found": {
-    "message": "找不到实例"
+  "app.action-bar.install.summary.instance-setup-failed": {
+    "message": "无法准备实例"
   },
   "app.action-bar.install.summary.invalid-file-path": {
     "message": "文件路径无效"
@@ -238,6 +238,9 @@
   },
   "app.action-bar.offline": {
     "message": "离线"
+  },
+  "app.action-bar.preparing-update": {
+    "message": "准备中"
   },
   "app.action-bar.primary-instance": {
     "message": "主实例"
@@ -3131,9 +3134,6 @@
   "app.home.news.error-title": {
     "message": "新闻加载失败"
   },
-  "app.home.news.offline-title": {
-    "message": "联网后会显示新闻"
-  },
   "app.home.news.open-article": {
     "message": "在 minecraft.net 上阅读"
   },
@@ -4205,6 +4205,9 @@
   "app.instance.never-played": {
     "message": "从未游玩"
   },
+  "app.instance.not-found": {
+    "message": "此实例已不存在。"
+  },
   "app.instance.offline-installed-only": {
     "message": "离线模式只能启动已完整下载的实例。"
   },
@@ -4950,7 +4953,7 @@
     "message": "还没有图案。添加图层即可在旗帜上绘制图案。"
   },
   "app.lab.banner-designer.layers.hint": {
-    "message": "列表自上而下对应最上层到最下层，后添加的图案会覆盖之前的图案。"
+    "message": "后添加的图案会覆盖之前的图案"
   },
   "app.lab.banner-designer.layers.limit": {
     "message": "一面旗帜最多容纳 {max} 个图案。"
@@ -18257,6 +18260,9 @@
   "app.resources.backups.confirm": {
     "message": "删除这些备份"
   },
+  "app.resources.backups.confirm-missing": {
+    "message": "清理缺失的备份记录"
+  },
   "app.resources.backups.description": {
     "message": "清理前请核对旧文件。有效回滚备份可用于恢复之前的安装。"
   },
@@ -18296,8 +18302,17 @@
   "app.resources.backups.removed": {
     "message": "已删除 {count, number} 个文件。"
   },
+  "app.resources.backups.removed-missing": {
+    "message": "已清理 {count, number} 条缺失的备份记录。"
+  },
   "app.resources.backups.review": {
     "message": "预览选中项清理"
+  },
+  "app.resources.backups.review-changed": {
+    "message": "选中的备份发生了变化，请重新扫描后再确认清理。"
+  },
+  "app.resources.backups.review-missing": {
+    "message": "从列表中清理 {count, number} 条缺失的备份记录。这些条目不会删除任何文件，更新历史也会保留。"
   },
   "app.resources.backups.review-size": {
     "message": "删除 {count, number} 个文件 · {size}"
@@ -18312,7 +18327,7 @@
     "message": "搜索文件名或路径…"
   },
   "app.resources.backups.select-visible": {
-    "message": "选择可清理文件"
+    "message": "选择可清理的条目"
   },
   "app.resources.backups.selected-size": {
     "message": "已选 {count, number} 个 · {size}"
@@ -19945,6 +19960,9 @@
   },
   "app.settings.about.game.title": {
     "message": "合成美西螈"
+  },
+  "app.settings.about.join-discord": {
+    "message": "加入 Discord"
   },
   "app.settings.about.license-attribution": {
     "message": "许可证与来源声明"
@@ -22895,15 +22913,6 @@
   "app.settings.updates.channel.beta-description": {
     "message": "包含最新功能的新更新，但稳定性较低，更新频率更快。"
   },
-  "app.settings.updates.channel.copy-database": {
-    "message": "复制数据库"
-  },
-  "app.settings.updates.channel.copy-database-description": {
-    "message": "为防止出现问题，Beta 版将使用独立的数据存储，以免影响正式版的正确运行。这貌似是你第一次使用 Beta 版，是否要将稳定版的数据复制到 Beta 版？此操作无法自动还原。"
-  },
-  "app.settings.updates.channel.copy-database-title": {
-    "message": "将 Release 数据复制到 Beta？"
-  },
   "app.settings.updates.channel.description": {
     "message": "选择 StarryIsle 接收的启动器版本。"
   },
@@ -22930,9 +22939,6 @@
   },
   "app.settings.updates.channel.restart-title": {
     "message": "需要重启"
-  },
-  "app.settings.updates.channel.start-empty": {
-    "message": "从空白数据库开始"
   },
   "app.settings.updates.channel.title": {
     "message": "更新通道"
@@ -23383,6 +23389,21 @@
   },
   "app.splash.checking-for-updates": {
     "message": "正在检查更新……"
+  },
+  "app.splash.migrating-data": {
+    "message": "正在迁移启动器数据……"
+  },
+  "app.splash.migration.core": {
+    "message": "正在迁移启动器记录……"
+  },
+  "app.splash.migration.finishing": {
+    "message": "正在完成迁移……"
+  },
+  "app.splash.migration.preparing": {
+    "message": "正在准备迁移……"
+  },
+  "app.splash.migration.recovery": {
+    "message": "正在迁移恢复记录……"
   },
   "app.splash.updating-app-directory": {
     "message": "正在更新应用目录……"

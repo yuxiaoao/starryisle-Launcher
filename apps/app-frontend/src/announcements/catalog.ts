@@ -79,6 +79,27 @@ export const launcherAnnouncements: readonly LauncherAnnouncement[] = [
                     'zh-CN': '「色相」独立成区，位于色彩主题与强调色之间。',
                 },
             ],
+            changed: [
+                {
+                    'en-US':
+                        'Improved accessibility with clearer labels for icon-only controls, notification announcements, and more consistent dialog focus.',
+                    'zh-CN': '优化无障碍体验，为纯图标控件补充标签，改进通知播报和对话框焦点处理。',
+                },
+                {
+                    'en-US':
+                        'Improved narrow-window layouts with responsive pagination and scrollable content.',
+                    'zh-CN': '优化窄窗口布局，改善分页栏和页面滚动表现。',
+                },
+                {
+                    'en-US': 'Improved project translation by batching Bili Index requests.',
+                    'zh-CN': '优化项目翻译，批量处理 Bili Index 翻译请求。',
+                },
+                {
+                    'en-US':
+                        'Improved Windows installation by detecting outdated WebView2 runtimes and providing update guidance.',
+                    'zh-CN': '优化 Windows 安装流程，检测过旧的 WebView2 运行时并提供更新指引。',
+                },
+            ],
             fixed: [
                 {
                     'en-US': 'The calendar shows up in the sidebar again.',
@@ -91,6 +112,94 @@ export const launcherAnnouncements: readonly LauncherAnnouncement[] = [
                 {
                     'en-US': 'The hue slider matches the accent colour slider.',
                     'zh-CN': '色相滑块与强调色滑块样式一致。',
+                },
+                {
+                    'en-US':
+                        'Fixed the missing Data Packs category in Discover for Minecraft 26.x instances, including vanilla instances.',
+                    'zh-CN':
+                        '修复 Minecraft 26.x 实例（包括原版实例）在发现页缺少“数据包”分类的问题。',
+                },
+                {
+                    'en-US':
+                        'Fixed newer NeoForge instances failing to launch from external game directories with an installation corruption error.',
+                    'zh-CN': '修复新版 NeoForge 实例使用外部游戏目录时，启动报安装损坏错误的问题。',
+                },
+                {
+                    'en-US':
+                        'Fixed Home incorrectly showing worlds as in use and disabling their play buttons when no game was running.',
+                    'zh-CN': '修复未运行游戏时，主页误报世界正在使用中并禁用启动按钮的问题。',
+                },
+                {
+                    'en-US':
+                        'Fixed missing or unavailable instances blocking Home or leaving the launcher on an invalid instance page.',
+                    'zh-CN': '修复实例缺失或不可用时阻塞主页，或使启动器停留在无效实例页面的问题。',
+                },
+                {
+                    'en-US':
+                        'Fixed launcher upgrades selecting the wrong database channel and preventing Home from loading across channels.',
+                    'zh-CN':
+                        '修复启动器升级时数据库通道选择错误，以及跨通道实例选择阻塞主页加载的问题。',
+                },
+                {
+                    'en-US':
+                        'Fixed cape previews failing to load because of WebView cross-origin restrictions.',
+                    'zh-CN': '修复披风预览受 WebView 跨域限制而无法加载的问题。',
+                },
+                {
+                    'en-US':
+                        'Fixed automatic garbage collector selection when launching Minecraft from the system tray.',
+                    'zh-CN': '修复从系统托盘启动 Minecraft 时自动垃圾回收器选择异常的问题。',
+                },
+                {
+                    'en-US':
+                        'Fixed Minecraft 26.3 authentication when using the Fallen authentication proxy.',
+                    'zh-CN': '修复使用 Fallen 验证代理时 Minecraft 26.3 的验证问题。',
+                },
+                {
+                    'en-US':
+                        'Fixed malformed Modrinth project identities preventing other installed content from being checked for updates.',
+                    'zh-CN': '修复无效 Modrinth 项目标识阻塞其他已安装内容更新检查的问题。',
+                },
+                {
+                    'en-US':
+                        'Fixed dependency refresh not using the current resource service and allowed cleanup of missing resource backups.',
+                    'zh-CN': '修复依赖刷新未使用当前资源服务的问题，并允许清理已缺失的资源备份。',
+                },
+                {
+                    'en-US':
+                        'Fixed MRPack installation failing to stage overrides with long paths.',
+                    'zh-CN': '修复 MRPack 安装时无法暂存长路径覆盖文件的问题。',
+                },
+                {
+                    'en-US':
+                        'Fixed browser form history suggestions appearing in the command generator\'s "Command to run" field after restarting the launcher.',
+                    'zh-CN': '修复重启启动器后，指令生成器弹出浏览器表单历史建议的问题。',
+                },
+                {
+                    'en-US': 'Fixed sidebar icons being draggable as links or images.',
+                    'zh-CN': '修复侧边栏图标可被拖出为链接或图片的问题。',
+                },
+                {
+                    'en-US':
+                        'Fixed localized system font family names not being displayed in font selection.',
+                    'zh-CN': '修复字体选择中未显示系统字体的本地化名称的问题。',
+                },
+                {
+                    'en-US': 'Fixed compact project card actions covering the download count.',
+                    'zh-CN': '修复紧凑项目卡片的操作按钮遮挡下载量的问题。',
+                },
+            ],
+            security: [
+                {
+                    'en-US':
+                        'Added permission checks and isolation for theme pack pages, storage, and network access.',
+                    'zh-CN': '为主题包页面、存储和网络访问加入权限检查与隔离。',
+                },
+                {
+                    'en-US':
+                        'Fixed MRPack overrides with paths that differ only by letter case being applied to the same destination on case-insensitive systems.',
+                    'zh-CN':
+                        '修复大小写不敏感系统中，仅字母大小写不同的 MRPack 覆盖文件路径可能写入同一目标的问题。',
                 },
             ],
         },

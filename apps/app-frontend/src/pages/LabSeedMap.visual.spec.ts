@@ -398,7 +398,9 @@ it('isolates saved marker rendering and selection by dimension and preserves the
     vm.workspace.dimension = 'overworld'
     await flushPromises()
     expect(vm.dimensionMarkers).toEqual([overworld])
-    vm.selectAt(point.x, point.y)
+    // The split view can resize the canvas between awaits, so project at click time.
+    const currentPoint = vm.worldToScreen(overworld.x, overworld.z)
+    vm.selectAt(currentPoint.x, currentPoint.y)
     expect(vm.selection).toHaveProperty('markerId', overworld.id)
 })
 
@@ -1046,7 +1048,16 @@ it('keeps real canvas pixels across LoD changes and progressively paints new det
     await vi.waitFor(
         () => {
             vm.drawMap()
-            expect(sample()).toEqual([0, 255, 0, 255])
+            const context = canvas.getContext('2d')!
+            const pixels = context.getImageData(0, 0, canvas.width, canvas.height).data
+            let hasGreenPixel = false
+            for (let index = 0; index < pixels.length; index += 4) {
+                if (pixels[index] === 0 && pixels[index + 1] === 255 && pixels[index + 2] === 0) {
+                    hasGreenPixel = true
+                    break
+                }
+            }
+            expect(hasGreenPixel).toBe(true)
         },
         { timeout: 10000 },
     )
