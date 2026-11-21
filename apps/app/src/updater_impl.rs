@@ -551,7 +551,8 @@ async fn check_with_updater<R: Runtime>(
         // Only the upstream artifact host needs its path rewritten; GitHub
         // release assets are already absolute download URLs.
         if update.download_url.host_str() == Some("dist.axlmc.org") {
-            update.download_url = update_artifact_url(update.download_url.path())?;
+            update.download_url =
+                update_artifact_url(update.download_url.path())?;
         }
     }
 
