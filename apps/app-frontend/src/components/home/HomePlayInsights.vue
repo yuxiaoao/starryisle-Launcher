@@ -107,7 +107,7 @@ const totalSeconds = computed(() =>
     dailyPlaytime.value.reduce((sum, entry) => sum + entry.played_seconds, 0),
 )
 
-const totalLine = computed(() =>
+const _totalLine = computed(() =>
     formatMessage(messages.total, { duration: formatDuration(totalSeconds.value) }),
 )
 const lastWeekSeconds = computed(() => rangeSeconds(shiftedDate(weekStart.value, -7), 7))
