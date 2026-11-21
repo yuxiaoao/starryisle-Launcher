@@ -92,12 +92,12 @@ it('accepts draggable order and restores the complete default layout', () => {
         original.widgets.map((widget) => widget.id).reverse(),
     )
     expect(createDefaultHomeDashboard().widgets.map(({ kind, size }) => ({ kind, size }))).toEqual([
-        { kind: 'launch', size: '2x2' },
-        { kind: 'calendar', size: '1x2' },
-        { kind: 'recent', size: '2x1' },
-        { kind: 'pinned-worlds', size: '1x1' },
+        { kind: 'greeting', size: '2x1' },
+        { kind: 'pinned-worlds', size: '1x2' },
         { kind: 'pinned-servers', size: '2x1' },
-        { kind: 'pinned-instances', size: '1x1' },
+        { kind: 'recent', size: '2x1' },
+        { kind: 'weather', size: '1x2' },
+        { kind: 'pinned-instances', size: '2x1' },
     ])
 })
 
@@ -186,12 +186,12 @@ it('packs widgets into the earliest available cells', () => {
             effectiveRows,
         })),
     ).toEqual([
-        { column: 1, row: 1, effectiveColumns: 2, effectiveRows: 2 },
+        { column: 1, row: 1, effectiveColumns: 2, effectiveRows: 1 },
         { column: 3, row: 1, effectiveColumns: 1, effectiveRows: 2 },
+        { column: 1, row: 2, effectiveColumns: 2, effectiveRows: 1 },
         { column: 1, row: 3, effectiveColumns: 2, effectiveRows: 1 },
-        { column: 4, row: 1, effectiveColumns: 1, effectiveRows: 1 },
+        { column: 4, row: 1, effectiveColumns: 1, effectiveRows: 2 },
         { column: 3, row: 3, effectiveColumns: 2, effectiveRows: 1 },
-        { column: 4, row: 2, effectiveColumns: 1, effectiveRows: 1 },
     ])
 })
 
