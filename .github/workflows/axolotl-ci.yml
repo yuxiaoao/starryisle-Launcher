@@ -308,6 +308,15 @@ jobs:
       - name: Test the store collections
         if: runner.os == 'Linux'
         run: cargo nextest run --package theseus --no-fail-fast --no-tests=fail state::store::tests
+      # The database layer: opening the app database (WAL, a busy timeout and a
+      # bounded pool), ownership, recovery, and the backup/restore suites.
+      # Hermetic (temp dirs); Linux only for matrix cost. These suites were in
+      # no filter, so nothing watched them.
+      - name: Test the app database layer
+        if: runner.os == 'Linux'
+        run: |
+          cargo nextest run --package theseus --no-fail-fast --no-tests=fail state::db::
+          cargo nextest run --package theseus --no-fail-fast --no-tests=fail state::db_backup::
       # The scheduler: tags and their cap, the L0 executor, queue, quiesce,
       # supervision, the critical-section API and telemetry reconciliation.
       # Hermetic (timers, temp dirs, in-memory sqlite); Linux only for matrix
