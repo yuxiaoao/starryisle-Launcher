@@ -8,6 +8,7 @@ export const AxolotlBrandConfig = Object.freeze({
     supportUrl: 'https://github.com/yuxiaoao/starryisle-Launcher/issues',
     qqGroupNumber: '590809347',
     qqChannelUrl: 'https://pd.qq.com/s/c4xacb53e',
+    discordInviteUrl: '',
     sponsorUrl: '',
     bundleIdentifier: 'com.starryisle.launcher',
     deepLinkScheme: 'starryisle',
