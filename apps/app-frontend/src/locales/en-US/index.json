@@ -182,6 +182,9 @@
   "app.action-bar.install.summary.file-download-failed": {
     "message": "Couldn't download {file}"
   },
+  "app.action-bar.install.summary.instance-not-found": {
+    "message": "Instance couldn't be found"
+  },
   "app.action-bar.install.summary.instance-setup-failed": {
     "message": "Couldn't prepare instance"
   },
@@ -3223,6 +3226,9 @@
   },
   "app.home.news.error-title": {
     "message": "Couldn't load the news"
+  },
+  "app.home.news.offline-title": {
+    "message": "News shows up when you are online"
   },
   "app.home.news.open-article": {
     "message": "Read on minecraft.net"
@@ -18311,6 +18317,15 @@
   "app.settings.updates.channel.beta-description": {
     "message": "New, less stable updates with the latest features. Updates arrive more often."
   },
+  "app.settings.updates.channel.copy-database": {
+    "message": "Copy database"
+  },
+  "app.settings.updates.channel.copy-database-description": {
+    "message": "Would you like to copy your Release database into the Beta channel? This cannot be undone automatically."
+  },
+  "app.settings.updates.channel.copy-database-title": {
+    "message": "Copy Release data to Beta?"
+  },
   "app.settings.updates.channel.description": {
     "message": "Choose which launcher versions StarryIsle receives."
   },
@@ -18337,6 +18352,9 @@
   },
   "app.settings.updates.channel.restart-title": {
     "message": "Restart required"
+  },
+  "app.settings.updates.channel.start-empty": {
+    "message": "Start with empty database"
   },
   "app.settings.updates.channel.title": {
     "message": "Update channel"
