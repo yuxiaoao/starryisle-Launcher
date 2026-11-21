@@ -3,10 +3,7 @@ import '@/assets/stylesheets/window-frame.css'
 
 import { ModrinthApiError, TauriModrinthClient, VerboseLoggingFeature } from '@modrinth/api-client'
 import {
-    ChangeSkinIcon,
     ChartSplineIcon,
-    CompassIcon,
-    FlaskConicalIcon,
     FolderOpenIcon,
     RefreshCwIcon,
     RightArrowIcon,
