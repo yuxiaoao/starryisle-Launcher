@@ -1595,6 +1595,7 @@ pub async fn instance_export_screenshot_bundle(
     )
     .await?)
 }
+#[tracing::instrument(skip_all, level = "info")]
 #[tauri::command]
 pub async fn instance_import_screenshot_bundle(
     instance_id: String,
@@ -1608,6 +1609,7 @@ pub async fn instance_import_screenshot_bundle(
     )
     .await?)
 }
+#[tracing::instrument(skip_all, level = "info")]
 #[tauri::command]
 pub async fn instance_list_screenshot_notes(
     instance_id: Option<String>,
@@ -1617,6 +1619,7 @@ pub async fn instance_list_screenshot_notes(
             .await?,
     )
 }
+#[tracing::instrument(skip_all, level = "info")]
 #[tauri::command]
 pub async fn instance_set_screenshot_note(
     instance_id: String,
@@ -1628,6 +1631,7 @@ pub async fn instance_set_screenshot_note(
             .await?,
     )
 }
+#[tracing::instrument(skip_all, level = "info")]
 #[tauri::command]
 pub async fn instance_list_screenshot_groups()
 -> Result<Vec<theseus::instance::ScreenshotGroup>> {
@@ -1682,6 +1686,7 @@ pub async fn instance_list_worlds(
 ) -> Result<Vec<theseus::instance::WorldSummary>> {
     Ok(theseus::instance::list_worlds(&instance_id).await?)
 }
+#[tracing::instrument(skip_all, level = "info")]
 #[tauri::command]
 pub async fn instance_world_advancements(
     instance_id: String,
@@ -1695,12 +1700,14 @@ pub async fn instance_world_advancements(
     )
     .await?)
 }
+#[tracing::instrument(skip_all, level = "info")]
 #[tauri::command]
 pub async fn instance_advancement_catalog(
     instance_id: Option<String>,
 ) -> Result<Vec<theseus::instance::AdvancementDef>> {
     Ok(theseus::instance::advancement_catalog(instance_id).await?)
 }
+#[tracing::instrument(skip_all, level = "info")]
 #[tauri::command]
 pub async fn stats_overview(
     year: Option<i32>,
@@ -1709,6 +1716,7 @@ pub async fn stats_overview(
     Ok(theseus::stats::overview(year, force.unwrap_or(false)).await?)
 }
 
+#[tracing::instrument(skip_all, level = "info")]
 #[tauri::command]
 pub async fn instance_export_screenshots(
     keys: Vec<theseus::instance::ScreenshotKey>,
