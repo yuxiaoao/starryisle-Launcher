@@ -224,13 +224,19 @@ jobs:
         env:
           CURSEFORGE_API_KEY: ${{ secrets.CURSEFORGE_API_KEY }}
         run: node scripts/axolotl/build-desktop.mjs --profile release --target "${{ matrix.target }}"
+      - name: Resolve application binary name
+        id: binary
+        shell: bash
+        run: |
+          name="$(node -p 'const c = require("./apps/app/tauri.conf.json"); c.mainBinaryName || c.productName')"
+          echo "name=$name" >> "$GITHUB_OUTPUT"
       - name: Upload macOS build artifacts
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: macos-${{ matrix.target }}
           overwrite: true
           path: |
-            target/${{ matrix.target }}/release/Axolotl Launcher
+            target/${{ matrix.target }}/release/${{ steps.binary.outputs.name }}
             target/${{ matrix.target }}/release/axolotl-build.json
           retention-days: 7
           if-no-files-found: error

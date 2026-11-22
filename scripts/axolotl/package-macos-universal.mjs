@@ -18,12 +18,15 @@ const { values } = parseArgs({
 })
 if (process.platform !== 'darwin') throw new Error('Universal packaging requires macOS')
 requireProfile('release')
+const tauriConfig = JSON.parse(fs.readFileSync(path.join(app, 'tauri.conf.json'), 'utf8'))
+const binaryName = tauriConfig.mainBinaryName || tauriConfig.productName
+if (!binaryName) throw new Error('tauri.conf.json must set mainBinaryName or productName')
 const input = path.resolve(root, values.input)
 const targets = ['aarch64-apple-darwin', 'x86_64-apple-darwin']
 const manifests = targets.map((target) => {
     const directory = path.join(input, target)
     const manifest = JSON.parse(fs.readFileSync(path.join(directory, 'axolotl-build.json'), 'utf8'))
-    const binary = requireFile(path.join(directory, 'Axolotl Launcher'))
+    const binary = requireFile(path.join(directory, binaryName))
     run('lipo', [binary, '-verify_arch', target.startsWith('aarch64') ? 'arm64' : 'x86_64'])
     if (
         manifest.schema !== 1 ||
@@ -50,10 +53,10 @@ if (manifests.some((manifest) => manifest.resources !== resourceId)) {
 }
 const directory = path.join(root, 'target/universal-apple-darwin/release')
 fs.mkdirSync(directory, { recursive: true })
-const binary = path.join(directory, 'Axolotl Launcher')
+const binary = path.join(directory, binaryName)
 run('lipo', [
     '-create',
-    ...targets.map((target) => path.join(input, target, 'Axolotl Launcher')),
+    ...targets.map((target) => path.join(input, target, binaryName)),
     '-output',
     binary,
 ])
