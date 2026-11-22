@@ -399,7 +399,7 @@ jobs:
         run: |
           npm install --prefix target/uninstall-verification --no-save --no-audit --no-fund handlebars@4.7.8
           if ($LASTEXITCODE -ne 0) { throw "Failed to prepare NSIS fixture dependencies" }
-          node apps/installer-ui/tests/compile-fixture.cjs --tauri-nsis target/ci-bundle/release/nsis/x64
+          node apps/installer-ui/tests/compile-fixture.cjs --tauri-nsis target/ci-bundle/release/nsis/x64 --installer-helper target/ci/axolotl-installer-ui.exe
           if ($LASTEXITCODE -ne 0) { throw "Failed to compile NSIS uninstall fixture" }
           & apps/installer-ui/tests/uninstall-smoke.ps1
   website:
