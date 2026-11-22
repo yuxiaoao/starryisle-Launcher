@@ -1797,6 +1797,8 @@ onBeforeUnmount(() => {
                     <ScreenshotTimeline
                         v-if="viewMode === 'timeline'"
                         :screenshots="filteredScreenshots"
+                        :groups="groupedScreenshots"
+                        :group-by="groupBy"
                         :note-for="noteFor"
                         :editing-for="editingFor"
                         :show-instance="isGlobal"

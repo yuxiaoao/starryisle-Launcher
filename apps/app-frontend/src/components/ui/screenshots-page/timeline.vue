@@ -7,8 +7,16 @@ import type { InstanceScreenshot } from '@/helpers/instance'
 
 import TimelineRow from './timeline-row.vue'
 
+type TimelineGroup = {
+    id: string
+    title: string
+    screenshots: InstanceScreenshot[]
+}
+
 const props = defineProps<{
     screenshots: InstanceScreenshot[]
+    groups?: TimelineGroup[]
+    groupBy?: 'custom' | 'instance' | 'date' | 'none'
     showInstance: boolean
     noteFor?: (screenshot: InstanceScreenshot) => string | undefined
     editingFor?: (screenshot: InstanceScreenshot) => boolean
@@ -39,9 +47,11 @@ const DAY_HEIGHT = 60
 const HOUR_HEIGHT = 34
 const ROW_HEIGHT = 268
 const DAY_GAP = 24
+const GROUP_HEIGHT = 64
 const OVERSCAN = 600
 
 type TimelineItem =
+    | { kind: 'group'; key: string; label: string; top: number; height: number }
     | { kind: 'day'; key: string; label: string; top: number; height: number }
     | { kind: 'hour'; key: string; label: string; top: number; height: number }
     | {
@@ -53,56 +63,78 @@ type TimelineItem =
       }
 
 const items = computed<TimelineItem[]>(() => {
-    const grouped = new Map<string, InstanceScreenshot[]>()
-    for (const screenshot of props.screenshots) {
-        const key = dayjs(screenshot.created_at).format('YYYY-MM-DD')
-        const bucket = grouped.get(key) ?? []
-        bucket.push(screenshot)
-        grouped.set(key, bucket)
-    }
-
     const result: TimelineItem[] = []
     let top = 0
-    for (const [id, shots] of grouped) {
-        result.push({
-            kind: 'day',
-            key: `day-${id}`,
-            label: formatMessage(messages.dayLabel, {
-                date: formatFullDate(dayjs(shots[0].created_at).toDate()),
-                count: shots.length,
-            }),
-            top,
-            height: DAY_HEIGHT,
-        })
-        top += DAY_HEIGHT
 
-        const useHours = shots.length > HOUR_SEPARATOR_THRESHOLD
-        let currentHour = ''
-        for (const screenshot of shots) {
-            const moment = dayjs(screenshot.created_at)
-            const hour = moment.format('HH')
-            if (useHours && hour !== currentHour) {
-                currentHour = hour
-                result.push({
-                    kind: 'hour',
-                    key: `hour-${id}-${hour}`,
-                    label: moment.startOf('hour').format('HH:00'),
-                    top,
-                    height: HOUR_HEIGHT,
-                })
-                top += HOUR_HEIGHT
-            }
-            top += ROW_HEIGHT
-            result.push({
-                kind: 'shot',
-                key: `shot-${screenshot.id}`,
-                screenshot,
-                top: top - ROW_HEIGHT,
-                height: ROW_HEIGHT,
-            })
+    const appendScreenshots = (screenshots: InstanceScreenshot[], scope: string) => {
+        const grouped = new Map<string, InstanceScreenshot[]>()
+        for (const screenshot of screenshots) {
+            const key = dayjs(screenshot.created_at).format('YYYY-MM-DD')
+            const bucket = grouped.get(key) ?? []
+            bucket.push(screenshot)
+            grouped.set(key, bucket)
         }
-        top += DAY_GAP
+
+        for (const [id, shots] of grouped) {
+            result.push({
+                kind: 'day',
+                key: `day-${scope}-${id}`,
+                label: formatMessage(messages.dayLabel, {
+                    date: formatFullDate(dayjs(shots[0].created_at).toDate()),
+                    count: shots.length,
+                }),
+                top,
+                height: DAY_HEIGHT,
+            })
+            top += DAY_HEIGHT
+
+            const useHours = shots.length > HOUR_SEPARATOR_THRESHOLD
+            let currentHour = ''
+            for (const screenshot of shots) {
+                const moment = dayjs(screenshot.created_at)
+                const hour = moment.format('HH')
+                if (useHours && hour !== currentHour) {
+                    currentHour = hour
+                    result.push({
+                        kind: 'hour',
+                        key: `hour-${scope}-${id}-${hour}`,
+                        label: moment.startOf('hour').format('HH:00'),
+                        top,
+                        height: HOUR_HEIGHT,
+                    })
+                    top += HOUR_HEIGHT
+                }
+                top += ROW_HEIGHT
+                result.push({
+                    kind: 'shot',
+                    key: `shot-${screenshot.id}`,
+                    screenshot,
+                    top: top - ROW_HEIGHT,
+                    height: ROW_HEIGHT,
+                })
+            }
+            top += DAY_GAP
+        }
     }
+
+    if (props.groupBy && props.groupBy !== 'date' && props.groups?.length) {
+        for (const group of props.groups) {
+            if (props.groupBy !== 'none') {
+                result.push({
+                    kind: 'group',
+                    key: `group-${group.id}`,
+                    label: group.title,
+                    top,
+                    height: GROUP_HEIGHT,
+                })
+                top += GROUP_HEIGHT
+            }
+            appendScreenshots(group.screenshots, group.id)
+        }
+    } else {
+        appendScreenshots(props.screenshots, 'all')
+    }
+
     return result
 })
 
@@ -150,6 +182,14 @@ onBeforeUnmount(() => {
 
 watch(
     () => props.screenshots,
+    () => {
+        scroller.value?.scrollTo({ top: 0 })
+        scrollTop.value = 0
+    },
+)
+
+watch(
+    () => [props.groupBy, props.groups?.length] as const,
     () => {
         scroller.value?.scrollTo({ top: 0 })
         scrollTop.value = 0
@@ -210,7 +250,13 @@ const visibleItems = computed(() => {
                     :style="{ top: `${item.top}px` }"
                 >
                     <h2
-                        v-if="item.kind === 'day'"
+                        v-if="item.kind === 'group'"
+                        class="m-0 flex items-center rounded-xl bg-surface-3 px-4 py-3 text-lg font-semibold text-[var(--color-text-primary)]"
+                    >
+                        {{ item.label }}
+                    </h2>
+                    <h2
+                        v-else-if="item.kind === 'day'"
                         class="m-0 flex items-center gap-2 rounded-xl bg-surface-2 px-4 py-2.5 text-base font-semibold text-[var(--color-text-default)]"
                     >
                         {{ item.label }}
