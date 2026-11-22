@@ -9,6 +9,14 @@ export function windowsPackageArchitecture(host) {
     return architecture
 }
 
+/** The executable Tauri builds, so a renamed product keeps packaging and bundling in step. */
+export function windowsPackageBinaryName(tauriConfig) {
+    const name = tauriConfig?.mainBinaryName || tauriConfig?.productName
+    if (typeof name !== 'string' || name.trim() === '')
+        throw new Error('tauri.conf.json must set mainBinaryName or productName')
+    return `${name}.exe`
+}
+
 export function verifyWindowsBinaryArchitecture(bytes, architecture, label) {
     if (!Object.hasOwn(machines, architecture))
         throw new Error(`Unsupported Windows package architecture: ${architecture}`)

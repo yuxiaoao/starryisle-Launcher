@@ -5,6 +5,7 @@ import {
     verifyWindowsBinaryArchitecture,
     verifyWindowsBundleArchitecture,
     windowsPackageArchitecture,
+    windowsPackageBinaryName,
 } from './windows-package-architecture.mjs'
 
 function pe(machine) {
@@ -20,6 +21,22 @@ test('uses the Rust host rather than the Node process architecture', () => {
     assert.equal(windowsPackageArchitecture('x86_64-pc-windows-msvc'), 'x64')
     assert.equal(windowsPackageArchitecture('aarch64-pc-windows-msvc'), 'arm64')
     assert.throws(() => windowsPackageArchitecture('aarch64-apple-darwin'), /Unsupported/)
+})
+
+test('names the packaged executable after the configured product, not a fixed brand', () => {
+    assert.equal(
+        windowsPackageBinaryName({
+            productName: 'StarryIsle Launcher',
+            mainBinaryName: 'StarryIsle Launcher',
+        }),
+        'StarryIsle Launcher.exe',
+    )
+    assert.equal(
+        windowsPackageBinaryName({ productName: 'Axolotl Launcher' }),
+        'Axolotl Launcher.exe',
+    )
+    for (const config of [{}, { productName: '  ' }, null])
+        assert.throws(() => windowsPackageBinaryName(config), /mainBinaryName or productName/)
 })
 
 test('rejects a mismatched application, installer UI or seed map DLL', () => {

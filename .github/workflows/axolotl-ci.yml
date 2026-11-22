@@ -72,6 +72,7 @@ jobs:
           node --test scripts/axolotl/ci-changes.test.mjs
           node --test scripts/axolotl/build-jobs.test.mjs
           node --test scripts/axolotl/rust-coverage.test.mjs
+          node --test scripts/axolotl/windows-package-architecture.test.mjs
           node --test scripts/axolotl/check-db-test-isolation.test.mjs
           node --test scripts/axolotl/release-policy.test.mjs
           node --test scripts/axolotl/aliyunoss-release.test.mjs

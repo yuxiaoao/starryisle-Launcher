@@ -17,6 +17,7 @@ import {
     verifyWindowsBinaryArchitecture,
     verifyWindowsBundleArchitecture,
     windowsPackageArchitecture,
+    windowsPackageBinaryName,
 } from './windows-package-architecture.mjs'
 
 const { values } = parseArgs({
@@ -28,8 +29,10 @@ const { values } = parseArgs({
 if (process.platform !== 'win32') throw new Error('Windows packaging requires Windows')
 const profile = values.profile
 requireProfile(profile)
+const tauriConfig = JSON.parse(fs.readFileSync(path.join(app, 'tauri.conf.json'), 'utf8'))
+const binaryName = windowsPackageBinaryName(tauriConfig)
 const source = path.join(root, 'target', profile)
-const binary = requireFile(path.join(source, 'Axolotl Launcher.exe'))
+const binary = requireFile(path.join(source, binaryName))
 const host = output('rustc', ['-vV']).match(/^host: (.+)$/m)?.[1]
 const architecture = windowsPackageArchitecture(host)
 const initialHash = sha256(binary)
@@ -50,7 +53,7 @@ const bundleTarget = architecture === 'arm64' ? host : undefined
 const releaseDirectory = path.join(target, ...(bundleTarget ? [bundleTarget] : []), 'release')
 fs.mkdirSync(releaseDirectory, { recursive: true })
 if (profile !== 'release' || bundleTarget)
-    fs.copyFileSync(binary, path.join(releaseDirectory, 'Axolotl Launcher.exe'))
+    fs.copyFileSync(binary, path.join(releaseDirectory, binaryName))
 const bundleDirectory = path.join(releaseDirectory, 'bundle/nsis')
 
 for (const variant of ['modern', 'native']) {
@@ -105,6 +108,7 @@ const portable = path.join(
     'Axolotl',
 )
 fs.mkdirSync(path.join(portable, '.Axolotl'), { recursive: true })
+// The portable updater still identifies the main executable by this historical name.
 fs.copyFileSync(binary, path.join(portable, 'Axolotl Launcher.exe'))
 fs.copyFileSync(process.env.AXOLOTL_INSTALLER_UI_PATH, path.join(portable, 'axolotl-updater.exe'))
 requireFile(path.join(app, 'resources/seed-map/axolotl-cubiomes.dll'))
