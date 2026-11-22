@@ -1,19 +1,14 @@
 # CI: known open items
 
-One check is red on main while everything else passes.
+No check is red on main.
 
-Current state (run 44980338114): guardrails, frontend lint/tests/visual, i18n, the
-theseus test suites and the Windows dual-installer packaging verification pass on
-ubuntu, macOS and Windows. That packaging item was repaired in df13559 and b491bf7;
-only the coverage gate below is still open.
+Run 44989168468 (#176) passed on its second attempt. The first attempt exposed
+one flaky check: `HomeCalendar.visual.spec.ts` timed out on the 2s tooltip wait
+and passed when rerun; if it recurs, give that wait more time instead of
+rerunning the job.
 
-## 1. Rust coverage gate
+The two items this file used to track are closed:
 
-Measure coverage fails although every test suite passes.
-
-The job runs the whole workspace under cargo-llvm-cov, so the likely cause is the
-coverage threshold rather than a failing test.
-
-Decision needed: either set the threshold to the level the fork actually holds today, or
-add tests for the uncovered code. Lowering it silently weakens the gate, so the choice
-should be explicit.
+- Windows dual-installer packaging: fixed in df13559 and b491bf7.
+- Coverage job: it was never below the 59% floor (63.55% lines); the job failed
+  on `command_observability_parity`, fixed in 46cdaf9.
