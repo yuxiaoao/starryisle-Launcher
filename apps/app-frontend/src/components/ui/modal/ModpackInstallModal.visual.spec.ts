@@ -125,7 +125,7 @@ it.each(['isolated', 'automatic', 'shared'])(
         const wrapper = setup([{ path: root, mode }])
         await flushPromises()
         expect(document.body.textContent).toContain('Game directory')
-        expect(document.body.textContent).toContain('Axolotl directory')
+        expect(document.body.textContent).toContain('StarryIsle directory')
         button(root).click()
         const input = document.querySelector('input')!
         input.value = '../Pack'

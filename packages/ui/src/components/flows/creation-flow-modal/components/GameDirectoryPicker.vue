@@ -21,7 +21,7 @@ const messages = defineMessages({
     },
     managed: {
         id: 'creation-flow.modal.custom-setup.game-dir.managed',
-        defaultMessage: 'Axolotl directory',
+        defaultMessage: 'StarryIsle directory',
     },
 })
 const options = computed(() => [

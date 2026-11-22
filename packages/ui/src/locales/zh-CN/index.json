@@ -1227,7 +1227,7 @@
     "defaultMessage": "游戏目录"
   },
   "creation-flow.modal.custom-setup.game-dir.managed": {
-    "defaultMessage": "Axolotl 目录"
+    "defaultMessage": "StarryIsle 目录"
   },
   "creation-flow.modal.custom-setup.game-version.load-failed": {
     "defaultMessage": "游戏版本加载失败"
